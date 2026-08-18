@@ -9,7 +9,7 @@ The app is split into two independent apps plus a deployment folder:
 | Part | What it is | Docs |
 |---|---|---|
 | [`backend/`](backend/) | FastAPI (Python) API: auth, projects, LLM/TTS/STT calls, analytics | [backend/README.md](backend/README.md) |
-| [`frontend/`](frontend/) | React + TypeScript single-page app, 3D avatar rendering with three.js | [frontend/README.md](frontend/README.md) |
+| [`frontend/`](frontend/) | React + TypeScript single-page app, 3D avatar rendering with three.js enabled by [TalkingHead](https://github.com/met4citizen/TalkingHead) by Mika Suominen | [frontend/README.md](frontend/README.md) |
 | [`docker/`](docker/) | Docker images, Compose file, and reverse-proxy config for deployment | [docker/README.md](docker/README.md) |
 
 The frontend talks to the backend over HTTP. In production, Caddy (in `docker/`) reverse-proxies both behind a single domain.
@@ -99,11 +99,6 @@ The avatar rendering and lip-sync are built on two MIT-licensed libraries by the
   from the played audio signal in real time, instead of text-based timing estimation. No npm
   package; vendored into `frontend/public/headaudio/` (see that folder's `ATTRIBUTION.md` for
   license and details).
-
-## Documentation conventions
-
-Code comment and docstring conventions (how the codebase is documented, not just this README)
-are written down in [docs/STYLE.md](docs/STYLE.md).
 
 ## License
 
