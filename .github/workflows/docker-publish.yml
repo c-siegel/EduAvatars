@@ -47,7 +47,7 @@ jobs:
 
       - name: Determine image tags
         id: tags
-        run:
+        run: |
           TAGS="chsiegel/eduavatars:${{ matrix.component }}"
           TAGS="$TAGS,chsiegel/eduavatars:${{ matrix.component }}-${{ github.sha }}"
           if [ "${{ github.ref_type }}" = "tag" ]; then

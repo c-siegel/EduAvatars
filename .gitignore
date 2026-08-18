@@ -21,4 +21,6 @@ backend/whisper-cache
 # Editors / OS
 .DS_Store
 
+#Agents
+.claude
 CLAUDE.md
