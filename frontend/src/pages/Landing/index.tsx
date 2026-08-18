@@ -10,7 +10,7 @@ import styles from "./Landing.module.css";
 // Shared between the desktop nav and the mobile drawer so both stay in sync.
 const NAV_ITEMS = [
   //{ label: "Features", href: "#" },
-  { label: "Quellcode", href: "https://github.com/c-siegel/avatarhub2" },
+  { label: "Quellcode", href: "https://github.com/c-siegel/EduAvatars" },
 ];
 
 // `full`/`short` give the two title variants shown at different breakpoints
