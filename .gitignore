@@ -1,0 +1,24 @@
+# Node / Frontend
+node_modules/
+dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# Python / Backend
+.venv/
+__pycache__/
+*.pyc
+*.db
+backend/uploads/
+*.egg-info/
+backend/build/
+backend/whisper-cache
+.pytest_cache/
+
+# Env
+.env
+
+# Editors / OS
+.DS_Store
+
+CLAUDE.md

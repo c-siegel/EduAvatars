@@ -1,0 +1,54 @@
+services:
+  web:
+    image: chsiegel/eduavatars:frontend
+    pull_policy: always
+    env_file: ../.env
+    ports:
+      - "30080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    image: chsiegel/eduavatars:backend
+    pull_policy: always
+    env_file: ../.env
+    environment:
+      DATABASE_URL: sqlite:////data/eduavatars.db
+      AVATAR_UPLOAD_DIR: /data/uploads/avatars
+      PROFILE_PICTURE_UPLOAD_DIR: /data/uploads/profile-pictures
+      AVATAR_THUMBNAIL_UPLOAD_DIR: /data/uploads/avatar-thumbnails
+      BACKGROUND_UPLOAD_DIR: /data/uploads/backgrounds
+
+      # --- Production, behind Caddy/HTTPS ---
+      COOKIE_SECURE: "true"
+      ENVIRONMENT: production
+      REGISTRATION_ENABLED: "true"
+
+      # Which senders may set X-Forwarded-For, i.e. which hops in front of this container are
+      # trusted to report the real visitor address (see --proxy-headers in docker/backend.Dockerfile).
+      # Everything ahead of the backend — Caddy, and cloudflared if it runs as a container — sits on
+      # a private network, while real visitors arrive from public addresses; uvicorn walks the
+      # X-Forwarded-For chain from the right and takes the first address NOT listed here, which is
+      # exactly the visitor. Overridable from .env for a tighter range.
+      #
+      # Do NOT set this to "*": that switches uvicorn to taking the LEFTMOST entry of the chain,
+      # which is the part a visitor can write themselves — every per-IP rate limit would then be
+      # bypassable by sending a made-up X-Forwarded-For header.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-172.16.0.0/12,10.0.0.0/8,192.168.0.0/16}
+
+      STT_MODEL_CACHE_DIR: /data/whisper-cache
+
+      # --- SMTP (password-reset emails), optional — without SMTP_HOST the reset flow is a silent
+      #     no-op, see backend/app/services/email_service.py. Set SMTP_HOST/PORT/USERNAME/PASSWORD/
+      #     FROM_ADDRESS in the root .env if needed (see .env.example). ---
+
+      # --- Defaults from Settings, usually leave unchanged ---
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "10080"
+      PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: "30"
+    volumes:
+      # This is the one value that genuinely needs ${VAR} substitution while the YAML itself is
+      # being parsed (volume sources can't come from env_file, unlike plain environment variables).
+      - ${EDUAVATARS_DATA_DIR}:/data
+    restart: unless-stopped

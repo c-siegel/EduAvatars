@@ -1,0 +1,289 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--gradient-brand);
+  color: var(--color-accent-contrast);
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.headerInfo h1 {
+  margin: 0;
+  font-size: 1rem;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerStatus {
+  margin: 0;
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}
+
+.infoButton {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: var(--space-2);
+  display: flex;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.avatarStage {
+  position: relative;
+  flex-shrink: 0;
+  height: 40vh;
+  min-height: 12rem;
+  margin: var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* Nur noch die Fallback-Fläche für "kein Hintergrundbild gewählt" — das Bild selbst rendert jetzt
+     TalkingHeadAvatar direkt (.backdrop, Geschwister des Canvas im selben Elternteil), damit beide
+     garantiert exakt dieselbe Box haben. Eine reine Flächenfarbe hat dieses Problem nicht (kein
+     "Kanten"-Versatz bei einer einfarbigen Fläche möglich), bleibt also hier. */
+  background-color: var(--neutral-200);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+/* Der eigentliche Bug hinter der Lücke: .avatarStage ist ein Flex-Container mit
+   justify-content: center — ohne dies würde TalkingHeadAvatar (erstes Kind) nur seine natürliche
+   Höhe bekommen und dann vertikal zentriert, statt den Rahmen auszufüllen. Der Canvas selbst reicht
+   dadurch gar nicht bis zum unteren Rand, weshalb Zuschnitt innerhalb des Canvas (siehe
+   TalkingHeadAvatar.module.css) daran nichts ändern konnte. Fix: das erste Kind wächst über den
+   verfügbaren Platz — .stageControls zählt nicht mit (siehe unten, position: absolute). */
+.avatarStage > :first-child {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Mikro + Stumm-Schalter schweben als eigene Steuerleiste über dem Avatar-Canvas, mittig unten —
+   wie die Steuerleiste unter dem Video in einer Videokonferenz. Absolute Positionierung statt
+   Flex-Fluss, damit dieselbe Regel auf Mobile UND Desktop funktioniert, unabhängig davon, ob
+   .avatarStage gerade Reihe oder Spalte ist (kein eigener Media-Query-Zweig nötig). */
+.stageControls {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Eingeklappter Chat: das Avatar-Fenster wächst über den Platz, den sonst die Chat-Spalte belegt
+   hätte, statt bei der festen Mobile-Höhe (40vh) zu bleiben — wie bei einer Videokonferenz, die den
+   Videobereich vergrößert, sobald man das Chat-Panel schließt. Auf Desktop übernimmt das schon
+   .avatarStages eigenes flex: 2 automatisch, sobald .chatColumn aus dem Fluss verschwindet. */
+.avatarStageFull {
+  flex: 1;
+  height: auto;
+}
+
+/* Ausziehbarer Griff zwischen Avatar und Chat-Spalte — als normales Flex-Geschwister sitzt er in
+   beiden Layouts automatisch genau an der Nahtstelle (unter dem Avatar auf Mobile, siehe Media
+   Query unten für die gedrehte Desktop-Variante). */
+.chatToggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+  margin: 0 var(--space-4);
+  border: none;
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.chatColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Ohne das würde ein Flex-Item nie schmaler als sein Inhalt — eine lange, nicht umbrechende Zeile
+     in einer Nachricht (z.B. eine URL oder ein langes Wort) zwingt die Spalte sonst zu wachsen und
+     drückt .avatarStage daneben zusammen, statt innerhalb der Spalte selbst zu umbrechen/scrollen. */
+  min-width: 0;
+}
+
+.chatColumnHeader {
+  display: none;
+}
+
+.hintPill {
+  margin: var(--space-3) auto 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.thread {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border-default);
+}
+
+.roundButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.roundButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recording {
+  background: var(--color-danger);
+  border-color: transparent;
+  color: var(--color-accent-contrast);
+}
+
+/* Nur während der Aufnahme selbst gedimmt (Button bleibt anklickbar, um sie zu beenden) — die
+   Transkription danach läuft über :disabled + .spinIcon weiter unten. */
+.recording:disabled {
+  opacity: 1;
+}
+
+.spinIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sendButton {
+  border-color: transparent;
+  background: var(--gradient-brand);
+  color: var(--color-accent-contrast);
+}
+
+.textInput {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+}
+
+.notice {
+  margin: var(--space-3) var(--space-4) 0;
+}
+
+.centered {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 900px) {
+  .body {
+    flex-direction: row;
+  }
+
+  .avatarStage {
+    flex: 2;
+    height: auto;
+  }
+
+  /* Griff dreht auf Desktop von einer horizontalen Leiste unter dem Avatar zu einer vertikalen
+     Leiste neben der (ein- oder ausgeklappten) Chat-Spalte — dieselbe Nahtstellen-Position wie auf
+     Mobile, nur entlang der anderen Achse, da .body hier zur Zeile wird (siehe unten). */
+  .chatToggle {
+    height: auto;
+    width: 1.75rem;
+    margin: var(--space-4) 0;
+    border-top: none;
+    border-bottom: none;
+    border-left: 1px solid var(--border-default);
+    border-right: 1px solid var(--border-default);
+  }
+
+  .chatColumn {
+    flex: 1;
+    border-left: 1px solid var(--border-default);
+  }
+
+  .chatColumnHeader {
+    display: block;
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .chatColumnHeader h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .chatColumnHeader p {
+    margin: var(--space-1) 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+  }
+
+  .hintPill {
+    display: none;
+  }
+}

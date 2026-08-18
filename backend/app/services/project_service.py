@@ -1,0 +1,64 @@
+"""
+Project CRUD Helpers
+
+Shared logic behind the project routes (app/api/projects.py): listing a user's projects,
+deriving the denormalized litellm model string from a project's chosen API key, and applying
+partial updates.
+
+How to use:
+    from app.services.project_service import list_projects, update_project
+
+    projects = list_projects(session, user_id)
+"""
+
+from sqlmodel import Session, select
+
+from app.core.providers import build_model_string
+from app.models.api_key import UserApiKey
+from app.models.project import Project
+
+
+def list_projects(session: Session, user_id: str) -> list[Project]:
+    """List all of a user's projects."""
+    return list(session.exec(select(Project).where(Project.user_id == user_id)))
+
+
+def sync_llm_model(session: Session, project: Project) -> None:
+    """Derive llm_model from the project's referenced API key.
+
+    The project stores its model choice as a key reference; the litellm model string is
+    additionally kept denormalized because analytics (analytics_service.py) and the project
+    cards can then avoid a join. Done centrally here so the two never drift apart.
+    """
+    key = session.get(UserApiKey, project.llm_api_key_id) if project.llm_api_key_id else None
+    if key is None or key.user_id != project.user_id or not key.model_id:
+        project.llm_model = None
+        return
+    project.llm_model = build_model_string(key.provider, key.model_id)
+
+
+# Fields where an explicitly sent null is a deliberate clear (e.g. deselecting a model or
+# removing an avatar). For every other field, null is ignored: ProjectUpdate declares every
+# field as optional, but a null on title/creativity/... would be a malformed request and would
+# fail the DB's NOT NULL constraint anyway.
+_CLEARABLE_FIELDS = {
+    "llm_api_key_id",
+    "avatar_model_url",
+    "avatar_background_url",
+    "grade_level",
+    "tts_voice",
+    "tts_api_key_id",
+}
+
+
+def update_project(session: Session, project: Project, data: dict) -> Project:
+    """Apply a partial update to a project (only the fields present in `data`)."""
+    for field, value in data.items():
+        if value is not None or field in _CLEARABLE_FIELDS:
+            setattr(project, field, value)
+    if "llm_api_key_id" in data:
+        sync_llm_model(session, project)
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    return project

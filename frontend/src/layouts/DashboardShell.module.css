@@ -1,0 +1,157 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Nur ab Desktop-Breite (Sidebar-Layout) — auf Mobile ist die Drawer-Variante bereits eigens fürs
+   kleine Display ausgelegt, ein zusätzlicher Zoom-Faktor würde die dort schon knappe Fläche eher
+   verschlimmern. `zoom` skaliert die gesamte Baumstruktur (Schrift, Abstände, Radien, Icons) gleich
+   mit, exakt wie Browser-Zoom — 1.5 entspricht den 150%, bei denen es laut Rückmeldung schon gut
+   aussah, statt einzeln jeden rem-/px-Wert in den Komponenten anzufassen. */
+@media (min-width: 1024px) {
+  .shell {
+    zoom: 1.2;
+  }
+}
+
+.mobileTopbar {
+  display: none;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: var(--space-2);
+}
+
+.mobileTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sidebar {
+  width: 196px;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-4);
+}
+
+.sidebarHeader {
+  padding: 0 var(--space-3) var(--space-5);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sidebarFooter {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-default);
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userSchool {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-8);
+}
+
+@media (max-width: 1023px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .mobileTopbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-default);
+    padding: var(--space-3) var(--space-5);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 240px;
+    transform: translateX(-100%);
+    transition: transform var(--duration-base) var(--ease-out);
+    z-index: 50;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .content {
+    padding: var(--space-5);
+  }
+}

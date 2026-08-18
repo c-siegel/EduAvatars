@@ -1,0 +1,23 @@
+# Python / Backend
+**/.venv/
+**/__pycache__/
+**/*.pyc
+backend/*.db
+backend/uploads/
+**/*.egg-info/
+
+# Node / Frontend
+**/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+
+# VCS / Editors / OS
+.git/
+.claude/
+.DS_Store
+
+# Deployment-Secrets
+.env
+
+docs/STYLE.md

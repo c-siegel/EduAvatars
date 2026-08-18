@@ -1,0 +1,30 @@
+# SITE_ADDRESS comes from .env (see docker-compose.yml) instead of being hardcoded in the image, so
+# the same image works both for a real production host and for a local test run
+# (SITE_ADDRESS=localhost).
+#
+# auto_https off: TLS isn't handled by Caddy itself, it's terminated by the Cloudflare Tunnel
+# (cloudflared) in front of it — Caddy is never directly reachable from the outside, so its own
+# Let's Encrypt attempt via HTTP-01 would fail anyway. The tunnel talks to Caddy over plain HTTP
+# instead.
+{
+	auto_https off
+}
+
+http://{$SITE_ADDRESS} {
+	encode gzip
+
+	# Backend routes are mounted without an /api prefix (e.g. /auth/login, not /api/auth/login, see
+	# backend/app/main.py) — same rewrite as locally in frontend/vite.config.ts.
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy backend:8000
+	}
+
+	# SPA fallback: a direct request for e.g. /c/some-slug still needs to serve index.html, otherwise
+	# reloading on a sub-route would be a 404.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
