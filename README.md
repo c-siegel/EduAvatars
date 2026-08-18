@@ -1,4 +1,4 @@
-# EduAvatars
+# EduAvatars (work in progress)
 
 Eduavatars is a web app for creating and talking to a 3D avatar in the browser. A teacher (or any user) creates a "project" — a persona backed by an LLM (large language model), with a 3D avatar and a voice — and can share it as a public chat link. Visitors, who do not need an account or API key, type or speak to the avatar, which answers with generated speech and lip-synced animation.
 
@@ -20,7 +20,7 @@ There are two ways to run EduAvatars: locally for development (Deploy A), or wit
 real deployment (Deploy B). Both read the same `.env` file at the repo root, so it only needs to
 be set up once.
 
-### Shared setup: the `.env` file
+### Create the `.env` file
 
 ```bash
 cp .env.example .env
@@ -84,7 +84,7 @@ expected to be terminated upstream (e.g. a Cloudflare Tunnel). The `web` service
 | Frontend framework | React 18 + TypeScript, built with Vite |
 | 3D avatar rendering | three.js + [@met4citizen/talkinghead](https://github.com/met4citizen/TalkingHead) |
 | Frontend data fetching | TanStack Query |
-| Deployment | Docker Compose + Caddy, built for TrueNAS SCALE |
+| Deployment | Docker Compose + Caddy, built by default for TrueNAS SCALE, but PUID/GUID can be changed in `.env` file |
 
 ## 3D avatars and lip-sync
 
