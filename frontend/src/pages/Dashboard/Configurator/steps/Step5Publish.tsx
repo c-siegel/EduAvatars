@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Copy } from "lucide-react";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
+import { errorMessage } from "@/api/client";
 import { projectsApi } from "@/api/projects";
 import type { Project } from "@/types/project";
 import type { StepProps } from "../types";
@@ -31,6 +33,27 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
   });
 
   const shareUrl = project.shareSlug ? `${window.location.origin}/c/${project.shareSlug}` : null;
+
+  // Deliberately not part of `draft`/onChange (like published/shareSlug above) — this is
+  // server-owned status set through its own mutation, not part of the wizard's draft/dirty flow.
+  const [chatPasswordInput, setChatPasswordInput] = useState("");
+  const [editingChatPassword, setEditingChatPassword] = useState(false);
+
+  const chatPasswordMutation = useMutation({
+    mutationFn: (chatPassword: string | null) => projectsApi.update(projectId, { chatPassword }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["projects", projectId], updated);
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setChatPasswordInput("");
+      setEditingChatPassword(false);
+    },
+  });
+
+  function handleSetChatPassword(event: FormEvent) {
+    event.preventDefault();
+    if (!chatPasswordInput.trim() || chatPasswordMutation.isPending) return;
+    chatPasswordMutation.mutate(chatPasswordInput);
+  }
 
   return (
     <>
@@ -121,6 +144,61 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
               <Copy size={14} /> {t("configurator.step5.copy")}
             </Button>
           </div>
+        )}
+      </div>
+
+      <div className={styles.publishCard}>
+        <div className={styles.publishHeader}>
+          <span className={styles.toggleCopy}>
+            <strong>{t("configurator.step5.passwordProtection.title")}</strong>
+            <span>{t("configurator.step5.passwordProtection.text")}</span>
+          </span>
+          <Badge variant={project.passwordProtected ? "accent" : "default"}>
+            {project.passwordProtected
+              ? t("configurator.step5.passwordProtection.protected")
+              : t("configurator.step5.passwordProtection.notProtected")}
+          </Badge>
+        </div>
+
+        {chatPasswordMutation.isError && (
+          <Callout variant="danger">
+            {errorMessage(chatPasswordMutation.error, t("configurator.step5.actionFailed"))}
+          </Callout>
+        )}
+
+        {project.passwordProtected && !editingChatPassword && (
+          <div className={styles.linkRow}>
+            <Button size="sm" onClick={() => setEditingChatPassword(true)}>
+              {t("configurator.step5.passwordProtection.change")}
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => chatPasswordMutation.mutate(null)}
+              disabled={chatPasswordMutation.isPending}
+            >
+              {t("configurator.step5.passwordProtection.remove")}
+            </Button>
+          </div>
+        )}
+
+        {(!project.passwordProtected || editingChatPassword) && (
+          <form className={styles.linkRow} onSubmit={handleSetChatPassword}>
+            <Input
+              label={t("configurator.step5.passwordProtection.passwordLabel")}
+              type="text"
+              value={chatPasswordInput}
+              onChange={(e) => setChatPasswordInput(e.target.value)}
+            />
+            <Button type="submit" size="sm" disabled={chatPasswordMutation.isPending}>
+              {t("configurator.step5.passwordProtection.save")}
+            </Button>
+            {editingChatPassword && (
+              <Button type="button" size="sm" onClick={() => setEditingChatPassword(false)}>
+                {t("common.cancel")}
+              </Button>
+            )}
+          </form>
         )}
       </div>
     </>

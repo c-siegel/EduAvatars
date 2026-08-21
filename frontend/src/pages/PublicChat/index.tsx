@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Info, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, X } from "lucide-react";
+import { Info, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, Lock, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
+import { Input } from "@/components/Input";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SurveyEmbed } from "@/components/SurveyEmbed";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle } from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi } from "@/api/publicChat";
-import { ApiError } from "@/api/client";
+import { ApiError, errorMessage } from "@/api/client";
+import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./PublicChat.module.css";
 
-type Stage = "before-survey" | "chat" | "after-survey" | "done";
+type Stage = "locked" | "before-survey" | "chat" | "after-survey" | "done";
 
 // micStopAt: client timestamp (performance.now()) when the mic-stop button was clicked.
 // sttMs: backend-only whisper duration, from the /transcribe response.
@@ -65,11 +69,30 @@ export function PublicChatPage() {
   // Browser-Konsole, ohne dass sie danach gefragt hat. Siehe frontend/README.md ("Debugging").
   const latencyTestEnabled = searchParams.get("latencyTest") === "1";
 
+  const queryClient = useQueryClient();
   const tutorQuery = useQuery({
     queryKey: ["public-chat", slug],
     queryFn: () => publicChatApi.loadTutor(slug),
     retry: false,
   });
+
+  const [passwordInput, setPasswordInput] = useState("");
+  const unlockMutation = useMutation({
+    mutationFn: (password: string) => publicChatApi.unlock(slug, password),
+    onSuccess: (res) => {
+      setUnlockToken(slug, res.unlockToken);
+      setPasswordInput("");
+      // Refetches loadTutor with the now-stored token attached, which flips `unlocked` and
+      // reveals the real stage instead of the lock screen.
+      queryClient.invalidateQueries({ queryKey: ["public-chat", slug] });
+    },
+  });
+
+  function handleUnlockSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!passwordInput.trim() || unlockMutation.isPending) return;
+    unlockMutation.mutate(passwordInput);
+  }
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -210,9 +233,12 @@ export function PublicChatPage() {
 
   const tutor = tutorQuery.data;
 
-  // Anfangsstufe hängt vom Projekt ab: mit konfigurierter Vor-Umfrage startet die Seite dort,
-  // sonst direkt im Chat — für Projekte ohne Umfragen bleibt das Verhalten dadurch unverändert.
-  const stage: Stage = manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat");
+  // Locked takes priority over every other stage — a manual survey/chat choice made before the
+  // password was entered can't have happened yet anyway (see below: the header's End-chat button
+  // and everything else past the lock screen only render once unlocked).
+  // First stage depends on project: with survey it starts there, else withthe chat
+  const stage: Stage =
+    tutor.passwordProtected && !tutor.unlocked ? "locked" : (manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat"));
   // Fallback nur für den allerersten Render, bevor der Initialisierungs-Effekt oben gelaufen ist.
   const isChatOpen = chatOpen ?? tutor.chatDefaultOpen;
 
@@ -221,29 +247,57 @@ export function PublicChatPage() {
   }
 
   return (
-    <PublicChatLayout>
+    <PublicChatLayout showLanguageSwitcher={false}>
       <header className={styles.header}>
         <Avatar name={tutor.title} size="md" />
         <div className={styles.headerInfo}>
           <h1>{tutor.title}</h1>
           <p className={styles.headerStatus}>{t("publicChat.online")}</p>
         </div>
-        {stage === "chat" && (
-          <button
-            type="button"
-            className={styles.infoButton}
-            onClick={endChat}
-            disabled={sendMutation.isPending}
-            aria-label={t("publicChat.endChat")}
-            title={t("publicChat.endChat")}
-          >
-            <LogOut size={20} />
+        <div className={styles.headerActions}>
+          <LanguageSwitcher />
+          {stage === "chat" && (
+            <button
+              type="button"
+              className={styles.infoButton}
+              onClick={endChat}
+              disabled={sendMutation.isPending}
+              aria-label={t("publicChat.endChat")}
+              title={t("publicChat.endChat")}
+            >
+              <LogOut size={20} />
+            </button>
+          )}
+          <button className={styles.infoButton} aria-label={t("publicChat.information")}>
+            <Info size={20} />
           </button>
-        )}
-        <button className={styles.infoButton} aria-label={t("publicChat.information")}>
-          <Info size={20} />
-        </button>
+        </div>
       </header>
+
+      {stage === "locked" && (
+        <div className={styles.centered}>
+          <form className={styles.lockedForm} onSubmit={handleUnlockSubmit}>
+            <Lock size={28} />
+            <p className={styles.lockedText}>{t("publicChat.locked.description")}</p>
+            <Input
+              label={t("publicChat.locked.passwordLabel")}
+              type="password"
+              autoComplete="off"
+              required
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+            />
+            {unlockMutation.isError && (
+              <Callout variant="danger">
+                {errorMessage(unlockMutation.error, t("publicChat.locked.genericError"))}
+              </Callout>
+            )}
+            <Button type="submit" variant="accent" fullWidth disabled={unlockMutation.isPending}>
+              {t("publicChat.locked.submit")}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {stage === "before-survey" && tutor.surveyBeforeUrl && (
         <SurveyEmbed

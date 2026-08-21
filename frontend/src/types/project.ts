@@ -35,6 +35,10 @@ export interface Project {
   // startet. Wird im Konfigurator gesetzt/gespeichert; die Public-Chat-Seite rendert den
   // eingeklappten Zustand aktuell noch nicht (folgt später).
   chatDefaultOpen: boolean;
+  // Whether a visitor must enter a password before the public chat unlocks (see
+  // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
+  // projectsApi.update's separate `chatPassword` field, never read back here.
+  passwordProtected: boolean;
   createdAt: string;
 }
 

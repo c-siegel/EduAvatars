@@ -50,6 +50,11 @@ uvicorn app.main:app --reload
 ```
 The API is now available at `http://localhost:8000` (health check: `GET /health`).
 
+To get your first admin account (dashboard access to manage other accounts, site settings, ...),
+either set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env` and run
+`python -m app.cli.bootstrap_admin` from `backend/` (same idempotent step Deploy B runs
+automatically on every container start), or promote an existing account by hand in the database.
+
 **2. Frontend** (full details: [frontend/README.md](frontend/README.md))
 ```bash
 cd frontend

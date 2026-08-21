@@ -40,11 +40,22 @@ export function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+// Every caller in this codebase passes a plain object (or nothing) — never a Headers instance or
+// a tuple array — so a plain Record keeps the merge below simple instead of fighting HeadersInit's
+// wider (Headers | string[][] | Record) type.
+type SimpleHeaders = Record<string, string>;
+
+async function request<T>(path: string, init?: RequestInit & { headers?: SimpleHeaders }): Promise<T> {
+  // Merged (not spread-overwritten) so a caller-supplied `headers` — e.g. the chat-unlock token —
+  // doesn't silently drop the default Content-Type. Skipped entirely for a FormData body: the
+  // browser has to set that Content-Type itself (multipart boundary), see upload() below.
+  const { headers, body, ...restInit } = init ?? {};
+  const defaultHeaders: SimpleHeaders = body instanceof FormData ? {} : { "Content-Type": "application/json" };
   const res = await fetch(`${BASE_URL}${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...init,
+    ...restInit,
+    body,
+    headers: { ...defaultHeaders, ...headers },
   });
   if (!res.ok) {
     throw new ApiError(res.status, await res.text());
@@ -54,14 +65,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
-  put: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
+  get: <T>(path: string, headers?: SimpleHeaders) => request<T>(path, { headers }),
+  post: <T>(path: string, body?: unknown, headers?: SimpleHeaders) =>
+    request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined, headers }),
+  put: <T>(path: string, body?: unknown, headers?: SimpleHeaders) =>
+    request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined, headers }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  // Kein Content-Type-Header hier — der Browser setzt bei FormData selbst den
-  // multipart/form-data-Header inkl. Boundary (z.B. für den Avatar-Upload in 1e).
-  upload: <T>(path: string, formData: FormData) =>
-    request<T>(path, { method: "POST", headers: {}, body: formData }),
+  upload: <T>(path: string, formData: FormData, headers?: SimpleHeaders) =>
+    request<T>(path, { method: "POST", body: formData, headers }),
 };

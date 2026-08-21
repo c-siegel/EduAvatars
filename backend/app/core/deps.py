@@ -146,6 +146,26 @@ def get_current_user_optional(
     return user
 
 
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require the current user to be an admin.
+
+    Same shape as get_current_user, layered on top of it: authentication happens first (401 if
+    not logged in), then this adds the authorization check (403 if logged in but not an admin).
+
+    Raises:
+        HTTPException: 403 if the authenticated user isn't an admin
+
+    Example:
+        @router.get("/admin/users")
+        def list_users(admin: User = Depends(get_current_admin)):
+            ...
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail=ErrorCode.ADMIN_REQUIRED)
+    return current_user
+
+
 def get_owned_project(
     project_id: str,
     session: Session = Depends(get_session),

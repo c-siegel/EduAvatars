@@ -9,10 +9,14 @@ import { ConfiguratorPage } from "./pages/Dashboard/Configurator";
 import { AnalyticsPage } from "./pages/Dashboard/Analytics";
 import { ApiDashboardPage } from "./pages/Dashboard/ApiDashboard";
 import { ProfilePage } from "./pages/Dashboard/Profile";
+import { AdminUsersPage } from "./pages/Dashboard/Admin/Users";
+import { AdminSettingsPage } from "./pages/Dashboard/Admin/Settings";
+import { ForcePasswordChangePage } from "./pages/Dashboard/ForcePasswordChange";
 import { PublicChatPage } from "./pages/PublicChat";
 import { ImprintPage } from "./pages/Imprint";
 import { CreditsPage } from "./pages/Credits";
 import { DashboardShell } from "./layouts/DashboardShell";
+import { RequireAdmin } from "./components/RequireAdmin";
 
 // Layout route: wraps every /dashboard/* screen in the shared sidebar shell (Screen 1c).
 function DashboardLayout() {
@@ -40,6 +44,9 @@ export function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="api" element={<ApiDashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="change-password-required" element={<ForcePasswordChangePage />} />
+          <Route path="admin" element={<RequireAdmin> <AdminUsersPage /> </RequireAdmin> } />
+          <Route path="admin/settings" element={<RequireAdmin> <AdminSettingsPage /> </RequireAdmin> } />
         </Route>
         <Route path="/c/:projectSlug" element={<PublicChatPage />} />
       </Routes>

@@ -39,6 +39,12 @@ services:
 
       STT_MODEL_CACHE_DIR: /data/whisper-cache
 
+      # --- Admin bootstrap, optional — creates/promotes this account to admin on startup, see
+      #     backend/app/cli/bootstrap_admin.py. Safe to leave unset (no admin gets created) or to
+      #     leave set indefinitely (idempotent). Set ADMIN_EMAIL/ADMIN_PASSWORD in the root .env.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+
       # --- SMTP (password-reset emails), optional — without SMTP_HOST the reset flow is a silent
       #     no-op, see backend/app/services/email_service.py. Set SMTP_HOST/PORT/USERNAME/PASSWORD/
       #     FROM_ADDRESS in the root .env if needed (see .env.example). ---

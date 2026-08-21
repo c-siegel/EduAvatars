@@ -14,6 +14,7 @@
     "analytics": "Auswertung",
     "apiDashboard": "API-Dashboard",
     "profile": "Profileinstellungen",
+    "admin": "Admin",
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard-Navigation",
     "logout": "Abmelden",
@@ -92,7 +93,13 @@
     "send": "Senden",
     "surveyAfterTitle": "Umfrage nach dem Chat",
     "done": "Fertig",
-    "chatEnded": "Chat beendet. Danke, dass du mitgemacht hast!"
+    "chatEnded": "Chat beendet. Danke, dass du mitgemacht hast!",
+    "locked": {
+      "description": "Dieser Chat ist passwortgeschützt. Frag deine Lehrkraft nach dem Passwort.",
+      "passwordLabel": "Passwort",
+      "submit": "Entsperren",
+      "genericError": "Das Passwort war leider falsch. Bitte versuch es erneut."
+    }
   },
   "profile": {
     "savedToast": "Profil gespeichert.",
@@ -118,6 +125,57 @@
     "logoutOtherDevices": "Auf allen anderen Geräten abmelden",
     "deleteAccount": "Konto löschen",
     "deleteAccountText": "Alle Projekte und Links werden dauerhaft entfernt."
+  },
+  "forcePasswordChange": {
+    "title": "Passwort ändern",
+    "description": "Eine Administratorin/ein Administrator hat dieses Passwort für dich gesetzt. Wähle ein neues, um fortzufahren.",
+    "submit": "Speichern und fortfahren"
+  },
+  "admin": {
+    "users": {
+      "title": "Konten",
+      "subtitle": "Konten dieser Instanz anlegen, deaktivieren und verwalten.",
+      "table": {
+        "name": "Name",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "status": "Status"
+      },
+      "roleAdmin": "Admin",
+      "roleTeacher": "Lehrkraft",
+      "statusEnabled": "Aktiv",
+      "statusDisabled": "Deaktiviert",
+      "pendingPasswordChange": "Muss Passwort ändern",
+      "promote": "Zum Admin machen",
+      "demote": "Admin entziehen",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren",
+      "resetPassword": "Passwort zurücksetzen",
+      "resetPasswordTitle": "Passwort zurücksetzen für {{name}}",
+      "empty": "Noch keine Konten vorhanden.",
+      "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+      "addUser": "Konto hinzufügen",
+      "addUserButton": "Konto hinzufügen",
+      "form": {
+        "name": "Name",
+        "email": "E-Mail",
+        "temporaryPassword": "Vorläufiges Passwort",
+        "grantAdmin": "Admin-Zugriff gewähren",
+        "create": "Konto anlegen",
+        "reset": "Neues Passwort setzen"
+      }
+    },
+    "settings": {
+      "title": "Website-Einstellungen",
+      "subtitle": "Instanzweite Einstellungen, änderbar ohne erneutes Deployment.",
+      "contactEmailLabel": "Kontakt-E-Mail",
+      "contactEmailHint": "Wird im Impressum angezeigt. Leer lassen, um stattdessen den Platzhaltertext zu zeigen.",
+      "registrationTitle": "Selbstregistrierung erlauben",
+      "registrationText": "Wenn deaktiviert, können neue Konten nur von einer Admin-Person angelegt werden.",
+      "save": "Einstellungen speichern",
+      "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+      "saved": "Einstellungen gespeichert."
+    }
   },
   "configurator": {
     "steps": {
@@ -205,7 +263,17 @@
       "publish": "Publizieren",
       "publishNeedsModel": "Zum Publizieren muss ein Modell gewählt und gespeichert sein.",
       "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
-      "copy": "Kopieren"
+      "copy": "Kopieren",
+      "passwordProtection": {
+        "title": "Passwortschutz",
+        "text": "Schüler:innen müssen ein Passwort eingeben, bevor sie den Chat nutzen können.",
+        "protected": "Geschützt",
+        "notProtected": "Nicht geschützt",
+        "change": "Passwort ändern",
+        "remove": "Passwort entfernen",
+        "passwordLabel": "Passwort",
+        "save": "Speichern"
+      }
     }
   },
   "apiKeyForm": {
@@ -472,8 +540,14 @@
     "UNSUPPORTED_AUDIO_FORMAT": "Nicht unterstütztes Audioformat.",
     "AUDIO_FILE_TOO_LARGE": "Audiodatei ist zu groß (maximal 10 MB).",
     "CHAT_UNAVAILABLE": "Der Chat ist momentan nicht verfügbar.",
+    "CHAT_PASSWORD_TOO_SHORT": "Passwort muss mindestens 4 Zeichen haben.",
+    "CHAT_PASSWORD_TOO_LONG": "Passwort darf höchstens 72 Bytes lang sein.",
+    "CHAT_PASSWORD_INCORRECT": "Dieses Passwort ist falsch.",
+    "CHAT_UNLOCK_REQUIRED": "Dieser Chat benötigt ein Passwort.",
+    "PROJECT_NOT_PASSWORD_PROTECTED": "Für dieses Projekt ist kein Passwort gesetzt.",
     "RATE_LIMIT_CHAT": "Zu viele Nachrichten. Bitte kurz warten.",
     "RATE_LIMIT_TRANSCRIBE": "Zu viele Sprachaufnahmen. Bitte kurz warten.",
+    "RATE_LIMIT_CHAT_UNLOCK": "Zu viele Versuche. Bitte kurz warten.",
     "RATE_LIMIT_LOGIN": "Zu viele Anmeldeversuche. Bitte kurz warten.",
     "RATE_LIMIT_REGISTER": "Zu viele Registrierungen von dieser Verbindung. Bitte kurz warten.",
     "RATE_LIMIT_GENERIC": "Zu viele Anfragen. Bitte kurz warten.",
@@ -489,6 +563,10 @@
     "TTS_KEY_MISSING_MODEL": "Für diesen TTS-Key ist kein Modell hinterlegt.",
     "TTS_KEY_TEST_NEEDS_VOICE": "Dieser Anbieter braucht für die Sprachausgabe eine Stimme, die es beim Key-Test noch nicht gibt — probiere die Sprachausgabe direkt in einem Projekt aus.",
     "TTS_PROVIDER_UNSUPPORTED": "Sprachausgabe wird für diesen Anbieter (noch) nicht unterstützt.",
-    "CARTESIA_KEY_MISSING_MODEL": "Für diesen Cartesia-Key ist kein Modell hinterlegt."
+    "CARTESIA_KEY_MISSING_MODEL": "Für diesen Cartesia-Key ist kein Modell hinterlegt.",
+    "ADMIN_REQUIRED": "Diese Aktion erfordert ein Administrator-Konto.",
+    "USER_NOT_FOUND": "Nutzer:in nicht gefunden.",
+    "CANNOT_DISABLE_SELF": "Du kannst dein eigenes Konto nicht deaktivieren.",
+    "LAST_ADMIN_PROTECTED": "Es muss mindestens ein:e aktive:r Administrator:in bestehen bleiben."
   }
 }

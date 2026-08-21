@@ -1,4 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { settingsApi } from "@/api/settings";
 import { numberLocale } from "@/lib/format";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import styles from "./Imprint.module.css";
@@ -6,6 +8,19 @@ import styles from "./Imprint.module.css";
 // Screen — Impressum (Legal Notice)
 export function ImprintPage() {
   const { t } = useTranslation();
+  // No admin has set a contact email yet: keep the existing "[still to change]" placeholder
+  // instead of showing a broken/empty mailto link.
+  const settingsQuery = useQuery({ queryKey: ["settings", "public"], queryFn: settingsApi.getPublic });
+  const contactEmail = settingsQuery.data?.contactEmail;
+  const contactEmailLine = contactEmail ? (
+    <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+  ) : (
+    <>
+      {t("imprint.placeholder")}
+      <a href="mailto:kontakt@beispiel.de">noch ändern@beispiel.de</a>
+    </>
+  );
+
   return (
     <PublicLayout>
       <div className={styles.container}>
@@ -37,8 +52,7 @@ export function ImprintPage() {
           <div className={styles.content}>
             <p>
               <strong>{t("imprint.contact.email")}</strong>
-              {t("imprint.placeholder")}
-              <a href="mailto:kontakt@beispiel.de">noch ändern@beispiel.de</a>
+              {contactEmailLine}
             </p>
             <p>
               <strong>{t("imprint.contact.phone")}</strong> {t("imprint.contact.phonePlaceholder")}
@@ -54,8 +68,7 @@ export function ImprintPage() {
             </p>
             <p>
               <strong>{t("imprint.contact.email")}</strong>
-              {t("imprint.placeholder")}
-              <a href="mailto:kontakt@beispiel.de">noch ändern@beispiel.de</a>
+              {contactEmailLine}
             </p>
           </div>
         </section>

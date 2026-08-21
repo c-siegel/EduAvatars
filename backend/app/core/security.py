@@ -36,6 +36,11 @@ from cryptography.fernet import Fernet
 
 from app.core.config import settings
 
+# How long a chat-unlock token stays valid after a visitor enters the correct chat password —
+# long enough to cover a full class period, short enough to bound how long a leaked/shared token
+# keeps working. Not configurable: this is a UX/security tradeoff, not a deployment setting.
+_CHAT_UNLOCK_TOKEN_EXPIRE_MINUTES = 240
+
 
 def hash_password(password: str) -> str:
     """
@@ -124,6 +129,33 @@ def decode_access_token(token: str) -> tuple[str, int]:
     """
     payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     return payload["sub"], payload["tv"]
+
+
+def create_chat_unlock_token(project_id: str, visitor_id: str) -> str:
+    """Create a short-lived token proving `visitor_id` already entered `project_id`'s chat password.
+
+    Distinct from create_access_token (typ="chat_unlock" instead of a user session) so the two
+    can never be confused with each other even though they share a signing secret.
+    """
+    payload = {
+        "typ": "chat_unlock",
+        "pid": project_id,
+        "vid": visitor_id,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=_CHAT_UNLOCK_TOKEN_EXPIRE_MINUTES),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def decode_chat_unlock_token(token: str) -> tuple[str, str]:
+    """Decode a chat-unlock token, returning (project_id, visitor_id).
+
+    Raises jwt.InvalidTokenError (or a subclass) if the token is invalid, expired, or not a
+    chat-unlock token — callers should treat any exception here as "not unlocked".
+    """
+    payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+    if payload.get("typ") != "chat_unlock":
+        raise jwt.InvalidTokenError("wrong token type")
+    return payload["pid"], payload["vid"]
 
 
 def _fernet() -> Fernet:

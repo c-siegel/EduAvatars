@@ -53,6 +53,10 @@ class UserOut(CamelModel):
     school: str | None
     email: str
     avatar_url: str | None = None
+    is_admin: bool = False
+    # Whether the frontend should force a change-password screen before anything else — see
+    # User.must_change_password.
+    must_change_password: bool = False
 
 
 class RegistrationStatusOut(CamelModel):

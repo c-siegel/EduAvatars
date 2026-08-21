@@ -36,6 +36,13 @@
   display: flex;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 .body {
   flex: 1;
   display: flex;
@@ -237,6 +244,20 @@
   padding: var(--space-6);
   text-align: center;
   color: var(--text-secondary);
+}
+
+.lockedForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 20rem;
+  color: var(--text-secondary);
+}
+
+.lockedText {
+  margin: 0;
 }
 
 @media (min-width: 900px) {

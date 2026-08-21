@@ -19,7 +19,18 @@ How it works:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import analytics, api_keys, auth, avatar_library, background_library, profile, projects, public_chat
+from app.api import (
+    admin,
+    analytics,
+    api_keys,
+    auth,
+    avatar_library,
+    background_library,
+    profile,
+    projects,
+    public_chat,
+    site_settings,
+)
 from app.core.config import settings
 
 # Create the FastAPI application instance
@@ -46,6 +57,8 @@ app.include_router(analytics.router)  # Analytics and usage statistics
 app.include_router(api_keys.router)  # API key management for external services
 app.include_router(profile.router)  # User profile management
 app.include_router(public_chat.router)  # Public chat endpoints (no authentication required)
+app.include_router(admin.router)  # Admin dashboard: account management, site settings
+app.include_router(site_settings.router)  # Public-facing site settings (contact email, etc.)
 
 
 @app.get("/health")

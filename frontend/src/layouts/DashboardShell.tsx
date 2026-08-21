@@ -2,7 +2,17 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, BarChart3, KeyRound, Settings2, Menu, X, LogOut, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  BarChart3,
+  KeyRound,
+  Settings2,
+  ShieldCheck,
+  Menu,
+  X,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react";
 import { NavItem } from "@/components/NavItem";
 import { Scrim } from "@/components/Drawer";
 import { Wordmark } from "@/components/Wordmark";
@@ -14,6 +24,8 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import styles from "./DashboardShell.module.css";
 
+const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
+
 interface NavConfigItem {
   labelKey: string;
   href: string;
@@ -21,7 +33,7 @@ interface NavConfigItem {
   isActive: (pathname: string) => boolean;
 }
 
-const NAV_ITEMS: NavConfigItem[] = [
+const BASE_NAV_ITEMS: NavConfigItem[] = [
   { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
   {
     labelKey: "nav.analytics",
@@ -43,6 +55,13 @@ const NAV_ITEMS: NavConfigItem[] = [
   },
 ];
 
+const ADMIN_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.admin",
+  href: "/dashboard/admin",
+  icon: ShieldCheck,
+  isActive: (p) => p.startsWith("/dashboard/admin"),
+};
+
 // Layout für 1c–1h — Sidebar (Desktop) bzw. Hamburger + Overlay-Drawer (<1024px) + Content-Bereich
 export function DashboardShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -61,12 +80,21 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     }
   }, [error, navigate]);
 
+  // Forced password change (see User.must_change_password): blocks every other dashboard route
+  // until it's cleared, same idea as the 401 guard above but for "logged in, can't proceed yet".
+  useEffect(() => {
+    if (user?.mustChangePassword && location.pathname !== FORCE_PASSWORD_CHANGE_PATH) {
+      navigate(FORCE_PASSWORD_CHANGE_PATH, { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
+
   // Close the mobile drawer on every route change (e.g. after tapping a nav item).
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const activeItem = NAV_ITEMS.find((item) => item.isActive(location.pathname));
+  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
+  const activeItem = navItems.find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
   async function handleLogout() {
@@ -81,7 +109,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Wordmark />
       </div>
       <nav className={styles.nav} aria-label={t("nav.dashboardNavAriaLabel")}>
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
             {t(item.labelKey)}
           </NavItem>

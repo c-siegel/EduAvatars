@@ -30,18 +30,31 @@ class PublicProjectOut(CamelModel):
     start_prompt: str | None = None
     avatar_model_url: str | None = None
     avatar_background_url: str | None = None
-    spoken_language: str
-    tts_enabled: bool
-    stt_enabled: bool
+    spoken_language: str = "de"
+    tts_enabled: bool = False
+    stt_enabled: bool = False
     # Controls whether the chat should start open or collapsed-but-expandable — configurable from
     # the Configurator (see models/project.py), but the frontend doesn't render a collapsed state
     # yet, so this currently has no visible effect.
-    chat_default_open: bool
+    chat_default_open: bool = True
     # Already combined server-side with the respective checkbox (see
     # public_chat.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.
     survey_before_url: str | None = None
     survey_after_url: str | None = None
+    # Whether this project requires a password before start_prompt/avatar/etc. are shown at all —
+    # when True and unlocked is False, every field above is deliberately left at its default
+    # (nothing persona-related leaks pre-unlock), see public_chat.py::load_tutor.
+    password_protected: bool = False
+    unlocked: bool = True
+
+
+class ChatUnlockRequest(CamelModel):
+    password: str
+
+
+class ChatUnlockOut(CamelModel):
+    unlock_token: str
 
 
 class ChatMessageIn(CamelModel):

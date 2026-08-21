@@ -14,6 +14,7 @@
     "analytics": "Analytics",
     "apiDashboard": "API dashboard",
     "profile": "Profile settings",
+    "admin": "Admin",
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard navigation",
     "logout": "Log out",
@@ -92,7 +93,13 @@
     "send": "Send",
     "surveyAfterTitle": "Survey after the chat",
     "done": "Done",
-    "chatEnded": "Chat ended. Thanks for taking part!"
+    "chatEnded": "Chat ended. Thanks for taking part!",
+    "locked": {
+      "description": "This chat is password-protected. Ask your teacher for the password.",
+      "passwordLabel": "Password",
+      "submit": "Unlock",
+      "genericError": "That password didn't work. Please try again."
+    }
   },
   "profile": {
     "savedToast": "Profile saved.",
@@ -118,6 +125,57 @@
     "logoutOtherDevices": "Sign out on all other devices",
     "deleteAccount": "Delete account",
     "deleteAccountText": "All projects and links will be permanently removed."
+  },
+  "forcePasswordChange": {
+    "title": "Change your password",
+    "description": "An administrator set this password for you. Choose a new one to continue.",
+    "submit": "Save and continue"
+  },
+  "admin": {
+    "users": {
+      "title": "Accounts",
+      "subtitle": "Create, disable, and manage every account on this instance.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status"
+      },
+      "roleAdmin": "Admin",
+      "roleTeacher": "Teacher",
+      "statusEnabled": "Enabled",
+      "statusDisabled": "Disabled",
+      "pendingPasswordChange": "Must change password",
+      "promote": "Make admin",
+      "demote": "Remove admin",
+      "enable": "Enable",
+      "disable": "Disable",
+      "resetPassword": "Reset password",
+      "resetPasswordTitle": "Reset password for {{name}}",
+      "empty": "No accounts yet.",
+      "actionFailed": "Action failed. Please try again.",
+      "addUser": "Add account",
+      "addUserButton": "Add account",
+      "form": {
+        "name": "Name",
+        "email": "Email",
+        "temporaryPassword": "Temporary password",
+        "grantAdmin": "Grant admin access",
+        "create": "Create account",
+        "reset": "Set new password"
+      }
+    },
+    "settings": {
+      "title": "Site settings",
+      "subtitle": "Instance-wide settings, changeable without a redeploy.",
+      "contactEmailLabel": "Contact email",
+      "contactEmailHint": "Shown on the Impressum/legal notice page. Leave empty to show the placeholder text instead.",
+      "registrationTitle": "Allow self-registration",
+      "registrationText": "When off, only an admin can create new accounts.",
+      "save": "Save settings",
+      "saveError": "Save failed. Please try again.",
+      "saved": "Settings saved."
+    }
   },
   "configurator": {
     "steps": {
@@ -205,7 +263,17 @@
       "publish": "Publish",
       "publishNeedsModel": "A model must be selected and saved before publishing.",
       "actionFailed": "Action failed. Please try again.",
-      "copy": "Copy"
+      "copy": "Copy",
+      "passwordProtection": {
+        "title": "Password protection",
+        "text": "Require students to enter a password before they can use the chat.",
+        "protected": "Protected",
+        "notProtected": "Not protected",
+        "change": "Change password",
+        "remove": "Remove password",
+        "passwordLabel": "Password",
+        "save": "Save"
+      }
     }
   },
   "apiKeyForm": {
@@ -472,8 +540,14 @@
     "UNSUPPORTED_AUDIO_FORMAT": "Unsupported audio format.",
     "AUDIO_FILE_TOO_LARGE": "Audio file is too large (10 MB maximum).",
     "CHAT_UNAVAILABLE": "Chat is currently unavailable.",
+    "CHAT_PASSWORD_TOO_SHORT": "Password needs at least 4 characters.",
+    "CHAT_PASSWORD_TOO_LONG": "Password must be at most 72 bytes long.",
+    "CHAT_PASSWORD_INCORRECT": "That password is incorrect.",
+    "CHAT_UNLOCK_REQUIRED": "This chat requires a password.",
+    "PROJECT_NOT_PASSWORD_PROTECTED": "This project doesn't have a password set.",
     "RATE_LIMIT_CHAT": "Too many messages. Please wait a moment.",
     "RATE_LIMIT_TRANSCRIBE": "Too many voice recordings. Please wait a moment.",
+    "RATE_LIMIT_CHAT_UNLOCK": "Too many attempts. Please wait a moment.",
     "RATE_LIMIT_LOGIN": "Too many login attempts. Please wait a moment.",
     "RATE_LIMIT_REGISTER": "Too many registrations from this connection. Please wait a moment.",
     "RATE_LIMIT_GENERIC": "Too many requests. Please wait a moment.",
@@ -489,6 +563,10 @@
     "TTS_KEY_MISSING_MODEL": "No model is set for this TTS key.",
     "TTS_KEY_TEST_NEEDS_VOICE": "This provider needs a voice for speech output, which isn't available during a key test — try speech output directly in a project instead.",
     "TTS_PROVIDER_UNSUPPORTED": "Speech output isn't supported for this provider yet.",
-    "CARTESIA_KEY_MISSING_MODEL": "No model is set for this Cartesia key."
+    "CARTESIA_KEY_MISSING_MODEL": "No model is set for this Cartesia key.",
+    "ADMIN_REQUIRED": "This action requires an administrator account.",
+    "USER_NOT_FOUND": "User not found.",
+    "CANNOT_DISABLE_SELF": "You can't disable your own account.",
+    "LAST_ADMIN_PROTECTED": "At least one active administrator must remain."
   }
 }

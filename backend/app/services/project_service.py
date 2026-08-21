@@ -14,6 +14,7 @@ How to use:
 from sqlmodel import Session, select
 
 from app.core.providers import build_model_string
+from app.core.security import hash_password
 from app.models.api_key import UserApiKey
 from app.models.project import Project
 
@@ -49,6 +50,11 @@ _CLEARABLE_FIELDS = {
     "tts_voice",
     "tts_api_key_id",
 }
+
+
+def set_or_clear_chat_password(project: Project, password: str | None) -> None:
+    """Set/change (non-empty string) or remove (None) the project's public chat password."""
+    project.chat_password_hash = hash_password(password) if password else None
 
 
 def update_project(session: Session, project: Project, data: dict) -> Project:
