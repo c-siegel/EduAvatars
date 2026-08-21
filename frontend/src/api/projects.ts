@@ -1,11 +1,12 @@
 import { apiClient } from "./client";
+import i18n from "@/i18n";
 import type { ChatMessage } from "@/types/chat";
 import type { Project, ProjectStats } from "@/types/project";
 
 export const projectsApi = {
   list: () => apiClient.get<Project[]>("/projects"),
   stats: () => apiClient.get<ProjectStats>("/projects/stats"),
-  create: () => apiClient.post<Project>("/projects", { title: "Neues Projekt" }),
+  create: () => apiClient.post<Project>("/projects", { title: i18n.t("configurator.newProject") }),
   get: (id: string) => apiClient.get<Project>(`/projects/${id}`),
   update: (id: string, data: Partial<Project>) => apiClient.put<Project>(`/projects/${id}`, data),
   publish: (id: string) => apiClient.post<Project>(`/projects/${id}/publish`),

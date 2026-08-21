@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiKeysApi } from "@/api/apiKeys";
+import i18n from "@/i18n";
 import type { ApiKey, ProviderSpec } from "@/types/apiKey";
 
 // Anbieter, Endpunkt-Vorbelegungen und kuratierte Modelle kommen aus der Backend-Registry
@@ -33,7 +34,7 @@ export function modelLabel(key: ApiKey, specs: ProviderSpec[]): string | null {
   if (!key.modelId) {
     // TTS-Anbieter mit fest verdrahtetem Sprachausgabe-Modell (OpenAI/Gemini) speichern bewusst
     // kein model_id (siehe ApiKeyForm.tsx) — kein "kein Modell", sondern schlicht keine Wahl nötig.
-    return key.keyType === "tts" && spec?.ttsModelFixed ? "Standardmodell" : null;
+    return key.keyType === "tts" && spec?.ttsModelFixed ? i18n.t("apiKeyForm.defaultModel") : null;
   }
   return spec?.models.find((model) => model.value === key.modelId)?.label ?? key.modelId;
 }

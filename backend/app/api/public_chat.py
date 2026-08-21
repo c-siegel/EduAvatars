@@ -22,6 +22,7 @@ import json
 from datetime import datetime, timezone
 
 from app.core.deps import get_or_set_visitor_id, get_published_project, get_session
+from app.core.error_codes import ErrorCode
 from app.core.rate_limit import enforce_public_chat_rate_limit, enforce_public_transcribe_rate_limit
 from app.models.conversation import Conversation
 from app.models.project import Project
@@ -107,7 +108,7 @@ def send_message(
     # owner's configuration problem, not something visitors are affected by or can fix.
     api_key = resolve_llm_key(session, project)
     if api_key is None:
-        raise HTTPException(status_code=503, detail="Der Chat ist momentan nicht verfügbar.")
+        raise HTTPException(status_code=503, detail=ErrorCode.CHAT_UNAVAILABLE)
     # Timed for the client-side latency-test log (see pages/PublicChat/index.tsx) — not used by
     # the default UI, just extra fields riding along in the response.
     llm_start = time.perf_counter()
@@ -118,7 +119,7 @@ def send_message(
         )
     except Exception as exc:
         logger.exception("LLM-Anfrage fehlgeschlagen (project_id=%s)", project.id)
-        raise HTTPException(status_code=503, detail="Der Chat ist momentan nicht verfügbar.") from exc
+        raise HTTPException(status_code=503, detail=ErrorCode.CHAT_UNAVAILABLE) from exc
     llm_ms = (time.perf_counter() - llm_start) * 1000
 
     if project.save_conversations:
@@ -169,12 +170,12 @@ async def transcribe(
     enforce_public_transcribe_rate_limit(request, visitor_id)
 
     if not project.stt_enabled:
-        raise HTTPException(status_code=503, detail="Spracheingabe ist momentan nicht verfügbar.")
+        raise HTTPException(status_code=503, detail=ErrorCode.VOICE_INPUT_UNAVAILABLE)
     if audio.content_type not in _ALLOWED_AUDIO_CONTENT_TYPES:
-        raise HTTPException(status_code=400, detail="Nicht unterstütztes Audioformat.")
+        raise HTTPException(status_code=400, detail=ErrorCode.UNSUPPORTED_AUDIO_FORMAT)
     content = await audio.read(_MAX_AUDIO_UPLOAD_BYTES + 1)
     if len(content) > _MAX_AUDIO_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="Audiodatei ist zu groß (maximal 10 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.AUDIO_FILE_TOO_LARGE)
 
     stt_start = time.perf_counter()
     try:
@@ -182,6 +183,6 @@ async def transcribe(
     except Exception as exc:
         # Generic message for visitors (no technical detail), consistent with send_message.
         logger.exception("Transkription fehlgeschlagen (project_id=%s)", project.id)
-        raise HTTPException(status_code=503, detail="Spracheingabe ist momentan nicht verfügbar.") from exc
+        raise HTTPException(status_code=503, detail=ErrorCode.VOICE_INPUT_UNAVAILABLE) from exc
     stt_ms = (time.perf_counter() - stt_start) * 1000
     return TranscriptionOut(text=text, stt_ms=stt_ms)

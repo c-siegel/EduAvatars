@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
@@ -18,6 +19,7 @@ const MIN_PASSWORD_LENGTH = 10;
 
 // Screen 1h — Tab Profileinstellungen
 export function ProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -37,7 +39,7 @@ export function ProfilePage() {
     mutationFn: () => profileApi.update(account),
     onSuccess: (updated) => {
       queryClient.setQueryData(["auth", "me"], updated);
-      toast.show("Profil gespeichert.");
+      toast.show(t("profile.savedToast"));
     },
   });
 
@@ -48,16 +50,16 @@ export function ProfilePage() {
     mutationFn: profileApi.uploadPicture,
     onSuccess: (updated) => {
       queryClient.setQueryData(["auth", "me"], updated);
-      toast.show("Profilbild aktualisiert.");
+      toast.show(t("profile.pictureUpdatedToast"));
     },
-    onError: () => setPictureError("Bild konnte nicht hochgeladen werden (max. 5 MB, PNG/JPEG/WebP)."),
+    onError: () => setPictureError(t("profile.pictureUploadError")),
   });
 
   const deletePictureMutation = useMutation({
     mutationFn: profileApi.deletePicture,
     onSuccess: (updated) => {
       queryClient.setQueryData(["auth", "me"], updated);
-      toast.show("Profilbild entfernt.");
+      toast.show(t("profile.pictureRemovedToast"));
     },
   });
 
@@ -76,9 +78,9 @@ export function ProfilePage() {
     mutationFn: () => profileApi.changePassword(passwords.current, passwords.next),
     onSuccess: () => {
       setPasswords({ current: "", next: "", confirm: "" });
-      toast.show("Passwort aktualisiert.");
+      toast.show(t("profile.passwordUpdatedToast"));
     },
-    onError: () => setPasswordError("Aktuelles Passwort ist falsch oder die Anfrage ist fehlgeschlagen."),
+    onError: () => setPasswordError(t("profile.passwordChangeError")),
   });
 
   function handlePasswordSubmit(event: FormEvent) {
@@ -86,11 +88,11 @@ export function ProfilePage() {
     setPasswordError(null);
 
     if (passwords.next.length < MIN_PASSWORD_LENGTH || !/\d/.test(passwords.next)) {
-      setPasswordError(`Neues Passwort braucht mind. ${MIN_PASSWORD_LENGTH} Zeichen und eine Zahl.`);
+      setPasswordError(t("auth.resetPassword.errorTooShort", { min: MIN_PASSWORD_LENGTH }));
       return;
     }
     if (passwords.next !== passwords.confirm) {
-      setPasswordError("Die Wiederholung stimmt nicht mit dem neuen Passwort überein.");
+      setPasswordError(t("auth.resetPassword.errorMismatch"));
       return;
     }
     passwordMutation.mutate();
@@ -98,11 +100,11 @@ export function ProfilePage() {
 
   const logoutEverywhereMutation = useMutation({
     mutationFn: profileApi.logoutEverywhere,
-    onSuccess: () => toast.show("Alle anderen Sitzungen wurden abgemeldet."),
+    onSuccess: () => toast.show(t("profile.loggedOutEverywhereToast")),
   });
 
   function handleLogoutEverywhere() {
-    if (window.confirm("Auf allen anderen Geräten/Browsern abmelden? Diese Sitzung bleibt aktiv.")) {
+    if (window.confirm(t("profile.confirmLogoutEverywhere"))) {
       logoutEverywhereMutation.mutate();
     }
   }
@@ -116,11 +118,7 @@ export function ProfilePage() {
   });
 
   function handleDeleteAccount() {
-    if (
-      window.confirm(
-        "Alle Projekte und Links werden dauerhaft entfernt. Konto wirklich unwiderruflich löschen?",
-      )
-    ) {
+    if (window.confirm(t("profile.confirmDeleteAccount"))) {
       deleteMutation.mutate();
     }
   }
@@ -134,7 +132,7 @@ export function ProfilePage() {
           accountMutation.mutate();
         }}
       >
-        <h3>Konto</h3>
+        <h3>{t("profile.account")}</h3>
 
         <div className={styles.avatarRow}>
           <Avatar name={account.name} src={toAbsoluteAvatarUrl(user?.avatarUrl)} size="lg" />
@@ -152,7 +150,7 @@ export function ProfilePage() {
               onClick={() => pictureInputRef.current?.click()}
               disabled={uploadPictureMutation.isPending}
             >
-              Bild ändern
+              {t("profile.changePicture")}
             </Button>
             <Button
               type="button"
@@ -160,7 +158,7 @@ export function ProfilePage() {
               onClick={() => deletePictureMutation.mutate()}
               disabled={!user?.avatarUrl || deletePictureMutation.isPending}
             >
-              Entfernen
+              {t("apiDashboard.remove")}
             </Button>
           </div>
         </div>
@@ -168,40 +166,38 @@ export function ProfilePage() {
 
         <div className={styles.fieldRow}>
           <Input
-            label="Vor- & Nachname"
+            label={t("profile.fullName")}
             value={account.name}
             onChange={(e) => setAccount((a) => ({ ...a, name: e.target.value }))}
             required
           />
           <Input
-            label="Schule"
+            label={t("profile.school")}
             value={account.school}
             onChange={(e) => setAccount((a) => ({ ...a, school: e.target.value }))}
           />
         </div>
 
         <Input
-          label="E-Mail"
+          label={t("auth.emailLabel")}
           type="email"
           value={account.email}
           onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
           required
         />
 
-        {accountMutation.isError && (
-          <Callout variant="danger">Speichern fehlgeschlagen. Bitte erneut versuchen.</Callout>
-        )}
+        {accountMutation.isError && <Callout variant="danger">{t("profile.saveError")}</Callout>}
 
         <Button type="submit" variant="accent" disabled={accountMutation.isPending}>
-          Änderungen speichern
+          {t("profile.saveChanges")}
         </Button>
       </form>
 
       <form className={styles.card} onSubmit={handlePasswordSubmit}>
-        <h3>Passwort ändern</h3>
+        <h3>{t("profile.changePassword")}</h3>
 
         <Input
-          label="Aktuelles Passwort"
+          label={t("profile.currentPassword")}
           type="password"
           autoComplete="current-password"
           value={passwords.current}
@@ -211,7 +207,7 @@ export function ProfilePage() {
 
         <div className={styles.fieldRow}>
           <Input
-            label="Neues Passwort"
+            label={t("auth.resetPassword.newPasswordLabel")}
             type="password"
             autoComplete="new-password"
             value={passwords.next}
@@ -219,7 +215,7 @@ export function ProfilePage() {
             required
           />
           <Input
-            label="Wiederholen"
+            label={t("auth.resetPassword.repeatLabel")}
             type="password"
             autoComplete="new-password"
             value={passwords.confirm}
@@ -228,35 +224,32 @@ export function ProfilePage() {
           />
         </div>
 
-        <p className={styles.hint}>Mind. {MIN_PASSWORD_LENGTH} Zeichen, eine Zahl</p>
+        <p className={styles.hint}>{t("auth.resetPassword.hint", { min: MIN_PASSWORD_LENGTH })}</p>
 
         {passwordError && <Callout variant="danger">{passwordError}</Callout>}
 
         <Button type="submit" variant="accent" disabled={passwordMutation.isPending}>
-          Passwort aktualisieren
+          {t("profile.updatePassword")}
         </Button>
       </form>
 
       <div className={styles.card}>
-        <h3>Sitzungen</h3>
-        <p className={styles.dangerText}>
-          Falls du den Verdacht hast, dass dein Konto auf einem anderen Gerät angemeldet ist: alle
-          anderen Sitzungen sofort beenden. Diese Sitzung hier bleibt aktiv.
-        </p>
+        <h3>{t("profile.sessions")}</h3>
+        <p className={styles.dangerText}>{t("profile.sessionsText")}</p>
         <Button
           variant="default"
           onClick={handleLogoutEverywhere}
           disabled={logoutEverywhereMutation.isPending}
         >
-          Auf allen anderen Geräten abmelden
+          {t("profile.logoutOtherDevices")}
         </Button>
       </div>
 
       <div className={styles.card}>
-        <h3>Konto löschen</h3>
-        <p className={styles.dangerText}>Alle Projekte und Links werden dauerhaft entfernt.</p>
+        <h3>{t("profile.deleteAccount")}</h3>
+        <p className={styles.dangerText}>{t("profile.deleteAccountText")}</p>
         <Button variant="danger" onClick={handleDeleteAccount} disabled={deleteMutation.isPending}>
-          Konto löschen
+          {t("profile.deleteAccount")}
         </Button>
       </div>
 

@@ -22,6 +22,8 @@ How to use:
 
 from dataclasses import dataclass
 
+from app.core.error_codes import ErrorCode
+
 # What a stored API key is used for. LLM = large language model (chat), TTS = text-to-speech.
 # STT runs entirely through the instance-wide Whisper server, see services/stt_service.py)
 
@@ -234,7 +236,7 @@ def require_provider(value: str) -> ProviderSpec:
     """Like get_provider, but raises ValueError instead of returning None for an unknown value."""
     spec = _BY_VALUE.get(value)
     if spec is None:
-        raise ValueError(f"Unbekannter Anbieter '{value}'.")
+        raise ValueError(ErrorCode.UNKNOWN_PROVIDER)
     return spec
 
 

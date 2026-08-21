@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
 import { Callout } from "@/components/Callout";
@@ -17,11 +18,11 @@ import type { ConfiguratorDraft } from "./types";
 import styles from "./Configurator.module.css";
 
 const STEPS = [
-  { id: 1, label: "Aussehen" },
-  { id: 2, label: "Technik" },
-  { id: 3, label: "Verhalten" },
-  { id: 4, label: "Vorschau" },
-  { id: 5, label: "Veröffentlichung" },
+  { id: 1, labelKey: "configurator.steps.appearance" },
+  { id: 2, labelKey: "configurator.steps.technical" },
+  { id: 3, labelKey: "configurator.steps.behavior" },
+  { id: 4, labelKey: "configurator.steps.preview" },
+  { id: 5, labelKey: "configurator.steps.publish" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -84,6 +85,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
 // Screen 1e — Tab Konfigurator: 5-Schritte-Assistent (Aussehen → Technik → Verhalten → Vorschau →
 // Veröffentlichung). Abweichung von der einspaltigen Wireframe-Referenz auf ausdrücklichen Wunsch.
 export function ConfiguratorPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const projectId = id!;
   const queryClient = useQueryClient();
@@ -133,16 +135,16 @@ export function ConfiguratorPage() {
     onSuccess: (updated) => {
       queryClient.setQueryData(["projects", projectId], updated);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.show("Fortschritt gespeichert.");
+      toast.show(t("configurator.progressSaved"));
     },
   });
 
   if (projectQuery.isLoading || !draft) {
-    return <p>Lädt …</p>;
+    return <p>{t("common.loading")}</p>;
   }
 
   if (projectQuery.isError || !projectQuery.data) {
-    return <Callout variant="danger">Projekt konnte nicht geladen werden.</Callout>;
+    return <Callout variant="danger">{t("configurator.loadError")}</Callout>;
   }
 
   const project = projectQuery.data;
@@ -155,19 +157,19 @@ export function ConfiguratorPage() {
     <div className={styles.page}>
       <div className={styles.topbar}>
         <div className={styles.titleGroup}>
-          <h2 className={styles.title}>{draft.title || "Neues Projekt"}</h2>
+          <h2 className={styles.title}>{draft.title || t("configurator.newProject")}</h2>
           <Badge variant={project.published ? "accent" : "default"}>
-            {project.published ? "Publiziert" : "Entwurf · nicht veröffentlicht"}
+            {project.published ? t("overview.card.published") : t("configurator.draftUnpublished")}
           </Badge>
         </div>
         <Button variant="accent" onClick={() => saveMutation.mutate(draft)} disabled={saveMutation.isPending}>
-          Speichern
+          {t("common.save")}
         </Button>
       </div>
 
-      {saveMutation.isError && <Callout variant="danger">Speichern fehlgeschlagen. Bitte erneut versuchen.</Callout>}
+      {saveMutation.isError && <Callout variant="danger">{t("configurator.saveError")}</Callout>}
 
-      <nav className={styles.stepper} aria-label="Konfigurator-Schritte">
+      <nav className={styles.stepper} aria-label={t("configurator.stepsAriaLabel")}>
         {STEPS.map((s) => (
           <button
             key={s.id}
@@ -176,7 +178,7 @@ export function ConfiguratorPage() {
             onClick={() => setStep(s.id)}
           >
             <span className={styles.stepNumber}>{s.id}</span>
-            {s.label}
+            {t(s.labelKey)}
           </button>
         ))}
       </nav>
@@ -213,13 +215,11 @@ export function ConfiguratorPage() {
 
       <div className={styles.stepNav}>
         <span>
-          {step > 1 && (
-            <Button onClick={() => setStep((s) => (s - 1) as StepId)}>Zurück</Button>
-          )}
+          {step > 1 && <Button onClick={() => setStep((s) => (s - 1) as StepId)}>{t("common.back")}</Button>}
         </span>
         {step < 5 && (
           <Button variant="accent" onClick={() => setStep((s) => (s + 1) as StepId)}>
-            Weiter
+            {t("configurator.next")}
           </Button>
         )}
       </div>

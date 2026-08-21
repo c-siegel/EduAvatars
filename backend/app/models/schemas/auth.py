@@ -12,6 +12,7 @@ import re
 
 from pydantic import EmailStr, field_validator
 
+from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
 
 MIN_PASSWORD_LENGTH = 10
@@ -24,9 +25,9 @@ def _validate_password_strength(password: str) -> str:
     # digit") — previously only checked client-side, now also enforced server-side on
     # registration (Phase 2.1, a safety net in case the client doesn't check, e.g. direct API calls).
     if len(password) < MIN_PASSWORD_LENGTH or not re.search(r"\d", password):
-        raise ValueError(f"Passwort muss mindestens {MIN_PASSWORD_LENGTH} Zeichen und eine Zahl enthalten.")
+        raise ValueError(ErrorCode.PASSWORD_TOO_SHORT)
     if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-        raise ValueError(f"Passwort darf höchstens {MAX_PASSWORD_BYTES} Bytes lang sein.")
+        raise ValueError(ErrorCode.PASSWORD_TOO_LONG)
     return password
 
 

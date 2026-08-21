@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Tile } from "@/components/Tile";
@@ -7,14 +8,14 @@ import { Callout } from "@/components/Callout";
 import { BarChart } from "@/components/Chart";
 import { analyticsApi } from "@/api/analytics";
 import { projectsApi } from "@/api/projects";
-import { formatCompactNumber, formatDuration, formatEuro } from "@/lib/format";
+import { formatCompactNumber, formatDuration, formatEuro, numberLocale } from "@/lib/format";
 import type { AnalyticsFilters, Granularity } from "@/types/analytics";
 import styles from "./Analytics.module.css";
 
 const PERIOD_OPTIONS = [
-  { value: 7, label: "7 Tage" },
-  { value: 30, label: "30 Tage" },
-  { value: 90, label: "90 Tage" },
+  { value: 7, days: 7 },
+  { value: 30, days: 30 },
+  { value: 90, days: 90 },
 ];
 
 const PAGE_SIZE = 4;
@@ -23,6 +24,7 @@ const DEFAULT_FILTERS: AnalyticsFilters = { projectId: null, periodDays: 30, mod
 
 // Screen 1f — Tab Auswertung
 export function AnalyticsPage() {
+  const { t } = useTranslation();
   // "Filter anwenden" im Wireframe impliziert zwei Zustände: was gerade in den Dropdowns steht
   // (draft) und was tatsächlich die Abfragen bestimmt (applied) — erst der Button übernimmt.
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
@@ -68,13 +70,13 @@ export function AnalyticsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
-        <h2>Auswertung</h2>
+        <h2>{t("nav.analytics")}</h2>
         <Button onClick={handleExport}>
-          <Download size={16} /> CSV-Export
+          <Download size={16} /> {t("analytics.csvExport")}
         </Button>
       </div>
 
-      {exportError && <Callout variant="danger">Export fehlgeschlagen. Bitte erneut versuchen.</Callout>}
+      {exportError && <Callout variant="danger">{t("analytics.exportError")}</Callout>}
 
       <div className={styles.filterRow}>
         <select
@@ -82,7 +84,7 @@ export function AnalyticsPage() {
           value={draftFilters.projectId ?? ""}
           onChange={(e) => setDraftFilters((f) => ({ ...f, projectId: e.target.value || null }))}
         >
-          <option value="">Projekt: Alle</option>
+          <option value="">{t("analytics.filters.projectAll")}</option>
           {(projectsQuery.data ?? []).map((project) => (
             <option key={project.id} value={project.id}>
               {project.title}
@@ -96,7 +98,7 @@ export function AnalyticsPage() {
         >
           {PERIOD_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              Zeitraum: {option.label}
+              {t("analytics.filters.period", { days: option.days })}
             </option>
           ))}
         </select>
@@ -105,7 +107,7 @@ export function AnalyticsPage() {
           value={draftFilters.model ?? ""}
           onChange={(e) => setDraftFilters((f) => ({ ...f, model: e.target.value || null }))}
         >
-          <option value="">Modell: Alle</option>
+          <option value="">{t("analytics.filters.modelAll")}</option>
           {usedModels.map((model) => (
             <option key={model} value={model!}>
               {model}
@@ -113,28 +115,28 @@ export function AnalyticsPage() {
           ))}
         </select>
         <Button variant="accent" size="sm" onClick={applyFilters}>
-          Filter anwenden
+          {t("analytics.filters.apply")}
         </Button>
       </div>
 
       <div className={styles.statGrid}>
         <Tile
-          label="Sessions"
+          label={t("analytics.stats.sessions")}
           value={stats ? formatCompactNumber(stats.sessions) : "–"}
           delta={stats && { value: stats.sessionsDeltaPct, goodDirection: "up" }}
         />
         <Tile
-          label="Nachrichten"
+          label={t("analytics.stats.messages")}
           value={stats ? formatCompactNumber(stats.messages) : "–"}
           delta={stats && { value: stats.messagesDeltaPct, goodDirection: "up" }}
         />
         <Tile
-          label="Ø Dauer"
+          label={t("analytics.stats.avgDuration")}
           value={stats ? formatDuration(stats.avgDurationSeconds) : "–"}
           delta={stats && { value: stats.avgDurationDeltaPct, goodDirection: "up" }}
         />
         <Tile
-          label="Token-Kosten"
+          label={t("analytics.stats.tokenCost")}
           value={stats ? formatEuro(stats.tokenCostEur) : "–"}
           delta={stats && { value: stats.tokenCostDeltaPct, goodDirection: "down" }}
         />
@@ -142,7 +144,7 @@ export function AnalyticsPage() {
 
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <h3>Sessions im Zeitverlauf</h3>
+          <h3>{t("analytics.sessionsOverTime")}</h3>
           <div className={styles.granularityToggle}>
             {(["day", "week", "month"] as Granularity[]).map((g) => (
               <button
@@ -150,7 +152,7 @@ export function AnalyticsPage() {
                 className={`${styles.granularityButton} ${granularity === g ? styles.granularityActive : ""}`}
                 onClick={() => setGranularity(g)}
               >
-                {g === "day" ? "Tag" : g === "week" ? "Woche" : "Monat"}
+                {t(`analytics.granularity.${g}`)}
               </button>
             ))}
           </div>
@@ -162,23 +164,23 @@ export function AnalyticsPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Projekt</th>
-              <th>Gestartet</th>
-              <th>Nachr.</th>
-              <th>Dauer</th>
-              <th>Letzte Frage</th>
+              <th>{t("analytics.table.project")}</th>
+              <th>{t("analytics.table.started")}</th>
+              <th>{t("analytics.table.messagesAbbr")}</th>
+              <th>{t("analytics.table.duration")}</th>
+              <th>{t("analytics.table.lastQuestion")}</th>
             </tr>
           </thead>
           <tbody>
             {sessions.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={5}>Keine Sessions für diesen Filter.</td>
+                <td colSpan={5}>{t("analytics.table.empty")}</td>
               </tr>
             ) : (
               sessions.map((session) => (
                 <tr key={session.id}>
                   <td>{session.projectTitle}</td>
-                  <td>{new Date(session.startedAt).toLocaleString("de-DE")}</td>
+                  <td>{new Date(session.startedAt).toLocaleString(numberLocale())}</td>
                   <td>{session.messageCount}</td>
                   <td>{formatDuration(session.durationSeconds)}</td>
                   <td>{session.lastQuestion ?? "–"}</td>
@@ -190,7 +192,7 @@ export function AnalyticsPage() {
 
         <div className={styles.sessionCards}>
           {sessions.length === 0 ? (
-            <p className={styles.emptyRow}>Keine Sessions für diesen Filter.</p>
+            <p className={styles.emptyRow}>{t("analytics.table.empty")}</p>
           ) : (
             sessions.map((session) => (
               <div key={session.id} className={styles.sessionCard}>
@@ -199,8 +201,8 @@ export function AnalyticsPage() {
                   <span>{formatDuration(session.durationSeconds)}</span>
                 </div>
                 <div className={styles.sessionCardMeta}>
-                  <span>{new Date(session.startedAt).toLocaleDateString("de-DE")}</span>
-                  <span>{session.messageCount} Nachr.</span>
+                  <span>{new Date(session.startedAt).toLocaleDateString(numberLocale())}</span>
+                  <span>{t("analytics.table.messagesCount", { count: session.messageCount })}</span>
                 </div>
               </div>
             ))
@@ -210,8 +212,12 @@ export function AnalyticsPage() {
         <div className={styles.pagination}>
           <span>
             {totalSessions === 0
-              ? "0 von 0"
-              : `${(page - 1) * PAGE_SIZE + 1}–${(page - 1) * PAGE_SIZE + sessions.length} von ${formatCompactNumber(totalSessions)}`}
+              ? t("analytics.pagination.zero")
+              : t("analytics.pagination.range", {
+                  from: (page - 1) * PAGE_SIZE + 1,
+                  to: (page - 1) * PAGE_SIZE + sessions.length,
+                  total: formatCompactNumber(totalSessions),
+                })}
           </span>
           <div className={styles.pageButtons}>
             <Button size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>

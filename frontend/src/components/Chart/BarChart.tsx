@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { formatCompactNumber } from "@/lib/format";
 import styles from "./BarChart.module.css";
 
@@ -25,10 +26,11 @@ function niceMax(value: number): number {
 // (Titel der Karte benennt sie), teal-600 statt emerald-500 als Füllfarbe: emerald-500 liegt mit
 // ~2.5:1 unter dem 3:1-Kontrast-Minimum für Marks auf hellem Grund, teal-600 schafft ~3.7:1.
 export function BarChart({ data, isFetching }: BarChartProps) {
+  const { t } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (data.length === 0) {
-    return <div className={styles.empty}>Keine Daten für diesen Zeitraum.</div>;
+    return <div className={styles.empty}>{t("analytics.chartEmpty")}</div>;
   }
 
   const max = niceMax(Math.max(...data.map((d) => d.value)));

@@ -38,6 +38,8 @@ from collections import defaultdict
 
 from fastapi import HTTPException, Request
 
+from app.core.error_codes import ErrorCode
+
 # Timestamps (in seconds) of recent hits per rate-limit key, e.g. "login-ip:1.2.3.4".
 _hits: dict[str, list[float]] = defaultdict(list)
 
@@ -78,7 +80,7 @@ def enforce_public_chat_rate_limit(request: Request, visitor_id: str) -> None:
     # The IP limit is checked FIRST and counts every attempt: a caller who rotates the
     # visitor cookie to dodge the per-visitor limit still consumes this budget, which is the
     # one they can't reset from the client side.
-    message = "Zu viele Nachrichten. Bitte kurz warten."
+    message = ErrorCode.RATE_LIMIT_CHAT
     _enforce(
         f"chat-ip:{_client_ip(request)}",
         max_requests=_CHAT_MAX_PER_IP,
@@ -97,7 +99,7 @@ def enforce_public_transcribe_rate_limit(request: Request, visitor_id: str) -> N
     """Limit how often voice recordings can be submitted for transcription, per visitor and per IP."""
     # Same two-dimension reasoning as the chat limit above — transcription is more expensive
     # per call (Whisper runs in-process), hence the lower numbers.
-    message = "Zu viele Sprachaufnahmen. Bitte kurz warten."
+    message = ErrorCode.RATE_LIMIT_TRANSCRIBE
     _enforce(
         f"transcribe-ip:{_client_ip(request)}",
         max_requests=_TRANSCRIBE_MAX_PER_IP,
@@ -117,7 +119,7 @@ def enforce_login_rate_limit(request: Request, email: str) -> None:
     # Two keys: per IP (stops one source from trying many accounts) AND per email (stops
     # distributed attempts against the same account from many IPs). Both count every attempt,
     # regardless of outcome — failed logins count too.
-    message = "Zu viele Anmeldeversuche. Bitte kurz warten."
+    message = ErrorCode.RATE_LIMIT_LOGIN
     _enforce(f"login-ip:{_client_ip(request)}", max_requests=10, window_seconds=600, message=message)
     _enforce(f"login-email:{email.lower()}", max_requests=5, window_seconds=600, message=message)
 
@@ -128,12 +130,12 @@ def enforce_register_rate_limit(request: Request) -> None:
         f"register-ip:{_client_ip(request)}",
         max_requests=5,
         window_seconds=600,
-        message="Zu viele Registrierungen von dieser Verbindung. Bitte kurz warten.",
+        message=ErrorCode.RATE_LIMIT_REGISTER,
     )
 
 
 def enforce_password_reset_rate_limit(request: Request, email: str) -> None:
     """Limit password-reset requests, both per IP (10 per 10 minutes) and per email (3 per 10 minutes)."""
-    message = "Zu viele Anfragen. Bitte kurz warten."
+    message = ErrorCode.RATE_LIMIT_GENERIC
     _enforce(f"reset-ip:{_client_ip(request)}", max_requests=10, window_seconds=600, message=message)
     _enforce(f"reset-email:{email.lower()}", max_requests=3, window_seconds=600, message=message)

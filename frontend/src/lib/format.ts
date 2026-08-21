@@ -1,9 +1,17 @@
+import i18n from "@/i18n";
+
+// The digit-grouping/date-formatting locale follows the UI language; a currency amount's
+// currency itself (EUR) doesn't. Shared by every Intl.NumberFormat/DateTimeFormat call site.
+export function numberLocale(): string {
+  return i18n.language === "en" ? "en-US" : "de-DE";
+}
+
 export function formatCompactNumber(value: number): string {
-  return new Intl.NumberFormat("de-DE", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat(numberLocale(), { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export function formatEuro(value: number): string {
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
+  return new Intl.NumberFormat(numberLocale(), { style: "currency", currency: "EUR" }).format(value);
 }
 
 export function formatDuration(totalSeconds: number): string {

@@ -1,6 +1,7 @@
 import { useRef, type ChangeEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Input, Textarea } from "@/components/Input";
 import { Avatar } from "@/components/Avatar";
 import { Callout } from "@/components/Callout";
@@ -14,6 +15,7 @@ import sharedStyles from "./shared.module.css";
 // Schritt 1 — Aussehen: Projektname, Kurzbeschreibung, Avatar-Bibliothek, Hintergrundbild und
 // Chat-Sichtbarkeit.
 export function Step1Appearance({ draft, onChange }: StepProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backgroundFileInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +75,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
   }
 
   function handleRemoveAvatar(avatar: AvatarModel) {
-    if (!window.confirm(`"${avatar.name}" wirklich aus der Bibliothek löschen?`)) return;
+    if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: avatar.name }))) return;
     // Ausgewählter Avatar wird beim Löschen mit abgewählt, statt im Entwurf auf eine nicht mehr
     // existierende Datei zeigen zu lassen.
     if (draft.avatarModelUrl === avatar.fileUrl) onChange({ avatarModelUrl: null });
@@ -81,7 +83,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
   }
 
   function handleRemoveBackground(background: BackgroundImage) {
-    if (!window.confirm(`"${background.name}" wirklich aus der Bibliothek löschen?`)) return;
+    if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: background.name }))) return;
     if (draft.avatarBackgroundUrl === background.fileUrl) onChange({ avatarBackgroundUrl: null });
     removeBackgroundMutation.mutate(background.id);
   }
@@ -91,11 +93,16 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
 
   return (
     <>
-      <Input label="Projektname" value={draft.title} onChange={(e) => onChange({ title: e.target.value })} required />
+      <Input
+        label={t("configurator.step1.projectName")}
+        value={draft.title}
+        onChange={(e) => onChange({ title: e.target.value })}
+        required
+      />
 
       <Textarea
-        label="Kurzbeschreibung (optional)"
-        placeholder="Kurze Beschreibung, was dieser Avatar macht"
+        label={t("configurator.step1.descriptionOptional")}
+        placeholder={t("configurator.step1.descriptionPlaceholder")}
         value={draft.description}
         onChange={(e) => onChange({ description: e.target.value })}
         rows={2}
@@ -103,8 +110,8 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
 
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h3>Avatar-Bibliothek</h3>
-          <span className={styles.count}>{avatars.length} verfügbar</span>
+          <h3>{t("configurator.step1.avatarLibrary")}</h3>
+          <span className={styles.count}>{t("configurator.step1.available", { count: avatars.length })}</span>
         </div>
         <div className={styles.avatarGrid}>
           {avatars.map((avatar) => (
@@ -129,7 +136,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
                 type="button"
                 className={styles.tileDelete}
                 onClick={() => handleRemoveAvatar(avatar)}
-                aria-label={`${avatar.name} löschen`}
+                aria-label={t("configurator.step1.deleteItem", { name: avatar.name })}
                 disabled={removeAvatarMutation.isPending}
               >
                 <X size={12} />
@@ -140,7 +147,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
             type="button"
             className={styles.uploadTile}
             onClick={() => fileInputRef.current?.click()}
-            aria-label="Avatar hochladen"
+            aria-label={t("configurator.step1.uploadAvatar")}
             disabled={uploadMutation.isPending}
           >
             <Plus size={18} />
@@ -151,8 +158,8 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
 
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h3>Hintergrundbild</h3>
-          <span className={styles.count}>{backgrounds.length} verfügbar</span>
+          <h3>{t("configurator.step1.backgroundImage")}</h3>
+          <span className={styles.count}>{t("configurator.step1.available", { count: backgrounds.length })}</span>
         </div>
         <div className={styles.backgroundGrid}>
           <button
@@ -161,10 +168,10 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
               !draft.avatarBackgroundUrl ? styles.backgroundTileSelected : ""
             }`}
             onClick={() => onChange({ avatarBackgroundUrl: null })}
-            aria-label="Kein Hintergrundbild (neutral hellgrau)"
+            aria-label={t("configurator.step1.noBackgroundAriaLabel")}
             aria-pressed={!draft.avatarBackgroundUrl}
           >
-            Standard
+            {t("configurator.step1.default")}
           </button>
           {backgrounds.map((background) => (
             <div key={background.id} className={styles.tileWrap}>
@@ -182,7 +189,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
                 type="button"
                 className={styles.tileDelete}
                 onClick={() => handleRemoveBackground(background)}
-                aria-label={`${background.name} löschen`}
+                aria-label={t("configurator.step1.deleteItem", { name: background.name })}
                 disabled={removeBackgroundMutation.isPending}
               >
                 <X size={12} />
@@ -193,7 +200,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
             type="button"
             className={styles.backgroundUploadTile}
             onClick={() => backgroundFileInputRef.current?.click()}
-            aria-label="Hintergrundbild hochladen"
+            aria-label={t("configurator.step1.uploadBackground")}
             disabled={uploadBackgroundMutation.isPending}
           >
             <Plus size={18} />
@@ -215,17 +222,11 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
           onChange={(e) => onChange({ chatDefaultOpen: e.target.checked })}
         />
         <span className={sharedStyles.toggleCopy}>
-          <strong>Chat standardmäßig sichtbar</strong>
-          <span>
-            Aktiv: Der Chat ist beim Öffnen der Seite direkt sichtbar. Inaktiv: Der Chat startet
-            eingeklappt, kann von Besucher:innen aber jederzeit ausgeklappt werden.
-          </span>
+          <strong>{t("configurator.step1.chatVisibleTitle")}</strong>
+          <span>{t("configurator.step1.chatVisibleText")}</span>
         </span>
       </label>
-      <Callout variant="info">
-        Diese Einstellung wird bereits gespeichert — die Anzeige auf der öffentlichen Seite folgt in
-        einem späteren Schritt.
-      </Callout>
+      <Callout variant="info">{t("configurator.step1.chatVisibleNote")}</Callout>
     </>
   );
 }

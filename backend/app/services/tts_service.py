@@ -14,6 +14,7 @@ How to use:
 import httpx
 import litellm
 
+from app.core.error_codes import ErrorCode
 from app.core.providers import CARTESIA_PROVIDER, OPENAI_COMPATIBLE_PROVIDER, build_model_string, get_provider
 from app.models.api_key import UserApiKey
 from app.services.api_key_service import effective_api_base
@@ -43,16 +44,16 @@ def _synthesize_litellm(text: str, tts_voice: str | None, api_key_record: UserAp
     """Generate speech via litellm, for every provider except Cartesia."""
     spec = get_provider(api_key_record.provider)
     if spec is None:
-        raise ValueError(f"Unbekannter Anbieter '{api_key_record.provider}'.")
+        raise ValueError(ErrorCode.UNKNOWN_PROVIDER)
 
     if api_key_record.provider == OPENAI_COMPATIBLE_PROVIDER:
         if not api_key_record.model_id:
-            raise ValueError("Für diesen TTS-Key ist kein Modell hinterlegt.")
+            raise ValueError(ErrorCode.TTS_KEY_MISSING_MODEL)
         model = build_model_string(api_key_record.provider, api_key_record.model_id)
     elif spec.tts_model:
         model = spec.tts_model
     else:
-        raise ValueError(f"Sprachausgabe wird für Anbieter '{spec.label}' (noch) nicht unterstützt.")
+        raise ValueError(ErrorCode.TTS_PROVIDER_UNSUPPORTED)
 
     api_key = reveal_api_key(api_key_record.encrypted_api_key)
     # Only a deliberately different address is passed to litellm (see api_key_service.py) —
@@ -96,7 +97,7 @@ def _synthesize_cartesia(text: str, tts_voice: str | None, api_key_record: UserA
     if not tts_voice:
         raise VoiceRequiredError("Cartesia braucht eine Stimme (Feld „Stimme“ im Projekt) — es gibt keinen Standardwert.")
     if not api_key_record.model_id:
-        raise ValueError("Für diesen Cartesia-Key ist kein Modell hinterlegt.")
+        raise ValueError(ErrorCode.CARTESIA_KEY_MISSING_MODEL)
 
     api_key = reveal_api_key(api_key_record.encrypted_api_key)
     # From the registry (the single source of truth for provider defaults) instead of a second,

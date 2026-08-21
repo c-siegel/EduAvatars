@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Copy } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -18,6 +19,7 @@ interface Step5Props extends StepProps {
 // Checkbox und URL der Umfragen sind bewusst getrennte Felder: eine URL kann stehen bleiben,
 // während die Umfrage vorübergehend deaktiviert ist, ohne den Text löschen zu müssen.
 export function Step5Publish({ draft, onChange, project, projectId }: Step5Props) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const publishMutation = useMutation({
@@ -39,16 +41,12 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
           onChange={(e) => onChange({ saveConversations: e.target.checked })}
         />
         <span className={styles.toggleCopy}>
-          <strong>Konversationen aufzeichnen</strong>
-          <span>Speichert Chatverläufe zur späteren Auswertung (Tab Auswertung). Standardmäßig aus.</span>
+          <strong>{t("configurator.step5.recordConversationsTitle")}</strong>
+          <span>{t("configurator.step5.recordConversationsText")}</span>
         </span>
       </label>
 
-      <Callout variant="info">
-        Die Umfrage wird per Iframe von Tally.so eingebettet — es wird kein zusätzliches Skript von
-        tally.so geladen, nur die von dir eingefügte Formular-Adresse selbst. Für Schüler:innen ist die
-        Teilnahme freiwillig und jederzeit überspringbar.
-      </Callout>
+      <Callout variant="info">{t("configurator.step5.surveyNotice")}</Callout>
 
       <div className={styles.field}>
         <label className={styles.toggleRow}>
@@ -58,21 +56,18 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
             onChange={(e) => onChange({ surveyBeforeEnabled: e.target.checked })}
           />
           <span className={styles.toggleCopy}>
-            <strong>Umfrage vor dem Chat aktivieren</strong>
-            <span>Wird angezeigt, bevor Schüler:innen den Chat starten können.</span>
+            <strong>{t("configurator.step5.surveyBeforeTitle")}</strong>
+            <span>{t("configurator.step5.surveyBeforeText")}</span>
           </span>
         </label>
         <Input
-          label="Umfrage-URL (vor dem Chat)"
+          label={t("configurator.step5.surveyBeforeUrl")}
           type="url"
           placeholder="https://tally.so/r/xxxxxx"
           value={draft.surveyBeforeUrl}
           onChange={(e) => onChange({ surveyBeforeUrl: e.target.value })}
         />
-        <p className={styles.hint}>
-          Nur wirksam, wenn die Checkbox oben aktiviert ist. Leer lassen oder deaktivieren, um diesen
-          Schritt zu überspringen. Für die korrekte Adresse ist die Lehrkraft selbst verantwortlich.
-        </p>
+        <p className={styles.hint}>{t("configurator.step5.surveyBeforeHint")}</p>
       </div>
 
       <div className={styles.field}>
@@ -83,24 +78,24 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
             onChange={(e) => onChange({ surveyAfterEnabled: e.target.checked })}
           />
           <span className={styles.toggleCopy}>
-            <strong>Umfrage nach dem Chat aktivieren</strong>
-            <span>Wird angezeigt, wenn Schüler:innen den Chat über "Chat beenden" abschließen.</span>
+            <strong>{t("configurator.step5.surveyAfterTitle")}</strong>
+            <span>{t("configurator.step5.surveyAfterText")}</span>
           </span>
         </label>
         <Input
-          label="Umfrage-URL (nach dem Chat)"
+          label={t("configurator.step5.surveyAfterUrl")}
           type="url"
           placeholder="https://tally.so/r/yyyyyy"
           value={draft.surveyAfterUrl}
           onChange={(e) => onChange({ surveyAfterUrl: e.target.value })}
         />
-        <p className={styles.hint}>Nur wirksam, wenn die Checkbox oben aktiviert ist.</p>
+        <p className={styles.hint}>{t("configurator.step5.surveyAfterHint")}</p>
       </div>
 
       <div className={styles.publishCard}>
         <div className={styles.publishHeader}>
           <Badge variant={project.published ? "accent" : "default"}>
-            {project.published ? "Publiziert" : "Entwurf"}
+            {project.published ? t("overview.card.published") : t("overview.card.draft")}
           </Badge>
           <Button
             variant={project.published ? "default" : "accent"}
@@ -109,25 +104,21 @@ export function Step5Publish({ draft, onChange, project, projectId }: Step5Props
             // verfügbar" zeigen — Depublizieren bleibt selbstverständlich immer möglich.
             disabled={publishMutation.isPending || (!project.published && !project.llmApiKeyId)}
           >
-            {project.published ? "Depublizieren" : "Publizieren"}
+            {project.published ? t("configurator.step5.unpublish") : t("configurator.step5.publish")}
           </Button>
         </div>
 
         {!project.published && !project.llmApiKeyId && (
-          <Callout variant="warning">
-            Zum Publizieren muss ein Modell gewählt und gespeichert sein.
-          </Callout>
+          <Callout variant="warning">{t("configurator.step5.publishNeedsModel")}</Callout>
         )}
 
-        {publishMutation.isError && (
-          <Callout variant="danger">Aktion fehlgeschlagen. Bitte erneut versuchen.</Callout>
-        )}
+        {publishMutation.isError && <Callout variant="danger">{t("configurator.step5.actionFailed")}</Callout>}
 
         {project.published && shareUrl && (
           <div className={styles.linkRow}>
             <span className={styles.linkField + " mono"}>{shareUrl}</span>
             <Button size="sm" onClick={() => navigator.clipboard.writeText(shareUrl)}>
-              <Copy size={14} /> Kopieren
+              <Copy size={14} /> {t("configurator.step5.copy")}
             </Button>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Callout } from "@/components/Callout";
@@ -12,6 +13,7 @@ import styles from "@/pages/AuthShell.module.css";
 // Screen 1b — Registrierung (gleiche Card wie Login, plus Namensfeld + Zustimmungs-Checkbox,
 // siehe Wireframe-Annotation zu 1b)
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,9 +39,9 @@ export function RegisterPage() {
       navigate("/dashboard");
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
-        setError("Registrierung ist aktuell nicht möglich.");
+        setError(t("errors.REGISTRATION_DISABLED"));
       } else {
-        setError("Registrierung fehlgeschlagen. Bitte überprüfe deine Angaben.");
+        setError(t("auth.register.errorGeneric"));
       }
     } finally {
       setSubmitting(false);
@@ -48,7 +50,7 @@ export function RegisterPage() {
 
   if (statusLoading) {
     return (
-      <AuthShell active="register" subtitle="Erstelle dein kostenloses Konto" footer={null}>
+      <AuthShell active="register" subtitle={t("auth.register.subtitle")} footer={null}>
         {null}
       </AuthShell>
     );
@@ -58,18 +60,14 @@ export function RegisterPage() {
     return (
       <AuthShell
         active="register"
-        subtitle="Registrierung"
+        subtitle={t("common.register")}
         footer={
           <>
-            Bereits ein Konto? <Link to="/login">Anmelden</Link>
+            {t("auth.register.hasAccount")} <Link to="/login">{t("common.login")}</Link>
           </>
         }
       >
-        <Callout variant="info">
-          Registrierung ist aktuell nicht möglich. Diese Instanz von EduAvatars ist derzeit nur für
-          den internen Gebrauch freigeschaltet. Bitte wende dich an deine Institution, falls du ein
-          Konto benötigst.
-        </Callout>
+        <Callout variant="info">{t("auth.register.disabledNotice")}</Callout>
       </AuthShell>
     );
   }
@@ -77,17 +75,17 @@ export function RegisterPage() {
   return (
     <AuthShell
       active="register"
-      subtitle="Erstelle dein kostenloses Konto"
+      subtitle={t("auth.register.subtitle")}
       error={error}
       footer={
         <>
-          Bereits ein Konto? <Link to="/login">Anmelden</Link>
+          {t("auth.register.hasAccount")} <Link to="/login">{t("common.login")}</Link>
         </>
       }
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <Input
-          label="Name"
+          label={t("auth.nameLabel")}
           type="text"
           name="name"
           autoComplete="name"
@@ -96,17 +94,17 @@ export function RegisterPage() {
           onChange={(e) => setName(e.target.value)}
         />
         <Input
-          label="E-Mail"
+          label={t("auth.emailLabel")}
           type="email"
           name="email"
-          placeholder="lehrkraft@schule.de"
+          placeholder={t("auth.emailPlaceholder")}
           autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <Input
-          label="Passwort"
+          label={t("auth.passwordLabel")}
           type="password"
           name="password"
           autoComplete="new-password"
@@ -116,10 +114,10 @@ export function RegisterPage() {
         />
         <label className={styles.checkboxLabel}>
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} required />
-          Ich stimme den Nutzungsbedingungen und der Datenschutzerklärung zu.
+          {t("auth.register.terms")}
         </label>
         <Button type="submit" variant="accent" fullWidth disabled={submitting || !agreed}>
-          Konto erstellen
+          {t("auth.register.submit")}
         </Button>
       </form>
     </AuthShell>

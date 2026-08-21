@@ -22,6 +22,7 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `src/api/` | Functions that call the backend HTTP API |
 | `src/components/` | Reusable UI pieces — small design-system components (`Button`, `Card`, `Table`, ...) and the avatar renderer (`TalkingHeadAvatar`, `Avatar`) |
 | `src/hooks/` | Reusable React hooks |
+| `src/i18n/` | Localization: English and German strings are found here in json |
 | `src/layouts/` | Page layout wrappers (e.g. the dashboard shell) |
 | `src/lib/` | Small standalone helper functions |
 | `src/pages/` | One folder per route: `Landing`, `Login`, `Register`, `ForgotPassword`, `ResetPassword`, `Dashboard`, `PublicChat` |

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./Toast.module.css";
 
 interface ToastProps {
@@ -10,6 +11,7 @@ interface ToastProps {
 // Desktop oben rechts, Mobile unten über der Safe Area (siehe Wireframe-Annotation zu 1h),
 // Auto-Dismiss nach ~4s.
 export function Toast({ message, onDismiss }: ToastProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     const timeout = setTimeout(onDismiss, 4000);
     return () => clearTimeout(timeout);
@@ -18,7 +20,7 @@ export function Toast({ message, onDismiss }: ToastProps) {
   return (
     <div className={styles.toast} role="status">
       <span>{message}</span>
-      <button className={styles.dismiss} aria-label="Schließen" onClick={onDismiss}>
+      <button className={styles.dismiss} aria-label={t("common.close")} onClick={onDismiss}>
         ✕
       </button>
     </div>

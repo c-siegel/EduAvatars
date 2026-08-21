@@ -20,6 +20,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.deps import get_current_user, get_current_user_optional, get_session
+from app.core.error_codes import ErrorCode
 from app.models.background_image import BackgroundImage
 from app.models.project import Project
 from app.models.schemas.background import BackgroundImageOut
@@ -74,15 +75,15 @@ async def upload_background(
 ):
     """Upload a new background image."""
     if not file.filename or not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
-        raise HTTPException(status_code=400, detail="Nur .png- oder .jpg-Dateien sind erlaubt.")
+        raise HTTPException(status_code=400, detail=ErrorCode.BACKGROUND_INVALID_TYPE)
 
     content = await file.read(_MAX_UPLOAD_BYTES + 1)
     if len(content) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="Datei ist zu groß (maximal 10 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.BACKGROUND_FILE_TOO_LARGE)
 
     extension = _detect_extension(content)
     if extension is None:
-        raise HTTPException(status_code=400, detail="Datei ist kein gültiges PNG oder JPEG.")
+        raise HTTPException(status_code=400, detail=ErrorCode.BACKGROUND_INVALID_CONTENT)
 
     stored_filename = f"{uuid.uuid4()}{extension}"
     user_dir = _upload_dir(current_user.id)
@@ -110,7 +111,7 @@ def get_background_file(
     # background in a published project (the public chat needs it visible).
     background = session.get(BackgroundImage, background_id)
     if background is None:
-        raise HTTPException(status_code=404, detail="Hintergrundbild nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 
     is_owner = current_user is not None and background.user_id == current_user.id
     if not is_owner:
@@ -122,7 +123,7 @@ def get_background_file(
             is not None
         )
         if not is_used_publicly:
-            raise HTTPException(status_code=404, detail="Hintergrundbild nicht gefunden.")
+            raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 
     extension = Path(background.file_path).suffix.lower()
     media_type = _CONTENT_TYPES.get(extension, "application/octet-stream")
@@ -141,7 +142,7 @@ def delete_background(
     # (the background-color stays visible, see PublicChat.module.css/.avatarStage).
     background = session.get(BackgroundImage, background_id)
     if background is None or background.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Hintergrundbild nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 
     Path(background.file_path).unlink(missing_ok=True)
     session.delete(background)

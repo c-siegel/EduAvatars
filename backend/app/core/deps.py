@@ -30,6 +30,7 @@ import uuid
 from fastapi import Depends, HTTPException, Request, Response
 from sqlmodel import Session, select
 
+from app.core.error_codes import ErrorCode
 from app.core.security import decode_access_token
 from app.db.session import get_session
 from app.models.project import Project
@@ -78,19 +79,19 @@ def get_current_user(
     """
     token = request.cookies.get(ACCESS_TOKEN_COOKIE)
     if not token:
-        raise HTTPException(status_code=401, detail="Nicht angemeldet.")
+        raise HTTPException(status_code=401, detail=ErrorCode.NOT_AUTHENTICATED)
     try:
         user_id, token_version = decode_access_token(token)
     except Exception as exc:  # invalid/expired JWT
-        raise HTTPException(status_code=401, detail="Sitzung abgelaufen.") from exc
+        raise HTTPException(status_code=401, detail=ErrorCode.SESSION_EXPIRED) from exc
     user = session.get(User, user_id)
     if user is None or not user.enabled:
-        raise HTTPException(status_code=401, detail="Nicht angemeldet.")
-    # Same error message as above (instead of e.g. "Logged out elsewhere") — a client
+        raise HTTPException(status_code=401, detail=ErrorCode.NOT_AUTHENTICATED)
+    # Same error code as above (instead of e.g. "Logged out elsewhere") — a client
     # should not be able to distinguish whether a token expired or was intentionally
     # invalidated (see User.token_version).
     if token_version != user.token_version:
-        raise HTTPException(status_code=401, detail="Sitzung abgelaufen.")
+        raise HTTPException(status_code=401, detail=ErrorCode.SESSION_EXPIRED)
     return user
 
 
@@ -188,7 +189,7 @@ def get_owned_project(
     # 404 instead of 403 for foreign projects to prevent IDOR enumeration
     project = session.get(Project, project_id)
     if project is None or project.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Projekt nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.PROJECT_NOT_FOUND)
     return project
 
 
@@ -229,7 +230,7 @@ def get_published_project(
         select(Project).where(Project.share_slug == slug, Project.published == True)  # noqa: E712
     ).first()
     if project is None:
-        raise HTTPException(status_code=404, detail="Projekt nicht gefunden oder nicht veröffentlicht.")
+        raise HTTPException(status_code=404, detail=ErrorCode.PROJECT_NOT_FOUND_OR_UNPUBLISHED)
     return project
 
 

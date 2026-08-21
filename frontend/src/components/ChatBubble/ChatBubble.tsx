@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useTranslation } from "react-i18next";
 import styles from "./ChatBubble.module.css";
 
 interface ChatBubbleProps {
@@ -19,10 +20,11 @@ export function ChatBubble({ role, content }: ChatBubbleProps) {
 
 // Tippindikator während auf die Bot-Antwort gewartet wird (Live-Vorschau 1e, Chat 1i)
 export function TypingBubble() {
+  const { t } = useTranslation();
   return (
     <div className={styles.row}>
       <div className={styles.bubble}>
-        <span className={styles.typing} aria-label="Antwort wird geschrieben …">
+        <span className={styles.typing} aria-label={t("common.replyBeingWritten")}>
           <span />
           <span />
           <span />

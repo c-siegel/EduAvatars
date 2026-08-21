@@ -19,6 +19,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.deps import get_current_user, get_current_user_optional, get_session
+from app.core.error_codes import ErrorCode
 from app.models.avatar_model import AvatarModel
 from app.models.project import Project
 from app.models.schemas.avatar import AvatarModelOut
@@ -65,16 +66,16 @@ async def upload_avatar_model(
 ):
     """Upload a new .glb avatar model file."""
     if not file.filename or not file.filename.lower().endswith(".glb"):
-        raise HTTPException(status_code=400, detail="Nur .glb-Dateien sind erlaubt.")
+        raise HTTPException(status_code=400, detail=ErrorCode.AVATAR_FILE_INVALID_TYPE)
 
     content = await file.read(_MAX_UPLOAD_BYTES + 1)
     if len(content) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="Datei ist zu groß (maximal 50 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.AVATAR_FILE_TOO_LARGE)
     # The file extension alone is just a hint from the user, not proof — real glTF binary files
     # start with the 4-byte signature "glTF". This stops arbitrary (possibly malicious) files
     # from being stored and later served back out under a false extension.
     if content[:4] != _GLTF_MAGIC:
-        raise HTTPException(status_code=400, detail="Datei ist keine gültige .glb-Datei.")
+        raise HTTPException(status_code=400, detail=ErrorCode.AVATAR_FILE_INVALID_CONTENT)
 
     # UUID-prefixed filename instead of the original filename (as in the source repo) — avoids
     # collisions and path traversal via the filename.
@@ -106,7 +107,7 @@ def get_avatar_file(
     # someone else's avatars stay inaccessible to everyone else.
     avatar = session.get(AvatarModel, avatar_id)
     if avatar is None:
-        raise HTTPException(status_code=404, detail="Avatar nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 
     is_owner = current_user is not None and avatar.user_id == current_user.id
     if not is_owner:
@@ -118,7 +119,7 @@ def get_avatar_file(
             is not None
         )
         if not is_used_publicly:
-            raise HTTPException(status_code=404, detail="Avatar nicht gefunden.")
+            raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 
     return FileResponse(avatar.file_path, media_type="model/gltf-binary", filename=f"{avatar.name}.glb")
 
@@ -137,13 +138,13 @@ async def set_avatar_thumbnail(
     # avatar library is a user-only context).
     avatar = session.get(AvatarModel, avatar_id)
     if avatar is None or avatar.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Avatar nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 
     content = await file.read(_MAX_THUMBNAIL_BYTES + 1)
     if len(content) > _MAX_THUMBNAIL_BYTES:
-        raise HTTPException(status_code=400, detail="Vorschaubild ist zu groß (maximal 2 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.AVATAR_THUMBNAIL_TOO_LARGE)
     if content[:8] != _PNG_MAGIC:
-        raise HTTPException(status_code=400, detail="Vorschaubild ist keine gültige PNG-Datei.")
+        raise HTTPException(status_code=400, detail=ErrorCode.AVATAR_THUMBNAIL_INVALID)
 
     stored_filename = f"{uuid.uuid4()}.png"
     thumb_dir = _thumbnail_dir(current_user.id)
@@ -167,7 +168,7 @@ def get_avatar_thumbnail(
     """Serve an avatar's thumbnail image."""
     avatar = session.get(AvatarModel, avatar_id)
     if avatar is None or avatar.user_id != current_user.id or not avatar.thumbnail_path:
-        raise HTTPException(status_code=404, detail="Vorschaubild nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_THUMBNAIL_NOT_FOUND)
     return FileResponse(avatar.thumbnail_path, media_type="image/png")
 
 
@@ -184,7 +185,7 @@ def delete_avatar_model(
     # components/TalkingHeadAvatar.tsx).
     avatar = session.get(AvatarModel, avatar_id)
     if avatar is None or avatar.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Avatar nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 
     Path(avatar.file_path).unlink(missing_ok=True)
     if avatar.thumbnail_path:

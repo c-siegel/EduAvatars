@@ -19,6 +19,7 @@ import time
 import httpx
 import litellm
 
+from app.core.error_codes import ErrorCode
 from app.core.providers import GWDG_ARCANA_PROVIDER, build_model_string, get_provider
 from app.models.api_key import UserApiKey
 from app.services.api_key_service import effective_api_base
@@ -87,9 +88,9 @@ def _send_chat_arcana(
     https://docs.hpc.gwdg.de/services/ai-services/saia/index.html.
     """
     if not api_key_record.model_id:
-        raise ValueError("Für diesen Arcana-Key ist kein Modell hinterlegt.")
+        raise ValueError(ErrorCode.ARCANA_KEY_MISSING_MODEL)
     if not api_key_record.arcana_id:
-        raise ValueError("Für diesen Arcana-Key ist keine Arcana-ID hinterlegt.")
+        raise ValueError(ErrorCode.ARCANA_KEY_MISSING_ID)
 
     api_key = reveal_api_key(api_key_record.encrypted_api_key)
     default_api_base = get_provider(GWDG_ARCANA_PROVIDER).default_api_base
@@ -201,7 +202,7 @@ def test_api_key(api_key_record: UserApiKey) -> None:
         api_base = effective_api_base(api_key_record)
         model, extra = spec.test_model, ({"api_base": api_base} if api_base else {})
     else:
-        raise ValueError("Für diesen Eintrag ist kein Modell hinterlegt, das sich testen ließe.")
+        raise ValueError(ErrorCode.API_KEY_NO_TESTABLE_MODEL)
 
     litellm.completion(
         model=model,
