@@ -22,6 +22,10 @@ export interface PublicProject {
   // pages/PublicChat/index.tsx's "locked" stage.
   passwordProtected: boolean;
   unlocked: boolean;
+  // Shown to students so the page can be honest about what happens to what they type: whether the
+  // conversation is recorded, and which AI model replies. Not used for any logic.
+  saveConversations: boolean;
+  llmModel: string | null;
 }
 
 // Attaches the stored unlock token (if any) so an already-unlocked tab stays unlocked across

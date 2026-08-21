@@ -75,7 +75,6 @@
     "unavailable": "Dieser Chat ist nicht verfügbar.",
     "online": "Online",
     "endChat": "Chat beenden",
-    "information": "Informationen",
     "surveyBeforeTitle": "Umfrage vor dem Chat",
     "continueToChat": "Weiter zum Chat",
     "transcribing": "Transkription läuft",
@@ -86,8 +85,11 @@
     "collapseChat": "Chat einklappen",
     "expandChat": "Chat einblenden",
     "chatTitle": "Chat",
-    "noLoginNeeded": "Kein Login nötig",
-    "hintPill": "Kein Login nötig · Chat wird nicht gespeichert",
+    "privacySaved": "Dieses Gespräch wird anonym gespeichert und kann von deiner Lehrkraft gelesen werden.",
+    "privacyNotSaved": "Dieses Gespräch wird nicht gespeichert.",
+    "whichModel": "Mit welcher KI spreche ich?",
+    "modelTooltip": "Du sprichst mit dem KI-Modell {{model}}. Deine Nachrichten werden dorthin geschickt, um eine Antwort zu erzeugen.",
+    "modelTooltipUnknown": "Du sprichst mit einem KI-Modell. Deine Nachrichten werden dorthin geschickt, um eine Antwort zu erzeugen.",
     "messagePlaceholder": "Schreib deine Frage …",
     "messageAriaLabel": "Nachricht",
     "send": "Senden",
@@ -125,6 +127,40 @@
     "logoutOtherDevices": "Auf allen anderen Geräten abmelden",
     "deleteAccount": "Konto löschen",
     "deleteAccountText": "Alle Projekte und Links werden dauerhaft entfernt."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "subtitle": "Welche Daten dieser Dienst verarbeitet — und warum.",
+    "controller": {
+      "title": "Verantwortlich",
+      "text": "Für die hier verarbeiteten Daten ist die Betreiberin bzw. der Betreiber dieser EduAvatars-Instanz verantwortlich:"
+    },
+    "teachers": {
+      "title": "Konten von Lehrkräften",
+      "text": "Wenn Sie ein Konto anlegen, speichern wir Ihren Namen, Ihre E-Mail-Adresse, optional Ihre Schule und Ihr Profilbild sowie die von Ihnen angelegten Projekte. API-Schlüssel für KI-Anbieter werden verschlüsselt gespeichert und nie wieder vollständig angezeigt.",
+      "legalBasis": "Diese Verarbeitung erfolgt zur Erfüllung des Nutzungsverhältnisses (Art. 6 Abs. 1 lit. b DSGVO)."
+    },
+    "students": {
+      "title": "Schüler:innen, die einen Chat-Link nutzen",
+      "noAccount": "Schüler:innen brauchen kein Konto und werden weder nach ihrem Namen noch nach anderen persönlichen Angaben gefragt. Keine Registrierung, kein Login, kein seitenübergreifendes Tracking.",
+      "cookie": "Ein einzelnes technisches Cookie enthält eine zufällig erzeugte Besuchsnummer. Sie dient dazu, Gespräche auseinanderzuhalten und Nutzungsgrenzen durchzusetzen — sie identifiziert keine Person und wird nicht weitergegeben.",
+      "recording": "Lehrkräfte können die Aufzeichnung pro Chat aktivieren. Ist sie aktiv, steht das direkt über dem Eingabefeld, und das Gespräch wird unter der anonymen Besuchsnummer gespeichert, sodass die Lehrkraft es später lesen kann. Ist sie aus, werden Nachrichten nach dem Senden der Antwort nicht gespeichert."
+    },
+    "ai": {
+      "title": "Verarbeitung durch KI",
+      "text": "Nachrichten aus einem Chat werden an den KI-Anbieter gesendet, den die Lehrkraft für diesen Chat eingerichtet hat, um eine Antwort zu erzeugen. Welches Modell antwortet, zeigt im Chat die Schaltfläche „?“. Für einen passenden Auftragsverarbeitungsvertrag mit dem gewählten Anbieter sind die Betreibenden verantwortlich.",
+      "speech": "Ist die Sprachausgabe aktiviert, wird der Antworttext zusätzlich an den eingerichteten Sprachdienst gesendet. Spracheingaben werden auf diesem Server selbst transkribiert — Audioaufnahmen werden an keine dritte Stelle übermittelt und nicht gespeichert."
+    },
+    "retention": {
+      "title": "Speicherdauer",
+      "text": "Kontodaten werden bis zur Löschung des Kontos gespeichert. Gespeicherte Gespräche und Zugriffsprotokolle werden gelöscht, wenn das zugehörige Projekt oder Konto gelöscht wird — und zusätzlich nach der Aufbewahrungsfrist, die für diese Instanz eingestellt ist, sofern eine gesetzt wurde."
+    },
+    "rights": {
+      "title": "Ihre Rechte",
+      "text": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit bezüglich Ihrer personenbezogenen Daten. Kontoinhaber:innen können ihr Konto samt aller zugehörigen Daten jederzeit in den Profileinstellungen löschen.",
+      "students": "Da Schüler-Chats ohne identifizierende Angaben gespeichert werden, können wir sie in der Regel keiner konkreten Person zuordnen — das begrenzt, wie wir einzelne Auskunfts- oder Löschanfragen beantworten können. Schüler:innen wenden sich bitte an ihre Lehrkraft, die die Chatdaten eines Projekts löschen kann.",
+      "complaint": "Zudem haben Sie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren."
+    }
   },
   "forcePasswordChange": {
     "title": "Passwort ändern",
@@ -168,8 +204,17 @@
     "settings": {
       "title": "Website-Einstellungen",
       "subtitle": "Instanzweite Einstellungen, änderbar ohne erneutes Deployment.",
+      "imprintTitle": "Impressum & Kontakt",
+      "imprintHint": "Wird im Impressum und in der Datenschutzerklärung angezeigt. Leere Felder erscheinen dort als Platzhalter.",
+      "providerNameLabel": "Anbieter / Verantwortliche Person",
+      "providerStreetLabel": "Straße und Hausnummer",
+      "providerCityLabel": "PLZ und Ort",
+      "providerCountryLabel": "Land",
       "contactEmailLabel": "Kontakt-E-Mail",
-      "contactEmailHint": "Wird im Impressum angezeigt. Leer lassen, um stattdessen den Platzhaltertext zu zeigen.",
+      "contactPhoneLabel": "Telefon",
+      "privacyTitle": "Datenschutz & Registrierung",
+      "retentionLabel": "Schüler-Chatdaten löschen nach (Tagen)",
+      "retentionHint": "Gespeicherte Gespräche und Zugriffsprotokolle, die älter sind, werden beim Serverstart automatisch gelöscht. 0 bedeutet: unbegrenzt aufbewahren.",
       "registrationTitle": "Selbstregistrierung erlauben",
       "registrationText": "Wenn deaktiviert, können neue Konten nur von einer Admin-Person angelegt werden.",
       "save": "Einstellungen speichern",
@@ -379,7 +424,8 @@
       "copyLink": "Link kopieren",
       "notPublishedYet": "Noch nicht veröffentlicht",
       "moreActions": "Weitere Aktionen",
-      "comingSoon": "Bald verfügbar"
+      "delete": "Löschen",
+      "deleteConfirm": "„{{title}}“ endgültig löschen? Der Freigabe-Link funktioniert dann nicht mehr, und alle dazu gespeicherten Schüler-Gespräche werden gelöscht. Das lässt sich nicht rückgängig machen."
     }
   },
   "landing": {

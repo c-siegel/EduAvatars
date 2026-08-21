@@ -40,7 +40,13 @@ from app.services.api_key_service import (
     resolve_tts_key,
 )
 from app.services.llm_service import send_chat_message
-from app.services.project_service import list_projects, set_or_clear_chat_password, sync_llm_model, update_project
+from app.services.project_service import (
+    delete_project,
+    list_projects,
+    set_or_clear_chat_password,
+    sync_llm_model,
+    update_project,
+)
 from app.services.publish_service import publish_project, unpublish_project
 from app.services.stt_service import transcribe_audio
 from app.services.tts_service import synthesize_speech
@@ -150,6 +156,16 @@ def put_project(
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)
     return update_project(session, project, update_data)
+
+
+@router.delete("/{project_id}", status_code=204)
+def remove_project(
+    project: Project = Depends(get_owned_project),
+    session: Session = Depends(get_session),
+):
+    """Permanently delete a project, including every saved conversation and access log for it."""
+    delete_project(session, project)
+    return None
 
 
 @router.post("/{project_id}/publish", response_model=ProjectOut)

@@ -16,8 +16,12 @@ How it works:
 4. The server starts listening for requests
 """
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 
 from app.api import (
     admin,
@@ -32,10 +36,27 @@ from app.api import (
     site_settings,
 )
 from app.core.config import settings
+from app.db.session import engine
+from app.services.retention_service import purge_expired_data
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run the data-retention cleanup once per app start."""
+    try:
+        with Session(engine) as session:
+            purge_expired_data(session)
+    except Exception:
+        # Never let a cleanup problem stop the API from coming up.
+        logger.exception("Data-retention cleanup failed on startup.")
+    yield
+
 
 # Create the FastAPI application instance
 # This is the main application object that handles all HTTP requests
-app = FastAPI(title="EduAvatars API")
+app = FastAPI(title="EduAvatars API", lifespan=lifespan)
 
 # Configure CORS (Cross-Origin Resource Sharing) middleware
 # CORS allows the frontend (running on a different domain/port) to make requests to this backend

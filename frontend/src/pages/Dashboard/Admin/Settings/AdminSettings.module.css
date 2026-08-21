@@ -5,6 +5,12 @@
   max-width: 32rem;
 }
 
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
 .header h2 {
   margin: 0 0 var(--space-1);
   font-size: 1.5rem;
@@ -26,10 +32,16 @@
   gap: var(--space-4);
 }
 
+/* Sits directly under the field it explains, so the negative margin pulls it up out of the card's
+   normal gap. */
 .hint {
   margin: calc(var(--space-3) * -1) 0 0;
   font-size: 0.8125rem;
   color: var(--text-tertiary);
+}
+
+.card h3 + .hint {
+  margin-top: calc(var(--space-2) * -1);
 }
 
 .toggleRow {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { settingsApi } from "@/api/settings";
 import { numberLocale } from "@/lib/format";
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -8,17 +9,17 @@ import styles from "./Imprint.module.css";
 // Screen — Impressum (Legal Notice)
 export function ImprintPage() {
   const { t } = useTranslation();
-  // No admin has set a contact email yet: keep the existing "[still to change]" placeholder
-  // instead of showing a broken/empty mailto link.
+  // Every value here is admin-editable (Dashboard → Admin → Site settings) rather than hardcoded,
+  // so a self-hoster can produce a valid imprint without touching the source. Anything not filled
+  // in yet falls back to the "[noch ändern]" placeholder instead of rendering blank.
   const settingsQuery = useQuery({ queryKey: ["settings", "public"], queryFn: settingsApi.getPublic });
-  const contactEmail = settingsQuery.data?.contactEmail;
-  const contactEmailLine = contactEmail ? (
-    <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+  const settings = settingsQuery.data;
+  const placeholder = t("imprint.placeholder");
+
+  const contactEmailValue = settings?.contactEmail ? (
+    <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a>
   ) : (
-    <>
-      {t("imprint.placeholder")}
-      <a href="mailto:kontakt@beispiel.de">noch ändern@beispiel.de</a>
-    </>
+    placeholder
   );
 
   return (
@@ -33,16 +34,17 @@ export function ImprintPage() {
           <h2>{t("imprint.provider.title")}</h2>
           <div className={styles.content}>
             <p>
-              <strong>{t("imprint.provider.name")}</strong> {t("imprint.placeholder")}
+              <strong>{t("imprint.provider.name")}</strong> {settings?.providerName || placeholder}
             </p>
             <p>
-              <strong>{t("imprint.provider.street")}</strong> {t("imprint.placeholder")}
+              <strong>{t("imprint.provider.street")}</strong> {settings?.providerStreet || placeholder}
             </p>
             <p>
-              <strong>{t("imprint.provider.city")}</strong> {t("imprint.placeholder")}
+              <strong>{t("imprint.provider.city")}</strong> {settings?.providerCity || placeholder}
             </p>
             <p>
-              <strong>{t("imprint.provider.country")}</strong> {t("imprint.provider.countryValue")}
+              <strong>{t("imprint.provider.country")}</strong>{" "}
+              {settings?.providerCountry || t("imprint.provider.countryValue")}
             </p>
           </div>
         </section>
@@ -51,11 +53,11 @@ export function ImprintPage() {
           <h2>{t("imprint.contact.title")}</h2>
           <div className={styles.content}>
             <p>
-              <strong>{t("imprint.contact.email")}</strong>
-              {contactEmailLine}
+              <strong>{t("imprint.contact.email")}</strong> {contactEmailValue}
             </p>
             <p>
-              <strong>{t("imprint.contact.phone")}</strong> {t("imprint.contact.phonePlaceholder")}
+              <strong>{t("imprint.contact.phone")}</strong>{" "}
+              {settings?.contactPhone || t("imprint.contact.phonePlaceholder")}
             </p>
           </div>
         </section>
@@ -64,11 +66,10 @@ export function ImprintPage() {
           <h2>{t("imprint.responsible.title")}</h2>
           <div className={styles.content}>
             <p>
-              <strong>{t("imprint.provider.name")}</strong> {t("imprint.placeholder")}
+              <strong>{t("imprint.provider.name")}</strong> {settings?.providerName || placeholder}
             </p>
             <p>
-              <strong>{t("imprint.contact.email")}</strong>
-              {contactEmailLine}
+              <strong>{t("imprint.contact.email")}</strong> {contactEmailValue}
             </p>
           </div>
         </section>
@@ -91,6 +92,9 @@ export function ImprintPage() {
 
         <footer className={styles.footer}>
           <p>{t("imprint.asOf", { date: new Date().toLocaleDateString(numberLocale()) })}</p>
+          <p>
+            <Link to="/datenschutz">{t("landing.footer.privacy")}</Link>
+          </p>
         </footer>
       </div>
     </PublicLayout>

@@ -15,7 +15,14 @@ export interface AdminUser {
 
 export interface SiteSettings {
   contactEmail: string | null;
+  contactPhone: string | null;
+  providerName: string | null;
+  providerStreet: string | null;
+  providerCity: string | null;
+  providerCountry: string | null;
   registrationEnabled: boolean;
+  // 0 = keep saved student conversations forever.
+  conversationRetentionDays: number;
 }
 
 export const adminApi = {

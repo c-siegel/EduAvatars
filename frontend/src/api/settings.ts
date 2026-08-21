@@ -4,6 +4,11 @@ import { apiClient } from "./client";
 
 export interface PublicSiteSettings {
   contactEmail: string | null;
+  contactPhone: string | null;
+  providerName: string | null;
+  providerStreet: string | null;
+  providerCity: string | null;
+  providerCountry: string | null;
   registrationEnabled: boolean;
 }
 

@@ -14,6 +14,7 @@ import { AdminSettingsPage } from "./pages/Dashboard/Admin/Settings";
 import { ForcePasswordChangePage } from "./pages/Dashboard/ForcePasswordChange";
 import { PublicChatPage } from "./pages/PublicChat";
 import { ImprintPage } from "./pages/Imprint";
+import { PrivacyPage } from "./pages/Privacy";
 import { CreditsPage } from "./pages/Credits";
 import { DashboardShell } from "./layouts/DashboardShell";
 import { RequireAdmin } from "./components/RequireAdmin";
@@ -37,6 +38,7 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/impressum" element={<ImprintPage />} />
+        <Route path="/datenschutz" element={<PrivacyPage />} />
         <Route path="/credits" element={<CreditsPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />

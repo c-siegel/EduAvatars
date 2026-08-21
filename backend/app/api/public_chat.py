@@ -115,6 +115,8 @@ def load_tutor(
         survey_after_url=project.survey_after_url if project.survey_after_enabled and project.survey_after_url else None,
         password_protected=project.password_protected,
         unlocked=unlocked,
+        save_conversations=project.save_conversations,
+        llm_model=project.llm_model,
     )
 
 

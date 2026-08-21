@@ -47,6 +47,11 @@ class PublicProjectOut(CamelModel):
     # (nothing persona-related leaks pre-unlock), see public_chat.py::load_tutor.
     password_protected: bool = False
     unlocked: bool = True
+    # Told to students, not used for any logic: whether this chat is being recorded, and which AI
+    # model answers them. Both exist so the page can be honest about what happens to what they
+    # type — see the notice under the chat and the "?" in the header (pages/PublicChat).
+    save_conversations: bool = False
+    llm_model: str | None = None
 
 
 class ChatUnlockRequest(CamelModel):

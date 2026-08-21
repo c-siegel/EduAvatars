@@ -70,9 +70,11 @@
   cursor: not-allowed;
 }
 
+/* Shown on both layouts now that it carries Delete — on desktop it sits next to the two direct
+   action buttons, on mobile it replaces them (see the media query below). */
 .menuWrapper {
   position: relative;
-  display: none;
+  display: block;
 }
 
 .menu {
@@ -110,12 +112,27 @@
   background: var(--surface-sunken);
 }
 
+.menuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuItemDanger {
+  color: var(--color-danger);
+}
+
+/* Edit and "copy link" already have their own buttons on desktop, so inside the menu they'd be
+   duplicates — there, the menu only carries Delete. */
+.menuItemMobile {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .actionsDesktop {
     display: none;
   }
 
-  .menuWrapper {
-    display: block;
+  .menuItemMobile {
+    display: flex;
   }
 }

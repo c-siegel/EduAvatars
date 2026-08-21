@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Info, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, Lock, X } from "lucide-react";
+import { HelpCircle, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, Lock, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
@@ -246,6 +246,13 @@ export function PublicChatPage() {
     setManualStage(tutor.surveyAfterUrl ? "after-survey" : "done");
   }
 
+  // Says what actually happens to the conversation, straight from the project's setting — the
+  // page used to claim "chat isn't saved" unconditionally, which was untrue whenever the teacher
+  // had recording switched on.
+  const privacyNotice = tutor.saveConversations
+    ? t("publicChat.privacySaved")
+    : t("publicChat.privacyNotSaved");
+
   return (
     <PublicChatLayout showLanguageSwitcher={false}>
       <header className={styles.header}>
@@ -268,9 +275,18 @@ export function PublicChatPage() {
               <LogOut size={20} />
             </button>
           )}
-          <button className={styles.infoButton} aria-label={t("publicChat.information")}>
-            <Info size={20} />
-          </button>
+          {/* Speech bubble instead of a title attribute: it has to be reachable by keyboard and on
+              touch (where hover doesn't exist), so it opens on hover AND focus via CSS. */}
+          <span className={styles.infoTip}>
+            <button type="button" className={styles.infoButton} aria-label={t("publicChat.whichModel")}>
+              <HelpCircle size={20} />
+            </button>
+            <span className={styles.infoTipBubble} role="tooltip">
+              {tutor.llmModel
+                ? t("publicChat.modelTooltip", { model: tutor.llmModel })
+                : t("publicChat.modelTooltipUnknown")}
+            </span>
+          </span>
         </div>
       </header>
 
@@ -382,10 +398,12 @@ export function PublicChatPage() {
             <div className={styles.chatColumn}>
               <div className={styles.chatColumnHeader}>
                 <h2>{t("publicChat.chatTitle")}</h2>
-                <p>{t("publicChat.noLoginNeeded")}</p>
+                <p className={styles.privacyNote}>{privacyNotice}</p>
               </div>
 
-              <div className={styles.hintPill}>{t("publicChat.hintPill")}</div>
+              {/* Same sentence as the desktop subtitle above — only one of the two is ever visible
+                  (see the media query in PublicChat.module.css), so students get it either way. */}
+              <p className={`${styles.privacyNote} ${styles.privacyNoteMobile}`}>{privacyNotice}</p>
 
               <div className={styles.thread} ref={threadRef}>
                 <ChatBubble
