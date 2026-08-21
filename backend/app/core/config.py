@@ -171,6 +171,32 @@ class Settings(BaseSettings):
     """
     Whether new users can register themselves.
     When True: Anyone can create an account via the registration page.
+
+    Only used as the INITIAL value the first time the DB-backed site settings row is created
+    (see services/site_settings_service.py) — after that, an admin toggles this from the
+    dashboard instead, and this env var no longer has any effect.
+    """
+
+    # ==================== ADMIN BOOTSTRAP SETTINGS ====================
+
+    # Set both together to create (or promote) an admin account on startup — see
+    # app/cli/bootstrap_admin.py, run from docker/backend-entrypoint.sh. Safe to remove from your
+    # .env after the first successful run; the bootstrap is idempotent either way.
+
+    admin_email: str | None = None
+    """
+    Email of the account to create-or-promote to admin on startup.
+
+    Leave unset to skip admin bootstrapping entirely (e.g. for a second instance that already
+    has its admins). Must be set together with admin_password.
+    """
+
+    admin_password: str | None = None
+    """
+    Password for a newly created bootstrap admin account.
+
+    Only used when admin_email doesn't match an existing account yet — promoting an EXISTING
+    account to admin never touches their password.
     """
 
     # ==================== SPEECH-TO-TEXT (STT) SETTINGS ====================

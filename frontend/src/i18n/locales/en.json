@@ -14,6 +14,7 @@
     "analytics": "Analytics",
     "apiDashboard": "API dashboard",
     "profile": "Profile settings",
+    "admin": "Admin",
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard navigation",
     "logout": "Log out",
@@ -74,7 +75,6 @@
     "unavailable": "This chat isn't available.",
     "online": "Online",
     "endChat": "End chat",
-    "information": "Information",
     "surveyBeforeTitle": "Survey before the chat",
     "continueToChat": "Continue to chat",
     "transcribing": "Transcribing …",
@@ -85,14 +85,23 @@
     "collapseChat": "Collapse chat",
     "expandChat": "Expand chat",
     "chatTitle": "Chat",
-    "noLoginNeeded": "No login needed",
-    "hintPill": "No login needed · chat isn't saved",
+    "privacySaved": "This conversation is saved anonymously and can be read by your teacher.",
+    "privacyNotSaved": "This conversation is not saved.",
+    "whichModel": "Which AI am I talking to?",
+    "modelTooltip": "You're talking to the AI model {{model}}. Your messages are sent to it to generate a reply.",
+    "modelTooltipUnknown": "You're talking to an AI model. Your messages are sent to it to generate a reply.",
     "messagePlaceholder": "Type your question …",
     "messageAriaLabel": "Message",
     "send": "Send",
     "surveyAfterTitle": "Survey after the chat",
     "done": "Done",
-    "chatEnded": "Chat ended. Thanks for taking part!"
+    "chatEnded": "Chat ended. Thanks for taking part!",
+    "locked": {
+      "description": "This chat is password-protected. Ask your teacher for the password.",
+      "passwordLabel": "Password",
+      "submit": "Unlock",
+      "genericError": "That password didn't work. Please try again."
+    }
   },
   "profile": {
     "savedToast": "Profile saved.",
@@ -118,6 +127,100 @@
     "logoutOtherDevices": "Sign out on all other devices",
     "deleteAccount": "Delete account",
     "deleteAccountText": "All projects and links will be permanently removed."
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "subtitle": "What data this service processes, and why.",
+    "controller": {
+      "title": "Who is responsible",
+      "text": "The operator of this EduAvatars instance is responsible for the data processed here:"
+    },
+    "teachers": {
+      "title": "Teacher accounts",
+      "text": "If you create an account, we store your name, email address, optionally your school and profile picture, and the projects you configure. API keys you enter for AI providers are stored encrypted and are never shown again in full.",
+      "legalBasis": "This data is processed to provide the service you signed up for (Art. 6(1)(b) GDPR)."
+    },
+    "students": {
+      "title": "Students using a chat link",
+      "noAccount": "Students do not need an account and are not asked for their name or any other personal detail. No registration, no login, no tracking across websites.",
+      "cookie": "A single technical cookie holds a randomly generated visitor number. It is used to tell conversations apart and to enforce usage limits — it does not identify a person and is not shared with anyone.",
+      "recording": "Teachers can switch on recording per chat. When it is on, the chat page says so directly above the message box, and the conversation is stored under the anonymous visitor number so the teacher can read it later. When it is off, messages are not stored after the reply is sent."
+    },
+    "ai": {
+      "title": "AI processing",
+      "text": "Messages typed into a chat are sent to the AI provider the teacher configured for that chat, in order to generate a reply. Which model answers is shown in the chat via the \"?\" button. Operators are responsible for having an appropriate data processing agreement with the provider they choose.",
+      "speech": "If speech output is enabled, the reply text is additionally sent to the configured speech provider. Speech input is transcribed on this server itself — voice recordings are not sent to any third party and are not stored."
+    },
+    "retention": {
+      "title": "How long data is kept",
+      "text": "Account data is kept until the account is deleted. Saved conversations and access logs are deleted when the associated project or account is deleted, and additionally after the retention period the operator configured for this instance, if one is set."
+    },
+    "rights": {
+      "title": "Your rights",
+      "text": "You have the right to access, rectification, erasure, restriction of processing, and data portability regarding your personal data. Account holders can export or delete their account and all associated data at any time from their profile settings.",
+      "students": "Because student chats are stored without any identifying information, we usually cannot link them to an individual person, which limits our ability to answer an individual access or erasure request. Students should contact their teacher, who can delete the chat data of a project.",
+      "complaint": "You also have the right to lodge a complaint with a data protection supervisory authority."
+    }
+  },
+  "forcePasswordChange": {
+    "title": "Change your password",
+    "description": "An administrator set this password for you. Choose a new one to continue.",
+    "submit": "Save and continue"
+  },
+  "admin": {
+    "users": {
+      "title": "Accounts",
+      "subtitle": "Create, disable, and manage every account on this instance.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status"
+      },
+      "roleAdmin": "Admin",
+      "roleTeacher": "Teacher",
+      "statusEnabled": "Enabled",
+      "statusDisabled": "Disabled",
+      "pendingPasswordChange": "Must change password",
+      "promote": "Make admin",
+      "demote": "Remove admin",
+      "enable": "Enable",
+      "disable": "Disable",
+      "resetPassword": "Reset password",
+      "resetPasswordTitle": "Reset password for {{name}}",
+      "empty": "No accounts yet.",
+      "actionFailed": "Action failed. Please try again.",
+      "addUser": "Add account",
+      "addUserButton": "Add account",
+      "form": {
+        "name": "Name",
+        "email": "Email",
+        "temporaryPassword": "Temporary password",
+        "grantAdmin": "Grant admin access",
+        "create": "Create account",
+        "reset": "Set new password"
+      }
+    },
+    "settings": {
+      "title": "Site settings",
+      "subtitle": "Instance-wide settings, changeable without a redeploy.",
+      "imprintTitle": "Imprint & contact",
+      "imprintHint": "Shown on the legal notice and privacy pages. Any field left empty shows a placeholder there instead.",
+      "providerNameLabel": "Provider / responsible person",
+      "providerStreetLabel": "Street and number",
+      "providerCityLabel": "Postal code and city",
+      "providerCountryLabel": "Country",
+      "contactEmailLabel": "Contact email",
+      "contactPhoneLabel": "Phone",
+      "privacyTitle": "Privacy & registration",
+      "retentionLabel": "Delete student chat data after (days)",
+      "retentionHint": "Saved conversations and access logs older than this are deleted automatically on server start. 0 keeps them forever.",
+      "registrationTitle": "Allow self-registration",
+      "registrationText": "When off, only an admin can create new accounts.",
+      "save": "Save settings",
+      "saveError": "Save failed. Please try again.",
+      "saved": "Settings saved."
+    }
   },
   "configurator": {
     "steps": {
@@ -205,7 +308,17 @@
       "publish": "Publish",
       "publishNeedsModel": "A model must be selected and saved before publishing.",
       "actionFailed": "Action failed. Please try again.",
-      "copy": "Copy"
+      "copy": "Copy",
+      "passwordProtection": {
+        "title": "Password protection",
+        "text": "Require students to enter a password before they can use the chat.",
+        "protected": "Protected",
+        "notProtected": "Not protected",
+        "change": "Change password",
+        "remove": "Remove password",
+        "passwordLabel": "Password",
+        "save": "Save"
+      }
     }
   },
   "apiKeyForm": {
@@ -311,7 +424,8 @@
       "copyLink": "Copy link",
       "notPublishedYet": "Not published yet",
       "moreActions": "More actions",
-      "comingSoon": "Coming soon"
+      "delete": "Delete",
+      "deleteConfirm": "Delete \"{{title}}\" for good? Its share link stops working and every saved student conversation for it is deleted. This cannot be undone."
     }
   },
   "landing": {
@@ -472,8 +586,14 @@
     "UNSUPPORTED_AUDIO_FORMAT": "Unsupported audio format.",
     "AUDIO_FILE_TOO_LARGE": "Audio file is too large (10 MB maximum).",
     "CHAT_UNAVAILABLE": "Chat is currently unavailable.",
+    "CHAT_PASSWORD_TOO_SHORT": "Password needs at least 4 characters.",
+    "CHAT_PASSWORD_TOO_LONG": "Password must be at most 72 bytes long.",
+    "CHAT_PASSWORD_INCORRECT": "That password is incorrect.",
+    "CHAT_UNLOCK_REQUIRED": "This chat requires a password.",
+    "PROJECT_NOT_PASSWORD_PROTECTED": "This project doesn't have a password set.",
     "RATE_LIMIT_CHAT": "Too many messages. Please wait a moment.",
     "RATE_LIMIT_TRANSCRIBE": "Too many voice recordings. Please wait a moment.",
+    "RATE_LIMIT_CHAT_UNLOCK": "Too many attempts. Please wait a moment.",
     "RATE_LIMIT_LOGIN": "Too many login attempts. Please wait a moment.",
     "RATE_LIMIT_REGISTER": "Too many registrations from this connection. Please wait a moment.",
     "RATE_LIMIT_GENERIC": "Too many requests. Please wait a moment.",
@@ -489,6 +609,10 @@
     "TTS_KEY_MISSING_MODEL": "No model is set for this TTS key.",
     "TTS_KEY_TEST_NEEDS_VOICE": "This provider needs a voice for speech output, which isn't available during a key test — try speech output directly in a project instead.",
     "TTS_PROVIDER_UNSUPPORTED": "Speech output isn't supported for this provider yet.",
-    "CARTESIA_KEY_MISSING_MODEL": "No model is set for this Cartesia key."
+    "CARTESIA_KEY_MISSING_MODEL": "No model is set for this Cartesia key.",
+    "ADMIN_REQUIRED": "This action requires an administrator account.",
+    "USER_NOT_FOUND": "User not found.",
+    "CANNOT_DISABLE_SELF": "You can't disable your own account.",
+    "LAST_ADMIN_PROTECTED": "At least one active administrator must remain."
   }
 }

@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Info, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, X } from "lucide-react";
+import { HelpCircle, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, Lock, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
+import { Input } from "@/components/Input";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SurveyEmbed } from "@/components/SurveyEmbed";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle } from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi } from "@/api/publicChat";
-import { ApiError } from "@/api/client";
+import { ApiError, errorMessage } from "@/api/client";
+import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./PublicChat.module.css";
 
-type Stage = "before-survey" | "chat" | "after-survey" | "done";
+type Stage = "locked" | "before-survey" | "chat" | "after-survey" | "done";
 
 // micStopAt: client timestamp (performance.now()) when the mic-stop button was clicked.
 // sttMs: backend-only whisper duration, from the /transcribe response.
@@ -65,11 +69,30 @@ export function PublicChatPage() {
   // Browser-Konsole, ohne dass sie danach gefragt hat. Siehe frontend/README.md ("Debugging").
   const latencyTestEnabled = searchParams.get("latencyTest") === "1";
 
+  const queryClient = useQueryClient();
   const tutorQuery = useQuery({
     queryKey: ["public-chat", slug],
     queryFn: () => publicChatApi.loadTutor(slug),
     retry: false,
   });
+
+  const [passwordInput, setPasswordInput] = useState("");
+  const unlockMutation = useMutation({
+    mutationFn: (password: string) => publicChatApi.unlock(slug, password),
+    onSuccess: (res) => {
+      setUnlockToken(slug, res.unlockToken);
+      setPasswordInput("");
+      // Refetches loadTutor with the now-stored token attached, which flips `unlocked` and
+      // reveals the real stage instead of the lock screen.
+      queryClient.invalidateQueries({ queryKey: ["public-chat", slug] });
+    },
+  });
+
+  function handleUnlockSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!passwordInput.trim() || unlockMutation.isPending) return;
+    unlockMutation.mutate(passwordInput);
+  }
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -210,9 +233,12 @@ export function PublicChatPage() {
 
   const tutor = tutorQuery.data;
 
-  // Anfangsstufe hängt vom Projekt ab: mit konfigurierter Vor-Umfrage startet die Seite dort,
-  // sonst direkt im Chat — für Projekte ohne Umfragen bleibt das Verhalten dadurch unverändert.
-  const stage: Stage = manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat");
+  // Locked takes priority over every other stage — a manual survey/chat choice made before the
+  // password was entered can't have happened yet anyway (see below: the header's End-chat button
+  // and everything else past the lock screen only render once unlocked).
+  // First stage depends on project: with survey it starts there, else withthe chat
+  const stage: Stage =
+    tutor.passwordProtected && !tutor.unlocked ? "locked" : (manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat"));
   // Fallback nur für den allerersten Render, bevor der Initialisierungs-Effekt oben gelaufen ist.
   const isChatOpen = chatOpen ?? tutor.chatDefaultOpen;
 
@@ -220,30 +246,74 @@ export function PublicChatPage() {
     setManualStage(tutor.surveyAfterUrl ? "after-survey" : "done");
   }
 
+  // Says what actually happens to the conversation, straight from the project's setting — the
+  // page used to claim "chat isn't saved" unconditionally, which was untrue whenever the teacher
+  // had recording switched on.
+  const privacyNotice = tutor.saveConversations
+    ? t("publicChat.privacySaved")
+    : t("publicChat.privacyNotSaved");
+
   return (
-    <PublicChatLayout>
+    <PublicChatLayout showLanguageSwitcher={false}>
       <header className={styles.header}>
         <Avatar name={tutor.title} size="md" />
         <div className={styles.headerInfo}>
           <h1>{tutor.title}</h1>
           <p className={styles.headerStatus}>{t("publicChat.online")}</p>
         </div>
-        {stage === "chat" && (
-          <button
-            type="button"
-            className={styles.infoButton}
-            onClick={endChat}
-            disabled={sendMutation.isPending}
-            aria-label={t("publicChat.endChat")}
-            title={t("publicChat.endChat")}
-          >
-            <LogOut size={20} />
-          </button>
-        )}
-        <button className={styles.infoButton} aria-label={t("publicChat.information")}>
-          <Info size={20} />
-        </button>
+        <div className={styles.headerActions}>
+          <LanguageSwitcher />
+          {stage === "chat" && (
+            <button
+              type="button"
+              className={styles.infoButton}
+              onClick={endChat}
+              disabled={sendMutation.isPending}
+              aria-label={t("publicChat.endChat")}
+              title={t("publicChat.endChat")}
+            >
+              <LogOut size={20} />
+            </button>
+          )}
+          {/* Speech bubble instead of a title attribute: it has to be reachable by keyboard and on
+              touch (where hover doesn't exist), so it opens on hover AND focus via CSS. */}
+          <span className={styles.infoTip}>
+            <button type="button" className={styles.infoButton} aria-label={t("publicChat.whichModel")}>
+              <HelpCircle size={20} />
+            </button>
+            <span className={styles.infoTipBubble} role="tooltip">
+              {tutor.llmModel
+                ? t("publicChat.modelTooltip", { model: tutor.llmModel })
+                : t("publicChat.modelTooltipUnknown")}
+            </span>
+          </span>
+        </div>
       </header>
+
+      {stage === "locked" && (
+        <div className={styles.centered}>
+          <form className={styles.lockedForm} onSubmit={handleUnlockSubmit}>
+            <Lock size={28} />
+            <p className={styles.lockedText}>{t("publicChat.locked.description")}</p>
+            <Input
+              label={t("publicChat.locked.passwordLabel")}
+              type="password"
+              autoComplete="off"
+              required
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+            />
+            {unlockMutation.isError && (
+              <Callout variant="danger">
+                {errorMessage(unlockMutation.error, t("publicChat.locked.genericError"))}
+              </Callout>
+            )}
+            <Button type="submit" variant="accent" fullWidth disabled={unlockMutation.isPending}>
+              {t("publicChat.locked.submit")}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {stage === "before-survey" && tutor.surveyBeforeUrl && (
         <SurveyEmbed
@@ -328,10 +398,12 @@ export function PublicChatPage() {
             <div className={styles.chatColumn}>
               <div className={styles.chatColumnHeader}>
                 <h2>{t("publicChat.chatTitle")}</h2>
-                <p>{t("publicChat.noLoginNeeded")}</p>
+                <p className={styles.privacyNote}>{privacyNotice}</p>
               </div>
 
-              <div className={styles.hintPill}>{t("publicChat.hintPill")}</div>
+              {/* Same sentence as the desktop subtitle above — only one of the two is ever visible
+                  (see the media query in PublicChat.module.css), so students get it either way. */}
+              <p className={`${styles.privacyNote} ${styles.privacyNoteMobile}`}>{privacyNotice}</p>
 
               <div className={styles.thread} ref={threadRef}>
                 <ChatBubble

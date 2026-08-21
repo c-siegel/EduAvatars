@@ -61,6 +61,11 @@ For a real (non-`localhost`) deployment, also set `SITE_ADDRESS`, `CORS_ORIGINS`
 `FRONTEND_BASE_URL`, and `EDUAVATARS_DATA_DIR` in the root `.env` — see `.env.example` for what
 each one does.
 
+To get your first admin account (dashboard access to manage other accounts and site settings),
+set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in the root `.env` before the first start — `backend-
+entrypoint.sh` creates or promotes that account on every container start (a no-op once it's
+already an admin), so the values are safe to leave in `.env` indefinitely.
+
 **On a non-TrueNAS host**, also set `PUID`/`PGID` in `.env` to the UID/GID that should own
 `EDUAVATARS_DATA_DIR` (e.g. your own user's `id -u`/`id -g`) — otherwise the backend container
 defaults to UID/GID 568 (TrueNAS's built-in "apps" user) and won't have write access to a data

@@ -53,6 +53,13 @@ _CHAT_MAX_PER_IP = 300
 _TRANSCRIBE_MAX_PER_VISITOR = 10
 _TRANSCRIBE_MAX_PER_IP = 100
 
+# Tighter than the chat limits above: this gates a short, guessable PIN against brute-forcing,
+# not just cost/abuse — a whole class sharing one IP still only needs a handful of attempts to
+# get the password right once.
+_UNLOCK_WINDOW_SECONDS = 600
+_UNLOCK_MAX_PER_VISITOR = 5
+_UNLOCK_MAX_PER_IP = 20
+
 
 def _client_ip(request: Request) -> str:
     """The calling client's IP address, or "unknown" if the server didn't report one.
@@ -110,6 +117,23 @@ def enforce_public_transcribe_rate_limit(request: Request, visitor_id: str) -> N
         f"transcribe-visitor:{visitor_id}",
         max_requests=_TRANSCRIBE_MAX_PER_VISITOR,
         window_seconds=_CHAT_WINDOW_SECONDS,
+        message=message,
+    )
+
+
+def enforce_chat_unlock_rate_limit(request: Request, visitor_id: str) -> None:
+    """Limit chat-password unlock attempts, per visitor and per IP."""
+    message = ErrorCode.RATE_LIMIT_CHAT_UNLOCK
+    _enforce(
+        f"chat-unlock-ip:{_client_ip(request)}",
+        max_requests=_UNLOCK_MAX_PER_IP,
+        window_seconds=_UNLOCK_WINDOW_SECONDS,
+        message=message,
+    )
+    _enforce(
+        f"chat-unlock-visitor:{visitor_id}",
+        max_requests=_UNLOCK_MAX_PER_VISITOR,
+        window_seconds=_UNLOCK_WINDOW_SECONDS,
         message=message,
     )
 

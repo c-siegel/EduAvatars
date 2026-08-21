@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { getUnlockToken } from "@/lib/chatUnlockStorage";
 import type { ChatMessage } from "@/types/chat";
 import type { SpokenLanguage } from "@/types/project";
 
@@ -17,10 +18,28 @@ export interface PublicProject {
   chatDefaultOpen: boolean;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
+  // Whether this chat requires a password, and whether this tab already unlocked it — see
+  // pages/PublicChat/index.tsx's "locked" stage.
+  passwordProtected: boolean;
+  unlocked: boolean;
+  // Shown to students so the page can be honest about what happens to what they type: whether the
+  // conversation is recorded, and which AI model replies. Not used for any logic.
+  saveConversations: boolean;
+  llmModel: string | null;
+}
+
+// Attaches the stored unlock token (if any) so an already-unlocked tab stays unlocked across
+// loadTutor/sendMessage/transcribe calls — the backend re-verifies it regardless, this header is
+// just how the client proves it already passed the check once.
+function unlockHeader(slug: string): Record<string, string> | undefined {
+  const token = getUnlockToken(slug);
+  return token ? { "X-Chat-Unlock-Token": token } : undefined;
 }
 
 export const publicChatApi = {
-  loadTutor: (slug: string) => apiClient.get<PublicProject>(`/public/${slug}`),
+  loadTutor: (slug: string) => apiClient.get<PublicProject>(`/public/${slug}`, unlockHeader(slug)),
+  unlock: (slug: string, password: string) =>
+    apiClient.post<{ unlockToken: string }>(`/public/${slug}/unlock`, { password }),
   // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/api/public_chat.py) —
   // war zuvor fälschlich als Conversation typisiert.
   sendMessage: (slug: string, message: string, history: ChatMessage[]) =>
@@ -32,10 +51,14 @@ export const publicChatApi = {
       contentType: string | null;
       llmMs: number | null;
       ttsMs: number | null;
-    }>(`/public/${slug}/message`, { message, history }),
+    }>(`/public/${slug}/message`, { message, history }, unlockHeader(slug)),
   transcribe: (slug: string, audio: Blob) => {
     const formData = new FormData();
     formData.append("audio", audio, "recording.webm");
-    return apiClient.upload<{ text: string; sttMs: number | null }>(`/public/${slug}/transcribe`, formData);
+    return apiClient.upload<{ text: string; sttMs: number | null }>(
+      `/public/${slug}/transcribe`,
+      formData,
+      unlockHeader(slug),
+    );
   },
 };

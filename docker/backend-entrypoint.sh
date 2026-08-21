@@ -32,4 +32,8 @@ chown -R eduavatars:eduavatars /data
 # as the (now correctly configured) app user, never as root.
 gosu eduavatars python -m alembic upgrade head
 
+# Creates/promotes an admin account from ADMIN_EMAIL/ADMIN_PASSWORD if set — a no-op otherwise,
+# and safe to run on every start (see app/cli/bootstrap_admin.py).
+gosu eduavatars python -m app.cli.bootstrap_admin
+
 exec gosu eduavatars "$@"

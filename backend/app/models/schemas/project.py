@@ -10,8 +10,16 @@ How to use:
 
 from datetime import datetime
 
+from pydantic import field_validator
+
+from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
+from app.models.schemas.auth import MAX_PASSWORD_BYTES
 from app.models.schemas.chat import ChatHistoryEntry
+
+# A shared classroom PIN, not an account password — short and memorable is fine, unlike the
+# stricter 10-char+digit rule enforced on User passwords (schemas/auth.py).
+MIN_CHAT_PASSWORD_LENGTH = 4
 
 
 class ProjectOut(CamelModel):
@@ -42,6 +50,7 @@ class ProjectOut(CamelModel):
     spoken_language: str
     stt_enabled: bool
     chat_default_open: bool
+    password_protected: bool
     created_at: datetime
 
 
@@ -68,6 +77,21 @@ class ProjectUpdate(CamelModel):
     spoken_language: str | None = None
     stt_enabled: bool | None = None
     chat_default_open: bool | None = None
+    # None = no change (field omitted); "" or explicit null clears/disables the password; a
+    # non-empty string sets/changes it — handled separately in api/projects.py, never written
+    # straight to the DB (see services/project_service.py::set_or_clear_chat_password).
+    chat_password: str | None = None
+
+    @field_validator("chat_password")
+    @classmethod
+    def validate_chat_password(cls, value: str | None) -> str | None:
+        if not value:
+            return value
+        if len(value) < MIN_CHAT_PASSWORD_LENGTH:
+            raise ValueError(ErrorCode.CHAT_PASSWORD_TOO_SHORT)
+        if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            raise ValueError(ErrorCode.CHAT_PASSWORD_TOO_LONG)
+        return value
 
 
 class ProjectStats(CamelModel):

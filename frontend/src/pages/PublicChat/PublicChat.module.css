@@ -36,6 +36,55 @@
   display: flex;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Speech bubble for the "?" button. Opens on hover and on keyboard focus (:focus-within), so it
+   works for mouse, keyboard, and touch — a plain title attribute does none of those reliably. */
+.infoTip {
+  position: relative;
+  display: flex;
+}
+
+.infoTipBubble {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(16rem, calc(100vw - var(--space-5) * 2));
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--neutral-900, #1f2933);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+}
+
+/* The little tail that makes it read as a speech bubble rather than a floating box. */
+.infoTipBubble::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  right: var(--space-3);
+  border: 5px solid transparent;
+  border-bottom-color: var(--neutral-900, #1f2933);
+}
+
+.infoTip:hover .infoTipBubble,
+.infoTip:focus-within .infoTipBubble {
+  opacity: 1;
+  visibility: visible;
+}
+
 .body {
   flex: 1;
   display: flex;
@@ -137,14 +186,18 @@
   display: none;
 }
 
-.hintPill {
-  margin: var(--space-3) auto 0;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-pill);
-  border: 1px dashed var(--border-strong);
-  color: var(--text-tertiary);
+/* Small print: says whether the conversation is recorded. Deliberately quiet but always present —
+   students should be able to see what happens to what they type without being shouted at. */
+.privacyNote {
+  margin: var(--space-3) var(--space-4) 0;
   font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-tertiary);
   text-align: center;
+}
+
+.privacyNoteMobile {
+  display: block;
 }
 
 .thread {
@@ -239,6 +292,20 @@
   color: var(--text-secondary);
 }
 
+.lockedForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 20rem;
+  color: var(--text-secondary);
+}
+
+.lockedText {
+  margin: 0;
+}
+
 @media (min-width: 900px) {
   .body {
     flex-direction: row;
@@ -279,11 +346,14 @@
 
   .chatColumnHeader p {
     margin: var(--space-1) 0 0;
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--text-tertiary);
+    text-align: left;
   }
 
-  .hintPill {
+  /* On desktop the notice already sits in the column header, so the standalone one would be a
+     duplicate. */
+  .privacyNoteMobile {
     display: none;
   }
 }

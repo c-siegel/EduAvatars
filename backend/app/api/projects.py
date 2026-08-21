@@ -40,12 +40,22 @@ from app.services.api_key_service import (
     resolve_tts_key,
 )
 from app.services.llm_service import send_chat_message
-from app.services.project_service import list_projects, sync_llm_model, update_project
+from app.services.project_service import (
+    delete_project,
+    list_projects,
+    set_or_clear_chat_password,
+    sync_llm_model,
+    update_project,
+)
 from app.services.publish_service import publish_project, unpublish_project
 from app.services.stt_service import transcribe_audio
 from app.services.tts_service import synthesize_speech
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+# Distinguishes "chat_password wasn't in the request at all" (no change) from "it was sent as
+# null" (clear/disable) in put_project below — both look like a missing key otherwise.
+_NO_CHAT_PASSWORD_SENT = object()
 
 _MAX_AUDIO_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB — individual chat voice messages are short
 _ALLOWED_AUDIO_CONTENT_TYPES = {"audio/webm", "audio/ogg", "audio/mp4", "audio/wav", "audio/mpeg"}
@@ -90,7 +100,11 @@ def create_project(
         _require_owned_key_of_type(session, current_user.id, data.llm_api_key_id, KEY_TYPE_LLM)
     if data.tts_api_key_id:
         _require_owned_key_of_type(session, current_user.id, data.tts_api_key_id, KEY_TYPE_TTS)
-    project = Project(user_id=current_user.id, **data.model_dump(exclude_unset=True))
+    create_data = data.model_dump(exclude_unset=True)
+    chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    project = Project(user_id=current_user.id, **create_data)
+    if chat_password is not _NO_CHAT_PASSWORD_SENT:
+        set_or_clear_chat_password(project, chat_password)
     sync_llm_model(session, project)
     session.add(project)
     session.commit()
@@ -137,7 +151,21 @@ def put_project(
         _require_owned_key_of_type(session, project.user_id, data.llm_api_key_id, KEY_TYPE_LLM)
     if data.tts_api_key_id:
         _require_owned_key_of_type(session, project.user_id, data.tts_api_key_id, KEY_TYPE_TTS)
-    return update_project(session, project, data.model_dump(exclude_unset=True))
+    update_data = data.model_dump(exclude_unset=True)
+    chat_password = update_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    if chat_password is not _NO_CHAT_PASSWORD_SENT:
+        set_or_clear_chat_password(project, chat_password)
+    return update_project(session, project, update_data)
+
+
+@router.delete("/{project_id}", status_code=204)
+def remove_project(
+    project: Project = Depends(get_owned_project),
+    session: Session = Depends(get_session),
+):
+    """Permanently delete a project, including every saved conversation and access log for it."""
+    delete_project(session, project)
+    return None
 
 
 @router.post("/{project_id}/publish", response_model=ProjectOut)

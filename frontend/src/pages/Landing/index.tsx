@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UserCog, Share2, SlidersHorizontal } from "lucide-react";
 import { ButtonLink } from "@/components/Button";
@@ -131,16 +132,18 @@ export function LandingPage() {
       {/* Footer: copyright + legal links; "Kontakt" is dropped on mobile to save space */}
       <footer className={styles.footer}>
         <span>© EduAvatars</span>
+        {/* Link, not <a href>: these are client-side routes, so a plain anchor would throw away
+            the SPA and reload the whole app. */}
         <nav className={styles.footerLinks} aria-label={t("landing.footer.legalAriaLabel")}>
-          <a href="/datenschutz">{t("landing.footer.privacy")}</a>
+          <Link to="/datenschutz">{t("landing.footer.privacy")}</Link>
           <span aria-hidden="true">·</span>
-          <a href="/impressum">{t("landing.footer.imprint")}</a>
+          <Link to="/impressum">{t("landing.footer.imprint")}</Link>
           <span aria-hidden="true" className={styles.footerLinksFull}>
             ·
           </span>
-          <a href="/credits" className={styles.footerLinksFull}>
+          <Link to="/credits" className={styles.footerLinksFull}>
             {t("landing.footer.credits")}
-          </a>
+          </Link>
         </nav>
       </footer>
     </PublicLayout>

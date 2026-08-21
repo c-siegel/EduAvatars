@@ -143,6 +143,9 @@ def change_password(
     if not verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail=ErrorCode.CURRENT_PASSWORD_INCORRECT)
     current_user.password_hash = hash_password(data.new_password)
+    # A successful self-chosen password change clears any pending forced-change requirement
+    # (see User.must_change_password) — the whole point of that flag was to get here.
+    current_user.must_change_password = False
     # Invalidates all previously issued tokens (e.g. a stolen session cookie on another device) —
     # see User.token_version. The current session immediately gets a fresh cookie with the new
     # version below, so it stays seamlessly logged in; only *other* sessions get kicked out.

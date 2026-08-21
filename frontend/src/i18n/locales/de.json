@@ -14,6 +14,7 @@
     "analytics": "Auswertung",
     "apiDashboard": "API-Dashboard",
     "profile": "Profileinstellungen",
+    "admin": "Admin",
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard-Navigation",
     "logout": "Abmelden",
@@ -74,7 +75,6 @@
     "unavailable": "Dieser Chat ist nicht verfügbar.",
     "online": "Online",
     "endChat": "Chat beenden",
-    "information": "Informationen",
     "surveyBeforeTitle": "Umfrage vor dem Chat",
     "continueToChat": "Weiter zum Chat",
     "transcribing": "Transkription läuft",
@@ -85,14 +85,23 @@
     "collapseChat": "Chat einklappen",
     "expandChat": "Chat einblenden",
     "chatTitle": "Chat",
-    "noLoginNeeded": "Kein Login nötig",
-    "hintPill": "Kein Login nötig · Chat wird nicht gespeichert",
+    "privacySaved": "Dieses Gespräch wird anonym gespeichert und kann von deiner Lehrkraft gelesen werden.",
+    "privacyNotSaved": "Dieses Gespräch wird nicht gespeichert.",
+    "whichModel": "Mit welcher KI spreche ich?",
+    "modelTooltip": "Du sprichst mit dem KI-Modell {{model}}. Deine Nachrichten werden dorthin geschickt, um eine Antwort zu erzeugen.",
+    "modelTooltipUnknown": "Du sprichst mit einem KI-Modell. Deine Nachrichten werden dorthin geschickt, um eine Antwort zu erzeugen.",
     "messagePlaceholder": "Schreib deine Frage …",
     "messageAriaLabel": "Nachricht",
     "send": "Senden",
     "surveyAfterTitle": "Umfrage nach dem Chat",
     "done": "Fertig",
-    "chatEnded": "Chat beendet. Danke, dass du mitgemacht hast!"
+    "chatEnded": "Chat beendet. Danke, dass du mitgemacht hast!",
+    "locked": {
+      "description": "Dieser Chat ist passwortgeschützt. Frag deine Lehrkraft nach dem Passwort.",
+      "passwordLabel": "Passwort",
+      "submit": "Entsperren",
+      "genericError": "Das Passwort war leider falsch. Bitte versuch es erneut."
+    }
   },
   "profile": {
     "savedToast": "Profil gespeichert.",
@@ -118,6 +127,100 @@
     "logoutOtherDevices": "Auf allen anderen Geräten abmelden",
     "deleteAccount": "Konto löschen",
     "deleteAccountText": "Alle Projekte und Links werden dauerhaft entfernt."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "subtitle": "Welche Daten dieser Dienst verarbeitet — und warum.",
+    "controller": {
+      "title": "Verantwortlich",
+      "text": "Für die hier verarbeiteten Daten ist die Betreiberin bzw. der Betreiber dieser EduAvatars-Instanz verantwortlich:"
+    },
+    "teachers": {
+      "title": "Konten von Lehrkräften",
+      "text": "Wenn Sie ein Konto anlegen, speichern wir Ihren Namen, Ihre E-Mail-Adresse, optional Ihre Schule und Ihr Profilbild sowie die von Ihnen angelegten Projekte. API-Schlüssel für KI-Anbieter werden verschlüsselt gespeichert und nie wieder vollständig angezeigt.",
+      "legalBasis": "Diese Verarbeitung erfolgt zur Erfüllung des Nutzungsverhältnisses (Art. 6 Abs. 1 lit. b DSGVO)."
+    },
+    "students": {
+      "title": "Schüler:innen, die einen Chat-Link nutzen",
+      "noAccount": "Schüler:innen brauchen kein Konto und werden weder nach ihrem Namen noch nach anderen persönlichen Angaben gefragt. Keine Registrierung, kein Login, kein seitenübergreifendes Tracking.",
+      "cookie": "Ein einzelnes technisches Cookie enthält eine zufällig erzeugte Besuchsnummer. Sie dient dazu, Gespräche auseinanderzuhalten und Nutzungsgrenzen durchzusetzen — sie identifiziert keine Person und wird nicht weitergegeben.",
+      "recording": "Lehrkräfte können die Aufzeichnung pro Chat aktivieren. Ist sie aktiv, steht das direkt über dem Eingabefeld, und das Gespräch wird unter der anonymen Besuchsnummer gespeichert, sodass die Lehrkraft es später lesen kann. Ist sie aus, werden Nachrichten nach dem Senden der Antwort nicht gespeichert."
+    },
+    "ai": {
+      "title": "Verarbeitung durch KI",
+      "text": "Nachrichten aus einem Chat werden an den KI-Anbieter gesendet, den die Lehrkraft für diesen Chat eingerichtet hat, um eine Antwort zu erzeugen. Welches Modell antwortet, zeigt im Chat die Schaltfläche „?“. Für einen passenden Auftragsverarbeitungsvertrag mit dem gewählten Anbieter sind die Betreibenden verantwortlich.",
+      "speech": "Ist die Sprachausgabe aktiviert, wird der Antworttext zusätzlich an den eingerichteten Sprachdienst gesendet. Spracheingaben werden auf diesem Server selbst transkribiert — Audioaufnahmen werden an keine dritte Stelle übermittelt und nicht gespeichert."
+    },
+    "retention": {
+      "title": "Speicherdauer",
+      "text": "Kontodaten werden bis zur Löschung des Kontos gespeichert. Gespeicherte Gespräche und Zugriffsprotokolle werden gelöscht, wenn das zugehörige Projekt oder Konto gelöscht wird — und zusätzlich nach der Aufbewahrungsfrist, die für diese Instanz eingestellt ist, sofern eine gesetzt wurde."
+    },
+    "rights": {
+      "title": "Ihre Rechte",
+      "text": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit bezüglich Ihrer personenbezogenen Daten. Kontoinhaber:innen können ihr Konto samt aller zugehörigen Daten jederzeit in den Profileinstellungen löschen.",
+      "students": "Da Schüler-Chats ohne identifizierende Angaben gespeichert werden, können wir sie in der Regel keiner konkreten Person zuordnen — das begrenzt, wie wir einzelne Auskunfts- oder Löschanfragen beantworten können. Schüler:innen wenden sich bitte an ihre Lehrkraft, die die Chatdaten eines Projekts löschen kann.",
+      "complaint": "Zudem haben Sie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren."
+    }
+  },
+  "forcePasswordChange": {
+    "title": "Passwort ändern",
+    "description": "Eine Administratorin/ein Administrator hat dieses Passwort für dich gesetzt. Wähle ein neues, um fortzufahren.",
+    "submit": "Speichern und fortfahren"
+  },
+  "admin": {
+    "users": {
+      "title": "Konten",
+      "subtitle": "Konten dieser Instanz anlegen, deaktivieren und verwalten.",
+      "table": {
+        "name": "Name",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "status": "Status"
+      },
+      "roleAdmin": "Admin",
+      "roleTeacher": "Lehrkraft",
+      "statusEnabled": "Aktiv",
+      "statusDisabled": "Deaktiviert",
+      "pendingPasswordChange": "Muss Passwort ändern",
+      "promote": "Zum Admin machen",
+      "demote": "Admin entziehen",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren",
+      "resetPassword": "Passwort zurücksetzen",
+      "resetPasswordTitle": "Passwort zurücksetzen für {{name}}",
+      "empty": "Noch keine Konten vorhanden.",
+      "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+      "addUser": "Konto hinzufügen",
+      "addUserButton": "Konto hinzufügen",
+      "form": {
+        "name": "Name",
+        "email": "E-Mail",
+        "temporaryPassword": "Vorläufiges Passwort",
+        "grantAdmin": "Admin-Zugriff gewähren",
+        "create": "Konto anlegen",
+        "reset": "Neues Passwort setzen"
+      }
+    },
+    "settings": {
+      "title": "Website-Einstellungen",
+      "subtitle": "Instanzweite Einstellungen, änderbar ohne erneutes Deployment.",
+      "imprintTitle": "Impressum & Kontakt",
+      "imprintHint": "Wird im Impressum und in der Datenschutzerklärung angezeigt. Leere Felder erscheinen dort als Platzhalter.",
+      "providerNameLabel": "Anbieter / Verantwortliche Person",
+      "providerStreetLabel": "Straße und Hausnummer",
+      "providerCityLabel": "PLZ und Ort",
+      "providerCountryLabel": "Land",
+      "contactEmailLabel": "Kontakt-E-Mail",
+      "contactPhoneLabel": "Telefon",
+      "privacyTitle": "Datenschutz & Registrierung",
+      "retentionLabel": "Schüler-Chatdaten löschen nach (Tagen)",
+      "retentionHint": "Gespeicherte Gespräche und Zugriffsprotokolle, die älter sind, werden beim Serverstart automatisch gelöscht. 0 bedeutet: unbegrenzt aufbewahren.",
+      "registrationTitle": "Selbstregistrierung erlauben",
+      "registrationText": "Wenn deaktiviert, können neue Konten nur von einer Admin-Person angelegt werden.",
+      "save": "Einstellungen speichern",
+      "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+      "saved": "Einstellungen gespeichert."
+    }
   },
   "configurator": {
     "steps": {
@@ -205,7 +308,17 @@
       "publish": "Publizieren",
       "publishNeedsModel": "Zum Publizieren muss ein Modell gewählt und gespeichert sein.",
       "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
-      "copy": "Kopieren"
+      "copy": "Kopieren",
+      "passwordProtection": {
+        "title": "Passwortschutz",
+        "text": "Schüler:innen müssen ein Passwort eingeben, bevor sie den Chat nutzen können.",
+        "protected": "Geschützt",
+        "notProtected": "Nicht geschützt",
+        "change": "Passwort ändern",
+        "remove": "Passwort entfernen",
+        "passwordLabel": "Passwort",
+        "save": "Speichern"
+      }
     }
   },
   "apiKeyForm": {
@@ -311,7 +424,8 @@
       "copyLink": "Link kopieren",
       "notPublishedYet": "Noch nicht veröffentlicht",
       "moreActions": "Weitere Aktionen",
-      "comingSoon": "Bald verfügbar"
+      "delete": "Löschen",
+      "deleteConfirm": "„{{title}}“ endgültig löschen? Der Freigabe-Link funktioniert dann nicht mehr, und alle dazu gespeicherten Schüler-Gespräche werden gelöscht. Das lässt sich nicht rückgängig machen."
     }
   },
   "landing": {
@@ -472,8 +586,14 @@
     "UNSUPPORTED_AUDIO_FORMAT": "Nicht unterstütztes Audioformat.",
     "AUDIO_FILE_TOO_LARGE": "Audiodatei ist zu groß (maximal 10 MB).",
     "CHAT_UNAVAILABLE": "Der Chat ist momentan nicht verfügbar.",
+    "CHAT_PASSWORD_TOO_SHORT": "Passwort muss mindestens 4 Zeichen haben.",
+    "CHAT_PASSWORD_TOO_LONG": "Passwort darf höchstens 72 Bytes lang sein.",
+    "CHAT_PASSWORD_INCORRECT": "Dieses Passwort ist falsch.",
+    "CHAT_UNLOCK_REQUIRED": "Dieser Chat benötigt ein Passwort.",
+    "PROJECT_NOT_PASSWORD_PROTECTED": "Für dieses Projekt ist kein Passwort gesetzt.",
     "RATE_LIMIT_CHAT": "Zu viele Nachrichten. Bitte kurz warten.",
     "RATE_LIMIT_TRANSCRIBE": "Zu viele Sprachaufnahmen. Bitte kurz warten.",
+    "RATE_LIMIT_CHAT_UNLOCK": "Zu viele Versuche. Bitte kurz warten.",
     "RATE_LIMIT_LOGIN": "Zu viele Anmeldeversuche. Bitte kurz warten.",
     "RATE_LIMIT_REGISTER": "Zu viele Registrierungen von dieser Verbindung. Bitte kurz warten.",
     "RATE_LIMIT_GENERIC": "Zu viele Anfragen. Bitte kurz warten.",
@@ -489,6 +609,10 @@
     "TTS_KEY_MISSING_MODEL": "Für diesen TTS-Key ist kein Modell hinterlegt.",
     "TTS_KEY_TEST_NEEDS_VOICE": "Dieser Anbieter braucht für die Sprachausgabe eine Stimme, die es beim Key-Test noch nicht gibt — probiere die Sprachausgabe direkt in einem Projekt aus.",
     "TTS_PROVIDER_UNSUPPORTED": "Sprachausgabe wird für diesen Anbieter (noch) nicht unterstützt.",
-    "CARTESIA_KEY_MISSING_MODEL": "Für diesen Cartesia-Key ist kein Modell hinterlegt."
+    "CARTESIA_KEY_MISSING_MODEL": "Für diesen Cartesia-Key ist kein Modell hinterlegt.",
+    "ADMIN_REQUIRED": "Diese Aktion erfordert ein Administrator-Konto.",
+    "USER_NOT_FOUND": "Nutzer:in nicht gefunden.",
+    "CANNOT_DISABLE_SELF": "Du kannst dein eigenes Konto nicht deaktivieren.",
+    "LAST_ADMIN_PROTECTED": "Es muss mindestens ein:e aktive:r Administrator:in bestehen bleiben."
   }
 }

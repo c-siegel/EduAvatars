@@ -16,20 +16,31 @@ import base64
 import logging
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, UploadFile
 from sqlmodel import Session, select
 import json
 from datetime import datetime, timezone
 
 from app.core.deps import get_or_set_visitor_id, get_published_project, get_session
 from app.core.error_codes import ErrorCode
-from app.core.rate_limit import enforce_public_chat_rate_limit, enforce_public_transcribe_rate_limit
+from app.core.rate_limit import (
+    enforce_chat_unlock_rate_limit,
+    enforce_public_chat_rate_limit,
+    enforce_public_transcribe_rate_limit,
+)
 from app.models.conversation import Conversation
 from app.models.project import Project
-from app.models.schemas.chat import ChatMessageIn, ChatMessageOut, PublicProjectOut
+from app.models.schemas.chat import (
+    ChatMessageIn,
+    ChatMessageOut,
+    ChatUnlockOut,
+    ChatUnlockRequest,
+    PublicProjectOut,
+)
 from app.models.schemas.speech import TranscriptionOut
 from app.models.user import User
 from app.services.api_key_service import resolve_llm_key, resolve_tts_key
+from app.services.chat_password_service import assert_unlocked, is_unlocked, issue_unlock_token, verify_chat_password
 from app.services.llm_service import send_chat_message
 from app.services.stt_service import transcribe_audio
 from app.services.tts_service import synthesize_speech
@@ -67,10 +78,23 @@ def load_tutor(
     response: Response,
     project: Project = Depends(get_published_project),
     session: Session = Depends(get_session),
+    x_chat_unlock_token: str | None = Header(default=None),
 ):
     """Load a published project's public info (for the public chat page) and record the visit."""
     visitor_id = get_or_set_visitor_id(request, response)
     log_access(session, project.id, visitor_id)
+
+    unlocked = is_unlocked(project, visitor_id, x_chat_unlock_token)
+    if project.password_protected and not unlocked:
+        # Nothing persona/prompt-related leaks before the password is entered — just enough to
+        # show a non-blank lock screen (title, who set it up).
+        user = session.get(User, project.user_id)
+        return PublicProjectOut(
+            title=project.title,
+            teacher_name=user.name if user else "",
+            password_protected=True,
+            unlocked=False,
+        )
 
     user = session.get(User, project.user_id)
     teacher_name = user.name if user else ""
@@ -89,7 +113,28 @@ def load_tutor(
         # both "not enabled" and "enabled but URL empty" end up as None.
         survey_before_url=project.survey_before_url if project.survey_before_enabled and project.survey_before_url else None,
         survey_after_url=project.survey_after_url if project.survey_after_enabled and project.survey_after_url else None,
+        password_protected=project.password_protected,
+        unlocked=unlocked,
+        save_conversations=project.save_conversations,
+        llm_model=project.llm_model,
     )
+
+
+@router.post("/{slug}/unlock", response_model=ChatUnlockOut)
+def unlock(
+    data: ChatUnlockRequest,
+    request: Request,
+    response: Response,
+    project: Project = Depends(get_published_project),
+):
+    """Verify a visitor-entered chat password and issue an unlock token for this project+visitor."""
+    visitor_id = get_or_set_visitor_id(request, response)
+    enforce_chat_unlock_rate_limit(request, visitor_id)
+    if not project.password_protected:
+        raise HTTPException(status_code=400, detail=ErrorCode.PROJECT_NOT_PASSWORD_PROTECTED)
+    if not verify_chat_password(project, data.password):
+        raise HTTPException(status_code=401, detail=ErrorCode.CHAT_PASSWORD_INCORRECT)
+    return ChatUnlockOut(unlock_token=issue_unlock_token(project, visitor_id))
 
 
 @router.post("/{slug}/message", response_model=ChatMessageOut)
@@ -99,9 +144,13 @@ def send_message(
     response: Response,
     project: Project = Depends(get_published_project),
     session: Session = Depends(get_session),
+    x_chat_unlock_token: str | None = Header(default=None),
 ):
     """Send a visitor's chat message to the project's LLM and return the reply, saving history if enabled."""
     visitor_id = get_or_set_visitor_id(request, response)
+    # Checked before the rate limit — an unauthenticated caller shouldn't be able to spend a
+    # protected project's chat budget just by guessing at the endpoint.
+    assert_unlocked(project, visitor_id, x_chat_unlock_token)
     enforce_public_chat_rate_limit(request, visitor_id)
 
     # No technical detail (provider/model) is passed to anonymous visitors — that's the project
@@ -164,9 +213,11 @@ async def transcribe(
     request: Request,
     response: Response,
     project: Project = Depends(get_published_project),
+    x_chat_unlock_token: str | None = Header(default=None),
 ):
     """Transcribe a visitor's voice message for the public chat."""
     visitor_id = get_or_set_visitor_id(request, response)
+    assert_unlocked(project, visitor_id, x_chat_unlock_token)
     enforce_public_transcribe_rate_limit(request, visitor_id)
 
     if not project.stt_enabled:

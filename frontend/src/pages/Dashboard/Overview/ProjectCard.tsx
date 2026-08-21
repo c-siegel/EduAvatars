@@ -1,17 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Pencil, Link2, MoreHorizontal } from "lucide-react";
+import { Pencil, Link2, MoreHorizontal, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
+import { projectsApi } from "@/api/projects";
 import type { Project } from "@/types/project";
 import { formatRelativeDate } from "@/lib/time";
 import styles from "./ProjectCard.module.css";
 
 export function ProjectCard({ project }: { project: Project }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => projectsApi.remove(project.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
+  function handleDelete() {
+    setMenuOpen(false);
+    // Deliberate second step, like removing an API key (see ApiDashboard): this also deletes the
+    // students' saved conversations, which cannot be recovered.
+    if (window.confirm(t("overview.card.deleteConfirm", { title: project.title }))) {
+      deleteMutation.mutate();
+    }
+  }
 
   // Close the mobile "…" menu on outside click.
   useEffect(() => {
@@ -70,17 +89,10 @@ export function ProjectCard({ project }: { project: Project }) {
           >
             <Link2 size={16} />
           </button>
-          <button
-            className={styles.iconButton}
-            disabled
-            aria-label={t("overview.card.moreActions")}
-            title={t("overview.card.comingSoon")}
-          >
-            <MoreHorizontal size={16} />
-          </button>
         </div>
 
-        {/* Mobile: same two actions condensed behind a single working "…" menu */}
+        {/* The "…" menu carries the destructive action on both layouts; on mobile it also holds
+            the two actions that are shown directly on desktop. */}
         <div className={styles.menuWrapper} ref={menuRef}>
           <button
             className={styles.iconButton}
@@ -92,11 +104,24 @@ export function ProjectCard({ project }: { project: Project }) {
           </button>
           {menuOpen && (
             <div className={styles.menu} role="menu">
-              <Link className={styles.menuItem} to={`/dashboard/projects/${project.id}`} role="menuitem">
+              <Link className={`${styles.menuItem} ${styles.menuItemMobile}`} to={`/dashboard/projects/${project.id}`} role="menuitem">
                 <Pencil size={14} /> {t("overview.card.edit")}
               </Link>
-              <button className={styles.menuItem} onClick={copyLink} disabled={!shareUrl} role="menuitem">
+              <button
+                className={`${styles.menuItem} ${styles.menuItemMobile}`}
+                onClick={copyLink}
+                disabled={!shareUrl}
+                role="menuitem"
+              >
                 <Link2 size={14} /> {t("overview.card.copyLink")}
+              </button>
+              <button
+                className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                role="menuitem"
+              >
+                <Trash2 size={14} /> {t("overview.card.delete")}
               </button>
             </div>
           )}

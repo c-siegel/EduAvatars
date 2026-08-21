@@ -54,6 +54,8 @@ def user_to_out(user: User) -> UserOut:
         school=user.school,
         email=user.email,
         avatar_url=avatar_url,
+        is_admin=user.is_admin,
+        must_change_password=user.must_change_password,
     )
 
 

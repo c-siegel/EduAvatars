@@ -80,4 +80,13 @@ class Project(SQLModel, table=True):
     # value is configurable and persisted from the Configurator, but public_chat.py/PublicChat
     # frontend don't yet render a collapsed state — that's still to be implemented.
     chat_default_open: bool = True
+    # Optional teacher-set access gate for the public chat link (see services/chat_password_
+    # service.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
+    # share link can chat, same as before this field existed.
+    chat_password_hash: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def password_protected(self) -> bool:
+        """Whether a visitor must unlock this project's chat with a password before using it."""
+        return self.chat_password_hash is not None

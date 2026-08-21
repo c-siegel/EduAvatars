@@ -11,11 +11,15 @@ How to use:
     projects = list_projects(session, user_id)
 """
 
+from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app.core.providers import build_model_string
+from app.core.security import hash_password
 from app.models.api_key import UserApiKey
+from app.models.conversation import Conversation
 from app.models.project import Project
+from app.models.project_access import ProjectAccess
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -49,6 +53,24 @@ _CLEARABLE_FIELDS = {
     "tts_voice",
     "tts_api_key_id",
 }
+
+
+def delete_project(session: Session, project: Project) -> None:
+    """Permanently delete a project together with its saved conversations and access logs.
+
+    The dependent rows have to go explicitly: SQLite runs with foreign-key enforcement off (see
+    services/account_service.py), so deleting only the project row would silently orphan every
+    student conversation and page view belonging to it.
+    """
+    session.execute(delete(Conversation).where(Conversation.project_id == project.id))
+    session.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
+    session.delete(project)
+    session.commit()
+
+
+def set_or_clear_chat_password(project: Project, password: str | None) -> None:
+    """Set/change (non-empty string) or remove (None) the project's public chat password."""
+    project.chat_password_hash = hash_password(password) if password else None
 
 
 def update_project(session: Session, project: Project, data: dict) -> Project:

@@ -16,15 +16,47 @@ How it works:
 4. The server starts listening for requests
 """
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 
-from app.api import analytics, api_keys, auth, avatar_library, background_library, profile, projects, public_chat
+from app.api import (
+    admin,
+    analytics,
+    api_keys,
+    auth,
+    avatar_library,
+    background_library,
+    profile,
+    projects,
+    public_chat,
+    site_settings,
+)
 from app.core.config import settings
+from app.db.session import engine
+from app.services.retention_service import purge_expired_data
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run the data-retention cleanup once per app start."""
+    try:
+        with Session(engine) as session:
+            purge_expired_data(session)
+    except Exception:
+        # Never let a cleanup problem stop the API from coming up.
+        logger.exception("Data-retention cleanup failed on startup.")
+    yield
+
 
 # Create the FastAPI application instance
 # This is the main application object that handles all HTTP requests
-app = FastAPI(title="EduAvatars API")
+app = FastAPI(title="EduAvatars API", lifespan=lifespan)
 
 # Configure CORS (Cross-Origin Resource Sharing) middleware
 # CORS allows the frontend (running on a different domain/port) to make requests to this backend
@@ -46,6 +78,8 @@ app.include_router(analytics.router)  # Analytics and usage statistics
 app.include_router(api_keys.router)  # API key management for external services
 app.include_router(profile.router)  # User profile management
 app.include_router(public_chat.router)  # Public chat endpoints (no authentication required)
+app.include_router(admin.router)  # Admin dashboard: account management, site settings
+app.include_router(site_settings.router)  # Public-facing site settings (contact email, etc.)
 
 
 @app.get("/health")

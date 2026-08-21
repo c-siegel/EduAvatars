@@ -35,4 +35,5 @@ from app.models.conversation import Conversation  # noqa: F401
 from app.models.project import Project  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
 from app.models.project_access import ProjectAccess  # noqa: F401
+from app.models.site_settings import SiteSettings  # noqa: F401
 from app.models.user import User  # noqa: F401

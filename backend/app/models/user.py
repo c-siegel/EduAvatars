@@ -27,6 +27,14 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     password_hash: str
     enabled: bool = True
+    # Grants access to the admin dashboard (see api/admin.py, core/deps.py::get_current_admin).
+    # A plain flag, not a role enum — only two states exist today.
+    is_admin: bool = False
+    # Set when an admin sets this account's password for them (creation or reset) instead of the
+    # user choosing it themselves — cleared the next time they successfully change their own
+    # password (see api/profile.py::change_password). Checked by the frontend to force a change
+    # screen before the rest of the dashboard is reachable.
+    must_change_password: bool = False
     # Incremented on password change/reset, and on the explicit "sign out everywhere else".
     # Since JWTs are deliberately stateless (no session table, see above), this is the only way
     # to invalidate already-issued tokens early — every token carries the version at issue time
