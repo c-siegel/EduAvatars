@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { authApi } from "@/api/auth";
@@ -9,6 +10,7 @@ import styles from "@/pages/AuthShell.module.css";
 
 // Screen 1b — Login
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,9 +30,9 @@ export function LoginPage() {
       // variant on mobile ("Login fehlgeschlagen"), but a real error message
       // shouldn't change wording depending on screen size.
       if (err instanceof ApiError && err.status === 401) {
-        setError("E-Mail oder Passwort ist falsch.");
+        setError(t("errors.INVALID_CREDENTIALS"));
       } else {
-        setError("Anmeldung fehlgeschlagen. Bitte versuche es später erneut.");
+        setError(t("auth.login.errorGeneric"));
       }
     } finally {
       setSubmitting(false);
@@ -40,27 +42,27 @@ export function LoginPage() {
   return (
     <AuthShell
       active="login"
-      subtitle="Willkommen zurück"
+      subtitle={t("auth.login.subtitle")}
       error={error}
       footer={
         <>
-          Noch kein Konto? <Link to="/register">Registrieren</Link>
+          {t("auth.login.noAccount")} <Link to="/register">{t("common.register")}</Link>
         </>
       }
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <Input
-          label="E-Mail"
+          label={t("auth.emailLabel")}
           type="email"
           name="email"
-          placeholder="lehrkraft@schule.de"
+          placeholder={t("auth.emailPlaceholder")}
           autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <Input
-          label="Passwort"
+          label={t("auth.passwordLabel")}
           type="password"
           name="password"
           autoComplete="current-password"
@@ -71,12 +73,12 @@ export function LoginPage() {
         <div className={styles.row}>
           <label className={styles.checkboxLabel}>
             <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-            Angemeldet bleiben
+            {t("auth.login.rememberMe")}
           </label>
-          <Link to="/forgot-password">Passwort vergessen?</Link>
+          <Link to="/forgot-password">{t("auth.login.forgotPassword")}</Link>
         </div>
         <Button type="submit" variant="accent" fullWidth disabled={submitting}>
-          Anmelden
+          {t("common.login")}
         </Button>
       </form>
     </AuthShell>

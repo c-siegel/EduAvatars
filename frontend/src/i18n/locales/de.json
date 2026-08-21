@@ -1,0 +1,494 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "loading": "Lädt …",
+    "close": "Schließen",
+    "replyBeingWritten": "Antwort wird geschrieben …"
+  },
+  "nav": {
+    "overview": "Übersicht",
+    "analytics": "Auswertung",
+    "apiDashboard": "API-Dashboard",
+    "profile": "Profileinstellungen",
+    "dashboardFallback": "Dashboard",
+    "dashboardNavAriaLabel": "Dashboard-Navigation",
+    "logout": "Abmelden",
+    "closeMenu": "Menü schließen",
+    "openMenu": "Menü öffnen"
+  },
+  "auth": {
+    "tabsAriaLabel": "Anmelden oder registrieren",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "lehrkraft@schule.de",
+    "passwordLabel": "Passwort",
+    "nameLabel": "Name",
+    "backToLogin": "Zur Anmeldung",
+    "login": {
+      "subtitle": "Willkommen zurück",
+      "rememberMe": "Angemeldet bleiben",
+      "forgotPassword": "Passwort vergessen?",
+      "noAccount": "Noch kein Konto?",
+      "errorGeneric": "Anmeldung fehlgeschlagen. Bitte versuche es später erneut."
+    },
+    "register": {
+      "subtitle": "Erstelle dein kostenloses Konto",
+      "hasAccount": "Bereits ein Konto?",
+      "terms": "Ich stimme den Nutzungsbedingungen und der Datenschutzerklärung zu.",
+      "submit": "Konto erstellen",
+      "errorGeneric": "Registrierung fehlgeschlagen. Bitte überprüfe deine Angaben.",
+      "disabledNotice": "Registrierung ist aktuell nicht möglich. Diese Instanz von EduAvatars ist derzeit nur für den internen Gebrauch freigeschaltet. Bitte wende dich an deine Institution, falls du ein Konto benötigst."
+    },
+    "forgotPassword": {
+      "subtitle": "Passwort vergessen",
+      "remembered": "Erinnert?",
+      "submit": "Link zum Zurücksetzen senden",
+      "sentNotice": "Falls ein Konto mit dieser E-Mail existiert, haben wir einen Link zum Zurücksetzen verschickt. Bitte prüfe dein Postfach (auch den Spam-Ordner)."
+    },
+    "resetPassword": {
+      "subtitle": "Passwort zurücksetzen",
+      "formSubtitle": "Neues Passwort festlegen",
+      "doneSubtitle": "Passwort zurückgesetzt",
+      "doneNotice": "Dein Passwort wurde geändert.",
+      "loginNow": "Jetzt anmelden",
+      "noValidLinkPrefix": "Kein gültiger Link. Bitte fordere über",
+      "noValidLinkSuffix": " einen neuen Link an.",
+      "newPasswordLabel": "Neues Passwort",
+      "repeatLabel": "Wiederholen",
+      "hint": "Mind. {{min}} Zeichen, eine Zahl",
+      "submit": "Passwort speichern",
+      "errorTooShort": "Neues Passwort braucht mind. {{min}} Zeichen und eine Zahl.",
+      "errorMismatch": "Die Wiederholung stimmt nicht mit dem neuen Passwort überein.",
+      "errorInvalidLink": "Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an."
+    }
+  },
+  "surveyEmbed": {
+    "notice": "Diese Umfrage wird von einem externen Anbieter (Tally) bereitgestellt. Beim Laden wird eine Verbindung zu tally.so hergestellt.",
+    "loading": "Umfrage wird geladen …",
+    "skip": "Überspringen"
+  },
+  "publicChat": {
+    "unavailable": "Dieser Chat ist nicht verfügbar.",
+    "online": "Online",
+    "endChat": "Chat beenden",
+    "information": "Informationen",
+    "surveyBeforeTitle": "Umfrage vor dem Chat",
+    "continueToChat": "Weiter zum Chat",
+    "transcribing": "Transkription läuft",
+    "stopRecording": "Aufnahme beenden",
+    "voiceInput": "Spracheingabe",
+    "unmute": "Ton einschalten",
+    "mute": "Ton ausschalten",
+    "collapseChat": "Chat einklappen",
+    "expandChat": "Chat einblenden",
+    "chatTitle": "Chat",
+    "noLoginNeeded": "Kein Login nötig",
+    "hintPill": "Kein Login nötig · Chat wird nicht gespeichert",
+    "messagePlaceholder": "Schreib deine Frage …",
+    "messageAriaLabel": "Nachricht",
+    "send": "Senden",
+    "surveyAfterTitle": "Umfrage nach dem Chat",
+    "done": "Fertig",
+    "chatEnded": "Chat beendet. Danke, dass du mitgemacht hast!"
+  },
+  "profile": {
+    "savedToast": "Profil gespeichert.",
+    "pictureUpdatedToast": "Profilbild aktualisiert.",
+    "pictureUploadError": "Bild konnte nicht hochgeladen werden (max. 5 MB, PNG/JPEG/WebP).",
+    "pictureRemovedToast": "Profilbild entfernt.",
+    "passwordUpdatedToast": "Passwort aktualisiert.",
+    "passwordChangeError": "Aktuelles Passwort ist falsch oder die Anfrage ist fehlgeschlagen.",
+    "loggedOutEverywhereToast": "Alle anderen Sitzungen wurden abgemeldet.",
+    "confirmLogoutEverywhere": "Auf allen anderen Geräten/Browsern abmelden? Diese Sitzung bleibt aktiv.",
+    "confirmDeleteAccount": "Alle Projekte und Links werden dauerhaft entfernt. Konto wirklich unwiderruflich löschen?",
+    "account": "Konto",
+    "changePicture": "Bild ändern",
+    "fullName": "Vor- & Nachname",
+    "school": "Schule",
+    "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "saveChanges": "Änderungen speichern",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "updatePassword": "Passwort aktualisieren",
+    "sessions": "Sitzungen",
+    "sessionsText": "Falls du den Verdacht hast, dass dein Konto auf einem anderen Gerät angemeldet ist: alle anderen Sitzungen sofort beenden. Diese Sitzung hier bleibt aktiv.",
+    "logoutOtherDevices": "Auf allen anderen Geräten abmelden",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountText": "Alle Projekte und Links werden dauerhaft entfernt."
+  },
+  "configurator": {
+    "steps": {
+      "appearance": "Aussehen",
+      "technical": "Technik",
+      "behavior": "Verhalten",
+      "preview": "Vorschau",
+      "publish": "Veröffentlichung"
+    },
+    "progressSaved": "Fortschritt gespeichert.",
+    "loadError": "Projekt konnte nicht geladen werden.",
+    "newProject": "Neues Projekt",
+    "draftUnpublished": "Entwurf · nicht veröffentlicht",
+    "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "stepsAriaLabel": "Konfigurator-Schritte",
+    "next": "Weiter",
+    "step1": {
+      "confirmDeleteLibraryItem": "\"{{name}}\" wirklich aus der Bibliothek löschen?",
+      "projectName": "Projektname",
+      "descriptionOptional": "Kurzbeschreibung (optional)",
+      "descriptionPlaceholder": "Kurze Beschreibung, was dieser Avatar macht",
+      "avatarLibrary": "Avatar-Bibliothek",
+      "available": "{{count}} verfügbar",
+      "deleteItem": "{{name}} löschen",
+      "uploadAvatar": "Avatar hochladen",
+      "backgroundImage": "Hintergrundbild",
+      "noBackgroundAriaLabel": "Kein Hintergrundbild (neutral hellgrau)",
+      "default": "Standard",
+      "uploadBackground": "Hintergrundbild hochladen",
+      "chatVisibleTitle": "Chat standardmäßig sichtbar",
+      "chatVisibleText": "Aktiv: Der Chat ist beim Öffnen der Seite direkt sichtbar. Inaktiv: Der Chat startet eingeklappt, kann von Besucher:innen aber jederzeit ausgeklappt werden.",
+      "chatVisibleNote": "Diese Einstellung wird bereits gespeichert — die Anzeige auf der öffentlichen Seite folgt in einem späteren Schritt."
+    },
+    "step2": {
+      "noLlmPrefix": "Noch kein LLM eingerichtet. Lege zuerst unter",
+      "noLlmSuffix": " einen Schlüssel vom Typ LLM an — dort wählst du auch das Modell, das hier zur Verfügung stehen soll.",
+      "modelHint": "Es stehen nur Modelle zur Wahl, für die du unter API-Schlüssel einen Zugang eingerichtet hast. Ein weiteres Modell fügst du dort als neuen Schlüssel hinzu.",
+      "creativity": "Kreativität",
+      "language": "Sprache",
+      "spokenLanguageOptions": { "de": "Deutsch", "en": "Englisch" },
+      "languageHint": "Bestimmt die Antwortsprache und die Spracherkennung des Avatars.",
+      "ttsTitle": "Sprachausgabe (TTS)",
+      "ttsText": "Der Avatar spricht seine Antworten laut vor. Standardmäßig aus.",
+      "ttsKey": "TTS-Schlüssel",
+      "noTtsPrefix": "Noch kein TTS eingerichtet. Lege zuerst unter",
+      "noTtsSuffix": " einen Schlüssel vom Typ TTS an (z. B. OpenAI, Google Gemini, Cartesia oder ein eigener Endpunkt).",
+      "voiceOptional": "Stimme (optional)",
+      "voicePlaceholder": "z. B. alloy — abhängig vom gewählten Anbieter",
+      "voiceHint": "Für Cartesia ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die Sprachausgabe für dieses Projekt ins Leere.",
+      "sttTitle": "Spracheingabe (STT)",
+      "sttText": "Aktiviert den Mikrofon-Button im öffentlichen Chat. Standardmäßig aus."
+    },
+    "step3": {
+      "defaultPreprompt": "Du bist ein hilfreicher, KI-gestützter Lernassistent.\n\nAntworte kindgerecht, geduldig und ermutigend. Wenn du etwas nicht weißt, sag das ehrlich, anstatt zu raten.",
+      "targetGroup": "Zielgruppe / Klassenstufe",
+      "targetGroupPlaceholder": "z. B. Klasse 7b",
+      "resetToDefault": "Auf Standard zurücksetzen",
+      "preprompt": "Preprompt / Rolle",
+      "resetHint": "\"Auf Standard zurücksetzen\" ersetzt den aktuellen Text durch den generischen Standardtext.",
+      "startMessageOptional": "Startnachricht (optional)",
+      "startMessageHint": "Wird Schüler:innen als erste Nachricht des Avatars gezeigt — anders als der Preprompt oben kennt das Modell diesen Text ebenfalls (z. B. für eine Aufgabenstellung, auf die geantwortet werden soll). Leer lassen für eine generische Begrüßung."
+    },
+    "step4": {
+      "unsavedChanges": "Du hast ungespeicherte Änderungen — speichere oben rechts, damit die Vorschau sie berücksichtigt.",
+      "livePreview": "Live-Vorschau",
+      "testBadge": "Test",
+      "defaultGreeting": "Hallo! Ich bin {{name}}. Wie kann ich dir helfen?",
+      "yourAvatar": "dein Avatar",
+      "testMessagePlaceholder": "Nachricht testen …",
+      "testMessageAriaLabel": "Testnachricht"
+    },
+    "step5": {
+      "recordConversationsTitle": "Konversationen aufzeichnen",
+      "recordConversationsText": "Speichert Chatverläufe zur späteren Auswertung (Tab Auswertung). Standardmäßig aus.",
+      "surveyNotice": "Die Umfrage wird per Iframe von Tally.so eingebettet — es wird kein zusätzliches Skript von tally.so geladen, nur die von dir eingefügte Formular-Adresse selbst. Für Schüler:innen ist die Teilnahme freiwillig und jederzeit überspringbar.",
+      "surveyBeforeTitle": "Umfrage vor dem Chat aktivieren",
+      "surveyBeforeText": "Wird angezeigt, bevor Schüler:innen den Chat starten können.",
+      "surveyBeforeUrl": "Umfrage-URL (vor dem Chat)",
+      "surveyBeforeHint": "Nur wirksam, wenn die Checkbox oben aktiviert ist. Leer lassen oder deaktivieren, um diesen Schritt zu überspringen. Für die korrekte Adresse ist die Lehrkraft selbst verantwortlich.",
+      "surveyAfterTitle": "Umfrage nach dem Chat aktivieren",
+      "surveyAfterText": "Wird angezeigt, wenn Schüler:innen den Chat über \"Chat beenden\" abschließen.",
+      "surveyAfterUrl": "Umfrage-URL (nach dem Chat)",
+      "surveyAfterHint": "Nur wirksam, wenn die Checkbox oben aktiviert ist.",
+      "unpublish": "Depublizieren",
+      "publish": "Publizieren",
+      "publishNeedsModel": "Zum Publizieren muss ein Modell gewählt und gespeichert sein.",
+      "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+      "copy": "Kopieren"
+    }
+  },
+  "apiKeyForm": {
+    "provider": "Anbieter / Kommunikationsprotokoll",
+    "apiBase": "Endpunkt-Adresse (API-Base-URL)",
+    "apiBaseOptional": "Endpunkt-Adresse (API-Base-URL, optional)",
+    "nameOptional": "Name (optional)",
+    "ttsModelFixedHint": "{{provider}} nutzt für die Sprachausgabe immer ein festes Modell — eine Modellwahl entfällt hier.",
+    "pleaseChoose": "Bitte wählen …",
+    "customModel": "Eigenes Modell (Freitext) …",
+    "modelId": "Modell-ID",
+    "modelIdPlaceholder": "z. B. \"llama-3.1-70b\" oder \"qwen2.5\"",
+    "modelHint": "Genau dieses Modell steht danach im Konfigurator zur Auswahl. Die Modell-ID wird unverändert an den Anbieter weitergereicht — für die korrekte Schreibweise ist die Lehrkraft selbst verantwortlich.",
+    "arcanaId": "Arcana-ID",
+    "arcanaIdPlaceholder": "z. B. nutzername/Projektname",
+    "apiKeyEditing": "API-Key (leer lassen = unverändert)",
+    "apiKey": "API-Key",
+    "apiKeyOptional": "API-Key (optional)",
+    "defaultModel": "Standardmodell"
+  },
+  "apiDashboard": {
+    "title": "API-Schlüssel",
+    "subtitle": "Deine Keys werden verschlüsselt gespeichert und nie im Klartext angezeigt.",
+    "securityNoticeFull": "Sicherheitshinweis: Keys gelten für alle deine Projekte. Bei Verdacht auf Missbrauch sofort widerrufen und beim Anbieter neu erzeugen.",
+    "securityNoticeShort": "Keys werden verschlüsselt gespeichert.",
+    "testFailed": "Test fehlgeschlagen: {{message}}",
+    "testFailedFallback": "Der Anbieter hat den Schlüssel abgelehnt.",
+    "testSucceeded": "Schlüssel erfolgreich getestet.",
+    "test": "Test",
+    "remove": "Entfernen",
+    "empty": "Noch keine API-Schlüssel hinterlegt.",
+    "editKey": "Schlüssel bearbeiten",
+    "addKey": "Neuen Schlüssel hinzufügen",
+    "addKeyButton": "+ Schlüssel hinzufügen",
+    "providersLoadError": "Anbieterliste konnte nicht geladen werden.",
+    "saveError": "Speichern fehlgeschlagen. Bitte Angaben prüfen.",
+    "statusActive": "Aktiv",
+    "statusUnverified": "Ungeprüft",
+    "statusError": "Fehler",
+    "removeConfirm": "Schlüssel \"{{name}}\" wirklich entfernen?",
+    "removeUsedByProjects_one": "{{count}} Projekt nutzt dieses Modell und verliert dadurch die Modellwahl.",
+    "removeUsedByProjects_other": "{{count}} Projekte nutzen dieses Modell und verlieren dadurch die Modellwahl.",
+    "table": {
+      "name": "Name",
+      "type": "Typ",
+      "model": "Modell",
+      "key": "Schlüssel",
+      "added": "Hinzugefügt",
+      "status": "Status"
+    }
+  },
+  "analytics": {
+    "csvExport": "CSV-Export",
+    "exportError": "Export fehlgeschlagen. Bitte erneut versuchen.",
+    "sessionsOverTime": "Sessions im Zeitverlauf",
+    "chartEmpty": "Keine Daten für diesen Zeitraum.",
+    "filters": {
+      "projectAll": "Projekt: Alle",
+      "period": "Zeitraum: {{days}} Tage",
+      "modelAll": "Modell: Alle",
+      "apply": "Filter anwenden"
+    },
+    "stats": {
+      "sessions": "Sessions",
+      "messages": "Nachrichten",
+      "avgDuration": "Ø Dauer",
+      "tokenCost": "Token-Kosten"
+    },
+    "granularity": { "day": "Tag", "week": "Woche", "month": "Monat" },
+    "table": {
+      "project": "Projekt",
+      "started": "Gestartet",
+      "messagesAbbr": "Nachr.",
+      "duration": "Dauer",
+      "lastQuestion": "Letzte Frage",
+      "empty": "Keine Sessions für diesen Filter.",
+      "messagesCount": "{{count}} Nachr."
+    },
+    "pagination": {
+      "zero": "0 von 0",
+      "range": "{{from}}–{{to}} von {{total}}"
+    }
+  },
+  "overview": {
+    "greeting": "Hallo {{name}} 👋",
+    "subtitle": "Du hast {{total}} Projekte, {{published}} davon publiziert.",
+    "newProject": "+ Neues Projekt",
+    "createError": "Projekt konnte nicht erstellt werden. Bitte versuche es erneut.",
+    "myProjects": "Meine Projekte",
+    "stats": {
+      "projects": "Projekte",
+      "published": "Publiziert",
+      "sessions7d": "Sessions (7 T.)",
+      "messages": "Nachrichten"
+    },
+    "filters": { "all": "Alle", "draft": "Entwürfe", "published": "Publiziert" },
+    "card": {
+      "published": "Publiziert",
+      "draft": "Entwurf",
+      "noModel": "Kein Modell gewählt",
+      "lastActive": "Zuletzt: {{relative}}",
+      "edit": "Bearbeiten",
+      "copyLink": "Link kopieren",
+      "notPublishedYet": "Noch nicht veröffentlicht",
+      "moreActions": "Weitere Aktionen",
+      "comingSoon": "Bald verfügbar"
+    }
+  },
+  "landing": {
+    "getStarted": "Kostenlos starten",
+    "badge": "Für Lehrkräfte",
+    "headingFull": "Flexibel KI-Avatare erstellen.",
+    "headingShort": "Flexible KI-Avatare.",
+    "heroText": "Erstelle einen KI-gestützten Lernavatar, formuliere seine Rolle in eigenen Worten und teile ihn per Link — ganz bequem ohne Programmierkenntnisse.",
+    "avatarLoading": "Avatar wird geladen...",
+    "nav": {
+      "sourceCode": "Quellcode",
+      "mainAriaLabel": "Hauptnavigation",
+      "mobileAriaLabel": "Mobile Navigation",
+      "openMenu": "Menü öffnen"
+    },
+    "features": {
+      "configure": {
+        "full": "Avatar konfigurieren",
+        "short": "Konfigurieren",
+        "text": "Wähle einen Avatar, formuliere seine Rolle, sein Aussehen und sein Verhalten."
+      },
+      "publish": {
+        "full": "Projekt publizieren",
+        "short": "Publizieren",
+        "text": "Ein Klick erzeugt einen Link, den deine Klasse ohne Login öffnen kann."
+      },
+      "flexibility": {
+        "full": "Volle Flexibilität",
+        "short": "API-Kontrolle",
+        "text": "Alle üblichen LLMs und Sprach-APIs sind flexibel nutzbar."
+      }
+    },
+    "footer": {
+      "legalAriaLabel": "Rechtliches",
+      "privacy": "Datenschutz",
+      "imprint": "Impressum",
+      "credits": "Credits"
+    }
+  },
+  "credits": {
+    "title": "Credits & Lizenzen",
+    "subtitle": "Danksagung an alle Projekte und Bibliotheken, die EduAvatars möglich machen",
+    "licenseLabel": "Lizenz:",
+    "noteLabel": "Hinweis:",
+    "byAuthor": "von {{name}}",
+    "onGithub": "{{name}} auf GitHub",
+    "avatar": {
+      "title": "Avatar-Modell & Animation",
+      "talkingHead": { "description": "3D-Avatar-Rendering und Audio-basiertes Lipsync für echtzeitfähige Animationen" },
+      "headAudio": {
+        "description": "Echtzeitfähige, audio-basierte Viseme-Erkennung für präzises Lipsync",
+        "note": "Das Modell wurde auf englischen Stimmen trainiert. Für deutschsprachiges Audio ist die Erkennungsqualität unverifiziert."
+      }
+    },
+    "fonts": {
+      "title": "Schriften",
+      "intro": "Alle Schriften werden selbst gehostet (statt über Google Fonts CDN) aus Datenschutzgründen.",
+      "inter": { "description": "Variable Font (Gewicht 100–900) für UI-Text und Überschriften" },
+      "plusJakartaSans": { "description": "Variable Font (Gewicht 200–800) für moderne Typografie" },
+      "jetBrainsMono": { "description": "Variable Font (Gewicht 400–800) für Code und technische Inhalte" }
+    },
+    "frontend": {
+      "title": "Frontend-Frameworks & Bibliotheken",
+      "react": { "description": "JavaScript-Bibliothek für Benutzeroberflächen" },
+      "reactRouter": { "description": "Routing-Bibliothek für Single-Page-Anwendungen" },
+      "lucideReact": { "description": "Sammlung von konsistenten, anpassbaren Icons" },
+      "vite": { "description": "Next-Generation Frontend Tooling für schnelles Development" }
+    },
+    "backend": {
+      "title": "Backend-Frameworks & Bibliotheken",
+      "fastapi": { "description": "Modernes, schnelles Web-Framework für APIs mit Python" },
+      "sqlmodel": { "description": "SQL-Bibliothek für Python, basierend auf Pydantic und SQLAlchemy" },
+      "fasterWhisper": { "description": "Schnelle Implementierung von OpenAI Whisper für Spracherkennung" },
+      "pydantic": { "description": "Datenvalidierung mit Python Type Annotations" }
+    },
+    "privacy": {
+      "title": "Datenschutz & Hosting",
+      "selfHosting": {
+        "description": "Alle externen Ressourcen (Schriften, Avatare, Audio-Module) werden selbst gehostet, um die Privatsphäre der Nutzer zu schützen und keine Daten an externe CDNs zu senden."
+      }
+    },
+    "footer": {
+      "thanks": "Vielen Dank an alle Entwickler und Communities, die diese großartigen Open-Source-Projekte erstellt haben!"
+    }
+  },
+  "imprint": {
+    "title": "Impressum",
+    "subtitle": "Rechtliche Angaben gemäß § 5 TMG",
+    "placeholder": "[noch ändern]",
+    "provider": {
+      "title": "Anbieter",
+      "name": "Name:",
+      "street": "Straße und Hausnummer:",
+      "city": "PLZ, Ort:",
+      "country": "Land:",
+      "countryValue": "Deutschland"
+    },
+    "contact": {
+      "title": "Kontakt",
+      "email": "E-Mail:",
+      "phone": "Telefon:",
+      "phonePlaceholder": "[+noch ändern]"
+    },
+    "responsible": { "title": "Verantwortlich für den Inhalt" },
+    "liability": {
+      "contentTitle": "Haftung für Inhalte",
+      "contentP1": "Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.",
+      "contentP2": "Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.",
+      "linksTitle": "Haftung für Links",
+      "linksP1": "Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.",
+      "linksP2": "Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen."
+    },
+    "asOf": "Stand: {{date}}"
+  },
+  "time": {
+    "today": "heute",
+    "yesterday": "gestern",
+    "daysAgo_one": "vor {{count}} Tag",
+    "daysAgo_other": "vor {{count}} Tagen",
+    "weeksAgo_one": "vor {{count}} Woche",
+    "weeksAgo_other": "vor {{count}} Wochen",
+    "monthsAgo_one": "vor {{count}} Monat",
+    "monthsAgo_other": "vor {{count}} Monaten"
+  },
+  "errors": {
+    "NOT_AUTHENTICATED": "Nicht angemeldet.",
+    "SESSION_EXPIRED": "Sitzung abgelaufen.",
+    "PROJECT_NOT_FOUND": "Projekt nicht gefunden.",
+    "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Projekt nicht gefunden oder nicht veröffentlicht.",
+    "REGISTRATION_DISABLED": "Registrierung ist aktuell nicht möglich.",
+    "EMAIL_ALREADY_REGISTERED": "Diese E-Mail-Adresse wird bereits verwendet.",
+    "INVALID_CREDENTIALS": "E-Mail oder Passwort ist falsch.",
+    "RESET_LINK_INVALID": "Link ist ungültig oder abgelaufen.",
+    "CURRENT_PASSWORD_INCORRECT": "Aktuelles Passwort ist falsch.",
+    "PASSWORD_TOO_SHORT": "Passwort muss mindestens 10 Zeichen und eine Zahl enthalten.",
+    "PASSWORD_TOO_LONG": "Passwort darf höchstens 72 Bytes lang sein.",
+    "PROFILE_PICTURE_TOO_LARGE": "Bild ist zu groß (maximal 5 MB).",
+    "PROFILE_PICTURE_INVALID_TYPE": "Nur PNG-, JPEG- oder WebP-Bilder sind erlaubt.",
+    "PROFILE_PICTURE_NOT_FOUND": "Kein Profilbild vorhanden.",
+    "AVATAR_FILE_INVALID_TYPE": "Nur .glb-Dateien sind erlaubt.",
+    "AVATAR_FILE_TOO_LARGE": "Datei ist zu groß (maximal 50 MB).",
+    "AVATAR_FILE_INVALID_CONTENT": "Datei ist keine gültige .glb-Datei.",
+    "AVATAR_NOT_FOUND": "Avatar nicht gefunden.",
+    "AVATAR_THUMBNAIL_TOO_LARGE": "Vorschaubild ist zu groß (maximal 2 MB).",
+    "AVATAR_THUMBNAIL_INVALID": "Vorschaubild ist keine gültige PNG-Datei.",
+    "AVATAR_THUMBNAIL_NOT_FOUND": "Vorschaubild nicht gefunden.",
+    "BACKGROUND_INVALID_TYPE": "Nur .png- oder .jpg-Dateien sind erlaubt.",
+    "BACKGROUND_FILE_TOO_LARGE": "Datei ist zu groß (maximal 10 MB).",
+    "BACKGROUND_INVALID_CONTENT": "Datei ist kein gültiges PNG oder JPEG.",
+    "BACKGROUND_NOT_FOUND": "Hintergrundbild nicht gefunden.",
+    "UNKNOWN_API_KEY": "Unbekannter API-Schlüssel.",
+    "API_KEY_NOT_FOUND": "API-Key nicht gefunden.",
+    "NO_LLM_MODEL_SELECTED": "Kein Modell für dieses Projekt ausgewählt. Lege zuerst im Tab API einen Schlüssel vom Typ LLM an.",
+    "LLM_REQUEST_FAILED": "LLM-Anfrage fehlgeschlagen.",
+    "STT_REQUEST_FAILED": "Spracherkennung fehlgeschlagen.",
+    "VOICE_INPUT_DISABLED": "Spracheingabe ist für dieses Projekt nicht aktiviert.",
+    "VOICE_INPUT_UNAVAILABLE": "Spracheingabe ist momentan nicht verfügbar.",
+    "UNSUPPORTED_AUDIO_FORMAT": "Nicht unterstütztes Audioformat.",
+    "AUDIO_FILE_TOO_LARGE": "Audiodatei ist zu groß (maximal 10 MB).",
+    "CHAT_UNAVAILABLE": "Der Chat ist momentan nicht verfügbar.",
+    "RATE_LIMIT_CHAT": "Zu viele Nachrichten. Bitte kurz warten.",
+    "RATE_LIMIT_TRANSCRIBE": "Zu viele Sprachaufnahmen. Bitte kurz warten.",
+    "RATE_LIMIT_LOGIN": "Zu viele Anmeldeversuche. Bitte kurz warten.",
+    "RATE_LIMIT_REGISTER": "Zu viele Registrierungen von dieser Verbindung. Bitte kurz warten.",
+    "RATE_LIMIT_GENERIC": "Zu viele Anfragen. Bitte kurz warten.",
+    "UNKNOWN_PROVIDER": "Unbekannter Anbieter.",
+    "PROVIDER_UNSUPPORTED_KEY_TYPE": "Dieser Anbieter unterstützt diesen Schlüsseltyp nicht.",
+    "PROVIDER_NEEDS_BASE_URL": "Dieser Anbieter braucht eine Endpunkt-Adresse (API-Base-URL).",
+    "PROVIDER_NEEDS_ARCANA_ID": "Dieser Anbieter braucht eine Arcana-ID.",
+    "PROVIDER_NEEDS_API_KEY": "Für diesen Anbieter wird ein API-Key benötigt.",
+    "MODEL_REQUIRED": "Bitte ein Modell auswählen oder eine Modell-ID eintragen.",
+    "ARCANA_KEY_MISSING_MODEL": "Für diesen Arcana-Key ist kein Modell hinterlegt.",
+    "ARCANA_KEY_MISSING_ID": "Für diesen Arcana-Key ist keine Arcana-ID hinterlegt.",
+    "API_KEY_NO_TESTABLE_MODEL": "Für diesen Eintrag ist kein Modell hinterlegt, das sich testen ließe.",
+    "TTS_KEY_MISSING_MODEL": "Für diesen TTS-Key ist kein Modell hinterlegt.",
+    "TTS_KEY_TEST_NEEDS_VOICE": "Dieser Anbieter braucht für die Sprachausgabe eine Stimme, die es beim Key-Test noch nicht gibt — probiere die Sprachausgabe direkt in einem Projekt aus.",
+    "TTS_PROVIDER_UNSUPPORTED": "Sprachausgabe wird für diesen Anbieter (noch) nicht unterstützt.",
+    "CARTESIA_KEY_MISSING_MODEL": "Für diesen Cartesia-Key ist kein Modell hinterlegt."
+  }
+}

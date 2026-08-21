@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { apiKeysApi } from "@/api/apiKeys";
 import { errorMessage } from "@/api/client";
+import { numberLocale } from "@/lib/format";
 import { keyDisplayName, modelLabel, providerLabel, useProviders } from "@/lib/providers";
 import { KEY_TYPE_LABELS, type ApiKey, type ApiKeyInput, type ApiKeyStatus } from "@/types/apiKey";
 import { ApiKeyForm } from "./ApiKeyForm";
@@ -17,14 +19,14 @@ const STATUS_VARIANT: Record<ApiKeyStatus, "accent" | "default" | "danger"> = {
   error: "danger",
 };
 
-const STATUS_LABEL: Record<ApiKeyStatus, string> = {
-  active: "Aktiv",
-  unverified: "Ungeprüft",
-  error: "Fehler",
-};
-
 // Screen 1g — Tab API-Dashboard
 export function ApiDashboardPage() {
+  const { t } = useTranslation();
+  const STATUS_LABEL: Record<ApiKeyStatus, string> = {
+    active: t("apiDashboard.statusActive"),
+    unverified: t("apiDashboard.statusUnverified"),
+    error: t("apiDashboard.statusError"),
+  };
   const queryClient = useQueryClient();
   const providersQuery = useProviders();
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
@@ -71,11 +73,8 @@ export function ApiDashboardPage() {
   function handleRemove(key: ApiKey) {
     // Absichtlich ein zweiter, expliziter Schritt (siehe Wireframe-Annotation zu 1g) —
     // "Entfernen" widerruft einen Key für alle Projekte, das braucht bewusste Reibung.
-    const used =
-      key.usedByProjects > 0
-        ? `\n\n${key.usedByProjects} Projekt${key.usedByProjects === 1 ? "" : "e"} nutzt dieses Modell und verliert dadurch die Modellwahl.`
-        : "";
-    if (window.confirm(`Schlüssel "${keyDisplayName(key, specs)}" wirklich entfernen?${used}`)) {
+    const used = key.usedByProjects > 0 ? `\n\n${t("apiDashboard.removeUsedByProjects", { count: key.usedByProjects })}` : "";
+    if (window.confirm(t("apiDashboard.removeConfirm", { name: keyDisplayName(key, specs) }) + used)) {
       removeMutation.mutate(key.id);
     }
   }
@@ -95,24 +94,21 @@ export function ApiDashboardPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2>API-Schlüssel</h2>
-        <p>Deine Keys werden verschlüsselt gespeichert und nie im Klartext angezeigt.</p>
+        <h2>{t("apiDashboard.title")}</h2>
+        <p>{t("apiDashboard.subtitle")}</p>
       </div>
 
       <Callout variant="info">
-        <span className={styles.calloutFull}>
-          Sicherheitshinweis: Keys gelten für alle deine Projekte. Bei Verdacht auf Missbrauch sofort widerrufen und
-          beim Anbieter neu erzeugen.
-        </span>
-        <span className={styles.calloutShort}>Keys werden verschlüsselt gespeichert.</span>
+        <span className={styles.calloutFull}>{t("apiDashboard.securityNoticeFull")}</span>
+        <span className={styles.calloutShort}>{t("apiDashboard.securityNoticeShort")}</span>
       </Callout>
 
       {testResult?.status === "error" && (
         <Callout variant="danger">
-          Test fehlgeschlagen: {testResult.message ?? "Der Anbieter hat den Schlüssel abgelehnt."}
+          {t("apiDashboard.testFailed", { message: testResult.message ?? t("apiDashboard.testFailedFallback") })}
         </Callout>
       )}
-      {testResult?.status === "active" && <Callout variant="success">Schlüssel erfolgreich getestet.</Callout>}
+      {testResult?.status === "active" && <Callout variant="success">{t("apiDashboard.testSucceeded")}</Callout>}
 
       <div className={styles.card}>
         {/* Sieben Spalten passen auf schmaleren Desktops nicht immer — scrollen statt überlaufen. */}
@@ -120,12 +116,12 @@ export function ApiDashboardPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Typ</th>
-              <th>Modell</th>
-              <th>Schlüssel</th>
-              <th>Hinzugefügt</th>
-              <th>Status</th>
+              <th>{t("apiDashboard.table.name")}</th>
+              <th>{t("apiDashboard.table.type")}</th>
+              <th>{t("apiDashboard.table.model")}</th>
+              <th>{t("apiDashboard.table.key")}</th>
+              <th>{t("apiDashboard.table.added")}</th>
+              <th>{t("apiDashboard.table.status")}</th>
               <th />
             </tr>
           </thead>
@@ -144,24 +140,29 @@ export function ApiDashboardPage() {
                   {key.maskedKey || "–"}
                   {key.apiBase && <div className={styles.hint}>{key.apiBase}</div>}
                 </td>
-                <td>{new Date(key.addedAt).toLocaleDateString("de-DE")}</td>
+                <td>{new Date(key.addedAt).toLocaleDateString(numberLocale())}</td>
                 <td>
                   <Badge variant={STATUS_VARIANT[key.status]}>{STATUS_LABEL[key.status]}</Badge>
                 </td>
                 <td>
                   <div className={styles.actions}>
                     <Button size="sm" onClick={() => testMutation.mutate(key.id)} disabled={testMutation.isPending}>
-                      Test
+                      {t("apiDashboard.test")}
                     </Button>
-                    <Button size="sm" onClick={() => openEdit(key)} aria-label="Bearbeiten" title="Bearbeiten">
+                    <Button
+                      size="sm"
+                      onClick={() => openEdit(key)}
+                      aria-label={t("overview.card.edit")}
+                      title={t("overview.card.edit")}
+                    >
                       <Pencil size={14} />
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleRemove(key)}
                       disabled={removeMutation.isPending}
-                      aria-label="Entfernen"
-                      title="Entfernen"
+                      aria-label={t("apiDashboard.remove")}
+                      title={t("apiDashboard.remove")}
                     >
                       <Trash2 size={14} />
                     </Button>
@@ -191,27 +192,25 @@ export function ApiDashboardPage() {
               {key.apiBase && <span className={styles.hint}>{key.apiBase}</span>}
               <div className={styles.keyCardActions}>
                 <Button size="sm" onClick={() => testMutation.mutate(key.id)} disabled={testMutation.isPending}>
-                  Testen
+                  {t("apiDashboard.test")}
                 </Button>
                 <Button size="sm" onClick={() => openEdit(key)}>
-                  Bearbeiten
+                  {t("overview.card.edit")}
                 </Button>
                 <Button size="sm" onClick={() => handleRemove(key)} disabled={removeMutation.isPending}>
-                  Entfernen
+                  {t("apiDashboard.remove")}
                 </Button>
               </div>
             </div>
           ))}
         </div>
 
-        {keys.length === 0 && !keysQuery.isLoading && (
-          <p className={styles.empty}>Noch keine API-Schlüssel hinterlegt.</p>
-        )}
+        {keys.length === 0 && !keysQuery.isLoading && <p className={styles.empty}>{t("apiDashboard.empty")}</p>}
       </div>
 
       <div className={styles.card}>
-        <h3>{editingKey ? "Schlüssel bearbeiten" : "Neuen Schlüssel hinzufügen"}</h3>
-        {providersQuery.isError && <Callout variant="danger">Anbieterliste konnte nicht geladen werden.</Callout>}
+        <h3>{editingKey ? t("apiDashboard.editKey") : t("apiDashboard.addKey")}</h3>
+        {providersQuery.isError && <Callout variant="danger">{t("apiDashboard.providersLoadError")}</Callout>}
         {specs.length > 0 &&
           (formOpen ? (
             <ApiKeyForm
@@ -221,16 +220,12 @@ export function ApiDashboardPage() {
               specs={specs}
               editing={editingKey ?? undefined}
               pending={saveMutation.isPending}
-              errorMessage={
-                saveMutation.isError
-                  ? errorMessage(saveMutation.error, "Speichern fehlgeschlagen. Bitte Angaben prüfen.")
-                  : undefined
-              }
+              errorMessage={saveMutation.isError ? errorMessage(saveMutation.error, t("apiDashboard.saveError")) : undefined}
               onSubmit={(input) => saveMutation.mutate(input)}
               onCancel={closeForm}
             />
           ) : (
-            <Button onClick={openCreate}>+ Schlüssel hinzufügen</Button>
+            <Button onClick={openCreate}>{t("apiDashboard.addKeyButton")}</Button>
           ))}
       </div>
     </div>

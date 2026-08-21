@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
@@ -33,6 +34,7 @@ export function Step4Preview({
   ttsEnabled,
   hasUnsavedChanges,
 }: Step4Props) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const avatarRef = useRef<TalkingHeadAvatarHandle>(null);
@@ -58,11 +60,7 @@ export function Step4Preview({
 
   return (
     <>
-      {hasUnsavedChanges && (
-        <Callout variant="info">
-          Du hast ungespeicherte Änderungen — speichere oben rechts, damit die Vorschau sie berücksichtigt.
-        </Callout>
-      )}
+      {hasUnsavedChanges && <Callout variant="info">{t("configurator.step4.unsavedChanges")}</Callout>}
 
       {ttsEnabled && (
         <div className={styles.avatarStage}>
@@ -79,14 +77,14 @@ export function Step4Preview({
       <div className={styles.panel}>
         <header className={styles.header}>
           <Avatar name={title} size="sm" />
-          <h3 className={styles.headerTitle}>{title || "Live-Vorschau"}</h3>
-          <Badge>Test</Badge>
+          <h3 className={styles.headerTitle}>{title || t("configurator.step4.livePreview")}</h3>
+          <Badge>{t("configurator.step4.testBadge")}</Badge>
         </header>
 
         <div className={styles.thread}>
           <ChatBubble
             role="assistant"
-            content={startPrompt || `Hallo! Ich bin ${title || "dein Avatar"}. Wie kann ich dir helfen?`}
+            content={startPrompt || t("configurator.step4.defaultGreeting", { name: title || t("configurator.step4.yourAvatar") })}
           />
           {messages.map((message, index) => (
             <ChatBubble key={index} role={message.role} content={message.content} />
@@ -97,10 +95,10 @@ export function Step4Preview({
         <form className={styles.composer} onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Nachricht testen …"
+            placeholder={t("configurator.step4.testMessagePlaceholder")}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            aria-label="Testnachricht"
+            aria-label={t("configurator.step4.testMessageAriaLabel")}
           />
           <Button type="submit" size="sm" disabled={sendMutation.isPending}>
             <Send size={16} />

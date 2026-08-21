@@ -19,6 +19,7 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.deps import ACCESS_TOKEN_COOKIE, get_current_user, get_session
+from app.core.error_codes import ErrorCode
 from app.core.security import hash_password, verify_password
 from app.models.schemas.auth import UserOut
 from app.models.schemas.profile import PasswordChange, ProfileUpdate
@@ -81,10 +82,10 @@ async def upload_profile_picture(
     """Upload or replace the current user's profile picture."""
     content = await file.read(_MAX_PICTURE_BYTES + 1)
     if len(content) > _MAX_PICTURE_BYTES:
-        raise HTTPException(status_code=400, detail="Bild ist zu groß (maximal 5 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.PROFILE_PICTURE_TOO_LARGE)
     sniffed = _sniff_image(content)
     if sniffed is None:
-        raise HTTPException(status_code=400, detail="Nur PNG-, JPEG- oder WebP-Bilder sind erlaubt.")
+        raise HTTPException(status_code=400, detail=ErrorCode.PROFILE_PICTURE_INVALID_TYPE)
     media_type, ext = sniffed
 
     _delete_picture_file(current_user)
@@ -127,7 +128,7 @@ def get_profile_picture(current_user: User = Depends(get_current_user)):
     # check is needed here: this route always serves only the cookie-authenticated user's own
     # picture, there's no ID parameter to spoof.
     if not current_user.avatar_path:
-        raise HTTPException(status_code=404, detail="Kein Profilbild vorhanden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.PROFILE_PICTURE_NOT_FOUND)
     return FileResponse(current_user.avatar_path, media_type=current_user.avatar_content_type or "application/octet-stream")
 
 
@@ -140,7 +141,7 @@ def change_password(
 ):
     """Change the current user's password; other sessions are signed out, this one stays signed in."""
     if not verify_password(data.current_password, current_user.password_hash):
-        raise HTTPException(status_code=400, detail="Aktuelles Passwort ist falsch.")
+        raise HTTPException(status_code=400, detail=ErrorCode.CURRENT_PASSWORD_INCORRECT)
     current_user.password_hash = hash_password(data.new_password)
     # Invalidates all previously issued tokens (e.g. a stolen session cookie on another device) —
     # see User.token_version. The current session immediately gets a fresh cookie with the new

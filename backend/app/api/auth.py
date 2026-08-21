@@ -17,6 +17,7 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.deps import ACCESS_TOKEN_COOKIE, get_current_user, get_session
+from app.core.error_codes import ErrorCode
 from app.core.rate_limit import (
     enforce_login_rate_limit,
     enforce_password_reset_rate_limit,
@@ -51,13 +52,13 @@ def register(data: RegisterRequest, request: Request, response: Response, sessio
     if not settings.registration_enabled:
         # Checked before the rate limit — no reason to spend that budget when registration is
         # switched off entirely anyway (at launch: internal use only).
-        raise HTTPException(status_code=403, detail="Registrierung ist aktuell nicht möglich.")
+        raise HTTPException(status_code=403, detail=ErrorCode.REGISTRATION_DISABLED)
     enforce_register_rate_limit(request)
     try:
         user = register_user(session, data.name, data.email, data.password)
     except IntegrityError as exc:
         session.rollback()
-        raise HTTPException(status_code=409, detail="Diese E-Mail-Adresse wird bereits verwendet.") from exc
+        raise HTTPException(status_code=409, detail=ErrorCode.EMAIL_ALREADY_REGISTERED) from exc
     set_auth_cookie(response, user)
     return user_to_out(user)
 
@@ -68,7 +69,7 @@ def login(data: LoginRequest, request: Request, response: Response, session: Ses
     enforce_login_rate_limit(request, data.email)
     user = authenticate_user(session, data.email, data.password)
     if user is None:
-        raise HTTPException(status_code=401, detail="E-Mail oder Passwort ist falsch.")
+        raise HTTPException(status_code=401, detail=ErrorCode.INVALID_CREDENTIALS)
     set_auth_cookie(response, user)
     return user_to_out(user)
 
@@ -101,5 +102,5 @@ def reset_password_route(data: ResetPasswordRequest, session: Session = Depends(
     """Complete a password reset using the token from the reset email."""
     user = reset_password(session, data.token, data.new_password)
     if user is None:
-        raise HTTPException(status_code=400, detail="Link ist ungültig oder abgelaufen.")
+        raise HTTPException(status_code=400, detail=ErrorCode.RESET_LINK_INVALID)
     return {"detail": "Passwort wurde zurückgesetzt."}

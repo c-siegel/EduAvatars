@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/Card";
 import { Callout } from "@/components/Callout";
 import { Wordmark } from "@/components/Wordmark";
@@ -18,6 +19,7 @@ interface AuthShellProps {
 // Anmelden/Registrieren segmented control, and the error callout slot.
 // The actual form fields are supplied by each page via `children`.
 export function AuthShell({ active, subtitle, error, children, footer }: AuthShellProps) {
+  const { t } = useTranslation();
   return (
     <PublicLayout>
       <div className={styles.wrapper}>
@@ -28,20 +30,20 @@ export function AuthShell({ active, subtitle, error, children, footer }: AuthShe
           </div>
 
           {active !== "none" && (
-            <nav className={styles.tabs} aria-label="Anmelden oder registrieren">
+            <nav className={styles.tabs} aria-label={t("auth.tabsAriaLabel")}>
               <Link
                 to="/login"
                 className={`${styles.tab} ${active === "login" ? styles.tabActive : ""}`}
                 aria-current={active === "login" ? "page" : undefined}
               >
-                Anmelden
+                {t("common.login")}
               </Link>
               <Link
                 to="/register"
                 className={`${styles.tab} ${active === "register" ? styles.tabActive : ""}`}
                 aria-current={active === "register" ? "page" : undefined}
               >
-                Registrieren
+                {t("common.register")}
               </Link>
             </nav>
           )}

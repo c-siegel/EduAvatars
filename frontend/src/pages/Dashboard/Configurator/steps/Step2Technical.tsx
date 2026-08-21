@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
 import { apiKeysApi } from "@/api/apiKeys";
 import { findProvider, keyDisplayName, modelLabel, useProviders } from "@/lib/providers";
-import { SPOKEN_LANGUAGE_OPTIONS } from "@/lib/speechOptions";
+import { SPOKEN_LANGUAGE_VALUES } from "@/lib/speechOptions";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
 
@@ -14,6 +15,7 @@ const NO_MODEL_SELECTED = "";
 
 // Schritt 2 — Technik: Modell, Kreativität, Sprache, TTS und STT.
 export function Step2Technical({ draft, onChange }: StepProps) {
+  const { t } = useTranslation();
   // Zur Auswahl stehen ausschließlich tatsächlich eingerichtete Schlüssel vom Typ LLM (Screen 1g).
   // Vorher listete das Dropdown eine feste Modell-Liste, was Verfügbarkeit suggerierte, die erst
   // nach dem Hinterlegen eines passenden Keys bestand — der Fehler fiel dann erst im Chat auf.
@@ -39,13 +41,12 @@ export function Step2Technical({ draft, onChange }: StepProps) {
     <>
       <div className={styles.field}>
         <label className={styles.label} htmlFor="llm-model">
-          Modell
+          {t("apiDashboard.table.model")}
         </label>
         {hasNoModels ? (
           <Callout variant="warning">
-            Noch kein LLM eingerichtet. Lege zuerst unter{" "}
-            <Link to="/dashboard/api">API-Schlüssel</Link> einen Schlüssel vom Typ LLM an — dort
-            wählst du auch das Modell, das hier zur Verfügung stehen soll.
+            {t("configurator.step2.noLlmPrefix")} <Link to="/dashboard/api">{t("apiDashboard.title")}</Link>
+            {t("configurator.step2.noLlmSuffix")}
           </Callout>
         ) : (
           <>
@@ -56,24 +57,21 @@ export function Step2Technical({ draft, onChange }: StepProps) {
               onChange={(e) => onChange({ llmApiKeyId: e.target.value || null })}
               disabled={!keysLoaded}
             >
-              <option value={NO_MODEL_SELECTED}>Bitte wählen …</option>
+              <option value={NO_MODEL_SELECTED}>{t("apiKeyForm.pleaseChoose")}</option>
               {llmKeys.map((key) => (
                 <option key={key.id} value={key.id}>
                   {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
                 </option>
               ))}
             </select>
-            <p className={styles.hint}>
-              Es stehen nur Modelle zur Wahl, für die du unter API-Schlüssel einen Zugang
-              eingerichtet hast. Ein weiteres Modell fügst du dort als neuen Schlüssel hinzu.
-            </p>
+            <p className={styles.hint}>{t("configurator.step2.modelHint")}</p>
           </>
         )}
       </div>
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="creativity">
-          Kreativität
+          {t("configurator.step2.creativity")}
         </label>
         <div className={styles.sliderRow}>
           <input
@@ -91,7 +89,7 @@ export function Step2Technical({ draft, onChange }: StepProps) {
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="spoken-language">
-          Sprache
+          {t("configurator.step2.language")}
         </label>
         <select
           id="spoken-language"
@@ -99,15 +97,13 @@ export function Step2Technical({ draft, onChange }: StepProps) {
           value={draft.spokenLanguage}
           onChange={(e) => onChange({ spokenLanguage: e.target.value as typeof draft.spokenLanguage })}
         >
-          {SPOKEN_LANGUAGE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          {SPOKEN_LANGUAGE_VALUES.map((value) => (
+            <option key={value} value={value}>
+              {t(`configurator.step2.spokenLanguageOptions.${value}`)}
             </option>
           ))}
         </select>
-        <p className={styles.hint}>
-          Bestimmt die Antwortsprache und die Spracherkennung des Avatars.
-        </p>
+        <p className={styles.hint}>{t("configurator.step2.languageHint")}</p>
       </div>
 
       <label className={styles.toggleRow}>
@@ -117,21 +113,20 @@ export function Step2Technical({ draft, onChange }: StepProps) {
           onChange={(e) => onChange({ ttsEnabled: e.target.checked })}
         />
         <span className={styles.toggleCopy}>
-          <strong>Sprachausgabe (TTS)</strong>
-          <span>Der Avatar spricht seine Antworten laut vor. Standardmäßig aus.</span>
+          <strong>{t("configurator.step2.ttsTitle")}</strong>
+          <span>{t("configurator.step2.ttsText")}</span>
         </span>
       </label>
 
       {draft.ttsEnabled && (
         <div className={styles.field}>
           <label className={styles.label} htmlFor="tts-key">
-            TTS-Schlüssel
+            {t("configurator.step2.ttsKey")}
           </label>
           {hasNoTtsKeys ? (
             <Callout variant="warning">
-              Noch kein TTS eingerichtet. Lege zuerst unter{" "}
-              <Link to="/dashboard/api">API-Schlüssel</Link> einen Schlüssel vom Typ TTS an (z. B.
-              OpenAI, Google Gemini, Cartesia oder ein eigener Endpunkt).
+              {t("configurator.step2.noTtsPrefix")} <Link to="/dashboard/api">{t("apiDashboard.title")}</Link>
+              {t("configurator.step2.noTtsSuffix")}
             </Callout>
           ) : (
             <>
@@ -142,7 +137,7 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                 onChange={(e) => onChange({ ttsApiKeyId: e.target.value || null })}
                 disabled={!keysLoaded}
               >
-                <option value={NO_MODEL_SELECTED}>Bitte wählen …</option>
+                <option value={NO_MODEL_SELECTED}>{t("apiKeyForm.pleaseChoose")}</option>
                 {ttsKeys.map((key) => (
                   <option key={key.id} value={key.id}>
                     {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
@@ -150,15 +145,12 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                 ))}
               </select>
               <Input
-                label="Stimme (optional)"
-                placeholder="z. B. alloy — abhängig vom gewählten Anbieter"
+                label={t("configurator.step2.voiceOptional")}
+                placeholder={t("configurator.step2.voicePlaceholder")}
                 value={draft.ttsVoice}
                 onChange={(e) => onChange({ ttsVoice: e.target.value })}
               />
-              <p className={styles.hint}>
-                Für Cartesia ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die
-                Sprachausgabe für dieses Projekt ins Leere.
-              </p>
+              <p className={styles.hint}>{t("configurator.step2.voiceHint")}</p>
             </>
           )}
         </div>
@@ -171,8 +163,8 @@ export function Step2Technical({ draft, onChange }: StepProps) {
           onChange={(e) => onChange({ sttEnabled: e.target.checked })}
         />
         <span className={styles.toggleCopy}>
-          <strong>Spracheingabe (STT)</strong>
-          <span>Aktiviert den Mikrofon-Button im öffentlichen Chat. Standardmäßig aus.</span>
+          <strong>{t("configurator.step2.sttTitle")}</strong>
+          <span>{t("configurator.step2.sttText")}</span>
         </span>
       </label>
     </>

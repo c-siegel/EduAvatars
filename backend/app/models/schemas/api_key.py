@@ -13,6 +13,7 @@ from datetime import datetime
 
 from pydantic import model_validator
 
+from app.core.error_codes import ErrorCode
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_TTS, ProviderSpec, get_provider
 from app.core.schema import CamelModel
 
@@ -28,19 +29,19 @@ def _validate_against_registry(
     """
     spec = get_provider(provider)
     if spec is None:
-        raise ValueError(f"Unbekannter Anbieter '{provider}'.")
+        raise ValueError(ErrorCode.UNKNOWN_PROVIDER)
     if key_type not in spec.supported_types:
-        raise ValueError(f"{spec.label} unterstützt den Typ '{key_type}' nicht.")
+        raise ValueError(ErrorCode.PROVIDER_UNSUPPORTED_KEY_TYPE)
     if spec.api_base_required and not api_base:
-        raise ValueError(f"{spec.label} braucht eine Endpunkt-Adresse (API-Base-URL).")
+        raise ValueError(ErrorCode.PROVIDER_NEEDS_BASE_URL)
     # TTS keys for providers with a fixed, provider-side speech model (spec.tts_model, e.g.
     # OpenAI/Gemini) don't need a model choice — tts_service.py always uses spec.tts_model for
     # them, never model_id.
     model_required = not (key_type == KEY_TYPE_TTS and spec.tts_model)
     if model_required and not model_id:
-        raise ValueError("Bitte ein Modell auswählen oder eine Modell-ID eintragen.")
+        raise ValueError(ErrorCode.MODEL_REQUIRED)
     if spec.requires_arcana_id and not arcana_id:
-        raise ValueError(f"{spec.label} braucht eine Arcana-ID.")
+        raise ValueError(ErrorCode.PROVIDER_NEEDS_ARCANA_ID)
     return spec
 
 
@@ -58,7 +59,7 @@ class ApiKeyCreate(CamelModel):
     def validate_against_registry(self):
         spec = _validate_against_registry(self.provider, self.key_type, self.api_base, self.model_id, self.arcana_id)
         if spec.key_required and not self.api_key:
-            raise ValueError(f"Für {spec.label} wird ein API-Key benötigt.")
+            raise ValueError(ErrorCode.PROVIDER_NEEDS_API_KEY)
         return self
 
 

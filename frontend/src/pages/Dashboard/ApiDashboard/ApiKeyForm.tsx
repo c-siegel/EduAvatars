@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
@@ -23,6 +24,7 @@ interface ApiKeyFormProps {
 }
 
 export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, onCancel }: ApiKeyFormProps) {
+  const { t } = useTranslation();
   const [provider, setProvider] = useState(editing?.provider ?? specs[0].value);
   const [apiBase, setApiBase] = useState(editing?.apiBase ?? specs[0].defaultApiBase ?? "");
   const [label, setLabel] = useState(editing?.label ?? "");
@@ -85,7 +87,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="provider-select">
-          Anbieter / Kommunikationsprotokoll
+          {t("apiKeyForm.provider")}
         </label>
         <select
           id="provider-select"
@@ -103,7 +105,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
       </div>
 
       <Input
-        label={spec.apiBaseRequired ? "Endpunkt-Adresse (API-Base-URL)" : "Endpunkt-Adresse (API-Base-URL, optional)"}
+        label={spec.apiBaseRequired ? t("apiKeyForm.apiBase") : t("apiKeyForm.apiBaseOptional")}
         type="url"
         placeholder={spec.defaultApiBase ?? "https://api.example.com/v1"}
         value={apiBase}
@@ -112,7 +114,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
       />
 
       <Input
-        label="Name (optional)"
+        label={t("apiKeyForm.nameOptional")}
         placeholder={spec.label}
         value={label}
         onChange={(e) => setLabel(e.target.value)}
@@ -120,7 +122,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="key-type-select">
-          Typ
+          {t("apiDashboard.table.type")}
         </label>
         <select
           id="key-type-select"
@@ -135,17 +137,14 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
           ))}
         </select>
         {keyType === "tts" && spec.ttsModelFixed && (
-          <p className={styles.hint}>
-            {spec.label} nutzt für die Sprachausgabe immer ein festes Modell — eine Modellwahl
-            entfällt hier.
-          </p>
+          <p className={styles.hint}>{t("apiKeyForm.ttsModelFixedHint", { provider: spec.label })}</p>
         )}
       </div>
 
       {showModelField && (
         <div className={styles.field}>
           <label className={styles.label} htmlFor="model-select">
-            Modell
+            {t("apiDashboard.table.model")}
           </label>
           <select
             id="model-select"
@@ -159,35 +158,31 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
             }}
             required
           >
-            <option value={NO_MODEL}>Bitte wählen …</option>
+            <option value={NO_MODEL}>{t("apiKeyForm.pleaseChoose")}</option>
             {spec.models.map((model) => (
               <option key={model.value} value={model.value}>
                 {model.label}
               </option>
             ))}
-            <option value={FREE_TEXT_MODEL}>Eigenes Modell (Freitext) …</option>
+            <option value={FREE_TEXT_MODEL}>{t("apiKeyForm.customModel")}</option>
           </select>
           {showFreeTextModel && (
             <Input
-              label="Modell-ID"
-              placeholder='z. B. "llama-3.1-70b" oder "qwen2.5"'
+              label={t("apiKeyForm.modelId")}
+              placeholder={t("apiKeyForm.modelIdPlaceholder")}
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
               required
             />
           )}
-          <p className={styles.hint}>
-            Genau dieses Modell steht danach im Konfigurator zur Auswahl. Die Modell-ID wird
-            unverändert an den Anbieter weitergereicht — für die korrekte Schreibweise ist die
-            Lehrkraft selbst verantwortlich.
-          </p>
+          <p className={styles.hint}>{t("apiKeyForm.modelHint")}</p>
         </div>
       )}
 
       {spec.requiresArcanaId && (
         <Input
-          label="Arcana-ID"
-          placeholder="z. B. nutzername/Projektname"
+          label={t("apiKeyForm.arcanaId")}
+          placeholder={t("apiKeyForm.arcanaIdPlaceholder")}
           value={arcanaId}
           onChange={(e) => setArcanaId(e.target.value)}
           required
@@ -195,7 +190,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
       )}
 
       <Input
-        label={editing ? "API-Key (leer lassen = unverändert)" : spec.keyRequired ? "API-Key" : "API-Key (optional)"}
+        label={editing ? t("apiKeyForm.apiKeyEditing") : spec.keyRequired ? t("apiKeyForm.apiKey") : t("apiKeyForm.apiKeyOptional")}
         type="password"
         placeholder={spec.keyPlaceholder}
         value={apiKeyValue}
@@ -206,11 +201,11 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
 
       <div className={styles.keyCardActions}>
         <Button type="submit" variant="accent" disabled={pending}>
-          Speichern
+          {t("common.save")}
         </Button>
         {onCancel && (
           <Button type="button" onClick={onCancel}>
-            Abbrechen
+            {t("common.cancel")}
           </Button>
         )}
       </div>

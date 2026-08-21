@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Callout } from "@/components/Callout";
@@ -11,6 +12,7 @@ import styles from "@/pages/AuthShell.module.css";
 // egal ob die E-Mail existiert (siehe backend/app/services/password_reset_service.py) — verhindert
 // Enumeration registrierter Konten, deshalb gibt es hier bewusst keinen Fehlerzustand für "unbekannte E-Mail".
 export function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -29,32 +31,29 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell
       active="none"
-      subtitle="Passwort vergessen"
+      subtitle={t("auth.forgotPassword.subtitle")}
       footer={
         <>
-          Erinnert? <Link to="/login">Anmelden</Link>
+          {t("auth.forgotPassword.remembered")} <Link to="/login">{t("common.login")}</Link>
         </>
       }
     >
       {sent ? (
-        <Callout variant="info">
-          Falls ein Konto mit dieser E-Mail existiert, haben wir einen Link zum Zurücksetzen verschickt.
-          Bitte prüfe dein Postfach (auch den Spam-Ordner).
-        </Callout>
+        <Callout variant="info">{t("auth.forgotPassword.sentNotice")}</Callout>
       ) : (
         <form className={styles.form} onSubmit={handleSubmit}>
           <Input
-            label="E-Mail"
+            label={t("auth.emailLabel")}
             type="email"
             name="email"
-            placeholder="lehrkraft@schule.de"
+            placeholder={t("auth.emailPlaceholder")}
             autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <Button type="submit" variant="accent" fullWidth disabled={submitting}>
-            Link zum Zurücksetzen senden
+            {t("auth.forgotPassword.submit")}
           </Button>
         </form>
       )}

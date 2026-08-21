@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, BarChart3, KeyRound, Settings2, Menu, X, LogOut, type LucideIcon } from "lucide-react";
 import { NavItem } from "@/components/NavItem";
 import { Scrim } from "@/components/Drawer";
 import { Wordmark } from "@/components/Wordmark";
 import { Avatar } from "@/components/Avatar";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -13,23 +15,28 @@ import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import styles from "./DashboardShell.module.css";
 
 interface NavConfigItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: LucideIcon;
   isActive: (pathname: string) => boolean;
 }
 
 const NAV_ITEMS: NavConfigItem[] = [
-  { label: "Übersicht", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
+  { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
   {
-    label: "Auswertung",
+    labelKey: "nav.analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
     isActive: (p) => p.startsWith("/dashboard/analytics"),
   },
-  { label: "API-Dashboard", href: "/dashboard/api", icon: KeyRound, isActive: (p) => p.startsWith("/dashboard/api") },
   {
-    label: "Profileinstellungen",
+    labelKey: "nav.apiDashboard",
+    href: "/dashboard/api",
+    icon: KeyRound,
+    isActive: (p) => p.startsWith("/dashboard/api"),
+  },
+  {
+    labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
@@ -38,6 +45,7 @@ const NAV_ITEMS: NavConfigItem[] = [
 
 // Layout für 1c–1h — Sidebar (Desktop) bzw. Hamburger + Overlay-Drawer (<1024px) + Content-Bereich
 export function DashboardShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -59,6 +67,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   const activeItem = NAV_ITEMS.find((item) => item.isActive(location.pathname));
+  const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
   async function handleLogout() {
     await authApi.logout().catch(() => undefined);
@@ -71,10 +80,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <div className={styles.sidebarHeader}>
         <Wordmark />
       </div>
-      <nav className={styles.nav} aria-label="Dashboard-Navigation">
+      <nav className={styles.nav} aria-label={t("nav.dashboardNavAriaLabel")}>
         {NAV_ITEMS.map((item) => (
-          <NavItem key={item.label} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
-            {item.label}
+          <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
+            {t(item.labelKey)}
           </NavItem>
         ))}
       </nav>
@@ -86,9 +95,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <span className={styles.userSchool}>{user?.school ?? ""}</span>
           </div>
         </div>
+        <div className={styles.languageSwitcherRow}>
+          <LanguageSwitcher />
+        </div>
         <button className={styles.logoutButton} onClick={handleLogout}>
           <LogOut size={16} strokeWidth={2} />
-          Abmelden
+          {t("nav.logout")}
         </button>
       </div>
     </aside>
@@ -99,13 +111,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <header className={styles.mobileTopbar}>
         <button
           className={styles.menuButton}
-          aria-label={mobileNavOpen ? "Menü schließen" : "Menü öffnen"}
+          aria-label={mobileNavOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={mobileNavOpen}
           onClick={() => setMobileNavOpen((open) => !open)}
         >
           {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-        <h3 className={styles.mobileTitle}>{activeItem?.label ?? "Dashboard"}</h3>
+        <h3 className={styles.mobileTitle}>{activeLabel}</h3>
         <Avatar name={user?.name ?? ""} size="sm" />
       </header>
 

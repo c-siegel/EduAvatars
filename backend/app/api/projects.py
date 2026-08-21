@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_owned_project, get_session
+from app.core.error_codes import ErrorCode
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_TTS
 from app.models.project import Project
 from app.models.schemas.project import (
@@ -56,7 +57,7 @@ def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_
     # user, AND be of the matching type — otherwise a TTS key could e.g. be entered as
     # llm_api_key_id (both fields point at the same table).
     if get_owned_key_of_type(session, user_id, key_id, key_type) is None:
-        raise HTTPException(status_code=400, detail="Unbekannter API-Schlüssel.")
+        raise HTTPException(status_code=400, detail=ErrorCode.UNKNOWN_API_KEY)
 
 
 def _synthesize_if_enabled(session: Session, project: Project, text: str) -> tuple[str | None, str | None]:
@@ -161,10 +162,7 @@ def preview_message(
     # Live preview chat in the configurator (Screen 1e) — uses the user's own API key.
     api_key = resolve_llm_key(session, project)
     if api_key is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Kein Modell für dieses Projekt ausgewählt. Lege zuerst im Tab API einen Schlüssel vom Typ LLM an.",
-        )
+        raise HTTPException(status_code=400, detail=ErrorCode.NO_LLM_MODEL_SELECTED)
     try:
         history = [{"role": h.role, "content": h.content} for h in data.history]
         reply = send_chat_message(
@@ -172,8 +170,12 @@ def preview_message(
         )
     except Exception as exc:
         # This is the user's own context (the configurator) — the concrete error message helps
-        # with debugging (wrong/expired key, wrong model, ...), unlike in the public chat.
-        raise HTTPException(status_code=502, detail=f"LLM-Anfrage fehlgeschlagen: {exc}") from exc
+        # with debugging (wrong/expired key, wrong model, ...), unlike in the public chat. `code`
+        # gets translated on the frontend (see errorMessage() in api/client.ts); `message` is the
+        # raw provider exception, appended untranslated since it's already technical/English.
+        raise HTTPException(
+            status_code=502, detail={"code": ErrorCode.LLM_REQUEST_FAILED, "message": str(exc)}
+        ) from exc
     audio_base64, content_type = _synthesize_if_enabled(session, project, reply)
     return PreviewMessageResponse(reply=reply, audio_base64=audio_base64, content_type=content_type)
 
@@ -185,15 +187,17 @@ async def transcribe(
 ):
     """Transcribe a voice message for the in-app preview chat."""
     if not project.stt_enabled:
-        raise HTTPException(status_code=400, detail="Spracheingabe ist für dieses Projekt nicht aktiviert.")
+        raise HTTPException(status_code=400, detail=ErrorCode.VOICE_INPUT_DISABLED)
     if audio.content_type not in _ALLOWED_AUDIO_CONTENT_TYPES:
-        raise HTTPException(status_code=400, detail="Nicht unterstütztes Audioformat.")
+        raise HTTPException(status_code=400, detail=ErrorCode.UNSUPPORTED_AUDIO_FORMAT)
     content = await audio.read(_MAX_AUDIO_UPLOAD_BYTES + 1)
     if len(content) > _MAX_AUDIO_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="Audiodatei ist zu groß (maximal 10 MB).")
+        raise HTTPException(status_code=400, detail=ErrorCode.AUDIO_FILE_TOO_LARGE)
 
     try:
         text = transcribe_audio(content)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Spracherkennung fehlgeschlagen: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail={"code": ErrorCode.STT_REQUEST_FAILED, "message": str(exc)}
+        ) from exc
     return TranscriptionOut(text=text)

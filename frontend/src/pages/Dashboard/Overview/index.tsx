@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Tile } from "@/components/Tile";
 import { Callout } from "@/components/Callout";
@@ -13,6 +14,7 @@ type Filter = "all" | "draft" | "published";
 
 // Screen 1d — Tab Übersicht
 export function OverviewPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
@@ -41,52 +43,53 @@ export function OverviewPage() {
         <div>
           {/* Wireframe zeigt "Hallo Frau Berger 👋" — ohne Anrede-/Geschlechtsfeld im User-Modell
               verwenden wir hier schlicht den registrierten Namen. */}
-          <h1>Hallo {user?.name ?? "…"} 👋</h1>
+          <h1>{t("overview.greeting", { name: user?.name ?? "…" })}</h1>
           <p className={styles.subtitle}>
             {statsQuery.data
-              ? `Du hast ${statsQuery.data.totalProjects} Projekte, ${statsQuery.data.publishedProjects} davon publiziert.`
+              ? t("overview.subtitle", {
+                  total: statsQuery.data.totalProjects,
+                  published: statsQuery.data.publishedProjects,
+                })
               : "…"}
           </p>
         </div>
         <Button variant="accent" onClick={() => createProject.mutate()} disabled={createProject.isPending}>
-          + Neues Projekt
+          {t("overview.newProject")}
         </Button>
       </div>
 
-      {createProject.isError && (
-        <Callout variant="danger">Projekt konnte nicht erstellt werden. Bitte versuche es erneut.</Callout>
-      )}
+      {createProject.isError && <Callout variant="danger">{t("overview.createError")}</Callout>}
 
       <div className={styles.statGrid}>
-        <Tile label="Projekte" value={statsQuery.data?.totalProjects ?? "–"} />
-        <Tile label="Publiziert" value={statsQuery.data?.publishedProjects ?? "–"} />
-        <Tile label="Sessions (7 T.)" value={statsQuery.data?.sessionsLast7Days ?? "–"} />
-        <Tile label="Nachrichten" value={statsQuery.data?.messagesLast7Days ?? "–"} />
+        <Tile label={t("overview.stats.projects")} value={statsQuery.data?.totalProjects ?? "–"} />
+        <Tile label={t("overview.stats.published")} value={statsQuery.data?.publishedProjects ?? "–"} />
+        <Tile label={t("overview.stats.sessions7d")} value={statsQuery.data?.sessionsLast7Days ?? "–"} />
+        <Tile label={t("overview.stats.messages")} value={statsQuery.data?.messagesLast7Days ?? "–"} />
       </div>
 
       <div>
         <div className={styles.sectionHeader}>
-          <h2>Meine Projekte</h2>
+          <h2>{t("overview.myProjects")}</h2>
           <div className={styles.filters}>
             <button
               className={`${styles.filterButton} ${filter === "all" ? styles.filterActive : ""}`}
               onClick={() => setFilter("all")}
             >
-              Alle
+              {t("overview.filters.all")}
             </button>
             <span aria-hidden="true">·</span>
             <button
               className={`${styles.filterButton} ${filter === "draft" ? styles.filterActive : ""}`}
               onClick={() => setFilter("draft")}
             >
-              Entwürfe
+              {t("overview.filters.draft")}
             </button>
             <span aria-hidden="true">·</span>
             <button
               className={`${styles.filterButton} ${filter === "published" ? styles.filterActive : ""}`}
               onClick={() => setFilter("published")}
             >
-              Publiziert
+              {t("overview.filters.published")}
             </button>
           </div>
         </div>
@@ -96,7 +99,7 @@ export function OverviewPage() {
             <ProjectCard key={project.id} project={project} />
           ))}
           <button className={styles.newProjectTile} onClick={() => createProject.mutate()}>
-            + Neues Projekt
+            {t("overview.newProject")}
           </button>
         </div>
       </div>

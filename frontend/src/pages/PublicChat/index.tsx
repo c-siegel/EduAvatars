@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Info, Loader2, Mic, MessageCircle, Send, Square, Volume2, VolumeX, LogOut, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Callout } from "@/components/Callout";
@@ -55,6 +56,7 @@ function logLatency(latency: MutationLatency, res: SendMessageResult, replyRecei
 // Screen 1i — Öffentliche Schüler-Chat-Seite (mobile-first, kein Login). Gesprochene Nachrichten
 // werden nach der Transkription automatisch gesendet (kein manueller "Senden"-Klick nötig).
 export function PublicChatPage() {
+  const { t } = useTranslation();
   const { projectSlug } = useParams<{ projectSlug: string }>();
   const slug = projectSlug!;
   const [searchParams] = useSearchParams();
@@ -193,7 +195,7 @@ export function PublicChatPage() {
   if (tutorQuery.isLoading) {
     return (
       <PublicChatLayout>
-        <div className={styles.centered}>Lädt …</div>
+        <div className={styles.centered}>{t("common.loading")}</div>
       </PublicChatLayout>
     );
   }
@@ -201,7 +203,7 @@ export function PublicChatPage() {
   if (tutorQuery.isError || !tutorQuery.data) {
     return (
       <PublicChatLayout>
-        <div className={styles.centered}>Dieser Chat ist nicht verfügbar.</div>
+        <div className={styles.centered}>{t("publicChat.unavailable")}</div>
       </PublicChatLayout>
     );
   }
@@ -224,7 +226,7 @@ export function PublicChatPage() {
         <Avatar name={tutor.title} size="md" />
         <div className={styles.headerInfo}>
           <h1>{tutor.title}</h1>
-          <p className={styles.headerStatus}>Online</p>
+          <p className={styles.headerStatus}>{t("publicChat.online")}</p>
         </div>
         {stage === "chat" && (
           <button
@@ -232,13 +234,13 @@ export function PublicChatPage() {
             className={styles.infoButton}
             onClick={endChat}
             disabled={sendMutation.isPending}
-            aria-label="Chat beenden"
-            title="Chat beenden"
+            aria-label={t("publicChat.endChat")}
+            title={t("publicChat.endChat")}
           >
             <LogOut size={20} />
           </button>
         )}
-        <button className={styles.infoButton} aria-label="Informationen">
+        <button className={styles.infoButton} aria-label={t("publicChat.information")}>
           <Info size={20} />
         </button>
       </header>
@@ -246,8 +248,8 @@ export function PublicChatPage() {
       {stage === "before-survey" && tutor.surveyBeforeUrl && (
         <SurveyEmbed
           url={tutor.surveyBeforeUrl}
-          title="Umfrage vor dem Chat"
-          continueLabel="Weiter zum Chat"
+          title={t("publicChat.surveyBeforeTitle")}
+          continueLabel={t("publicChat.continueToChat")}
           onContinue={() => setManualStage("chat")}
           onSkip={() => setManualStage("chat")}
         />
@@ -276,10 +278,10 @@ export function PublicChatPage() {
                     disabled={transcribeMutation.isPending}
                     aria-label={
                       transcribeMutation.isPending
-                        ? "Transkription läuft"
+                        ? t("publicChat.transcribing")
                         : isRecording
-                          ? "Aufnahme beenden"
-                          : "Spracheingabe"
+                          ? t("publicChat.stopRecording")
+                          : t("publicChat.voiceInput")
                     }
                     aria-pressed={isRecording}
                   >
@@ -297,7 +299,7 @@ export function PublicChatPage() {
                     type="button"
                     className={styles.roundButton}
                     onClick={() => setTtsMuted((muted) => !muted)}
-                    aria-label={ttsMuted ? "Ton einschalten" : "Ton ausschalten"}
+                    aria-label={ttsMuted ? t("publicChat.unmute") : t("publicChat.mute")}
                     aria-pressed={ttsMuted}
                   >
                     {ttsMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -316,8 +318,8 @@ export function PublicChatPage() {
             className={styles.chatToggle}
             onClick={() => setChatOpen((open) => !(open ?? tutor.chatDefaultOpen))}
             aria-expanded={isChatOpen}
-            aria-label={isChatOpen ? "Chat einklappen" : "Chat einblenden"}
-            title={isChatOpen ? "Chat einklappen" : "Chat einblenden"}
+            aria-label={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
+            title={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
           >
             {isChatOpen ? <X size={16} /> : <MessageCircle size={18} />}
           </button>
@@ -325,16 +327,16 @@ export function PublicChatPage() {
           {isChatOpen && (
             <div className={styles.chatColumn}>
               <div className={styles.chatColumnHeader}>
-                <h2>Chat</h2>
-                <p>Kein Login nötig</p>
+                <h2>{t("publicChat.chatTitle")}</h2>
+                <p>{t("publicChat.noLoginNeeded")}</p>
               </div>
 
-              <div className={styles.hintPill}>Kein Login nötig · Chat wird nicht gespeichert</div>
+              <div className={styles.hintPill}>{t("publicChat.hintPill")}</div>
 
               <div className={styles.thread} ref={threadRef}>
                 <ChatBubble
                   role="assistant"
-                  content={tutor.startPrompt || `Hallo! Ich bin ${tutor.title}. Wie kann ich dir helfen?`}
+                  content={tutor.startPrompt || t("configurator.step4.defaultGreeting", { name: tutor.title })}
                 />
                 {messages.map((message, index) => (
                   <ChatBubble key={index} role={message.role} content={message.content} />
@@ -344,7 +346,7 @@ export function PublicChatPage() {
 
               {rateLimited && (
                 <div className={styles.notice}>
-                  <Callout variant="warning">Zu viele Nachrichten. Bitte kurz warten.</Callout>
+                  <Callout variant="warning">{t("errors.RATE_LIMIT_CHAT")}</Callout>
                 </div>
               )}
 
@@ -352,16 +354,16 @@ export function PublicChatPage() {
                 <input
                   className={styles.textInput}
                   type="text"
-                  placeholder="Schreib deine Frage …"
+                  placeholder={t("publicChat.messagePlaceholder")}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  aria-label="Nachricht"
+                  aria-label={t("publicChat.messageAriaLabel")}
                 />
                 <button
                   type="submit"
                   className={`${styles.roundButton} ${styles.sendButton}`}
                   disabled={sendMutation.isPending}
-                  aria-label="Senden"
+                  aria-label={t("publicChat.send")}
                 >
                   <Send size={18} />
                 </button>
@@ -374,16 +376,14 @@ export function PublicChatPage() {
       {stage === "after-survey" && tutor.surveyAfterUrl && (
         <SurveyEmbed
           url={tutor.surveyAfterUrl}
-          title="Umfrage nach dem Chat"
-          continueLabel="Fertig"
+          title={t("publicChat.surveyAfterTitle")}
+          continueLabel={t("publicChat.done")}
           onContinue={() => setManualStage("done")}
           onSkip={() => setManualStage("done")}
         />
       )}
 
-      {stage === "done" && (
-        <div className={styles.centered}>Chat beendet. Danke, dass du mitgemacht hast!</div>
-      )}
+      {stage === "done" && <div className={styles.centered}>{t("publicChat.chatEnded")}</div>}
     </PublicChatLayout>
   );
 }

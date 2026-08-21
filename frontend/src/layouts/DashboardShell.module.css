@@ -3,11 +3,6 @@
   min-height: 100vh;
 }
 
-/* Nur ab Desktop-Breite (Sidebar-Layout) — auf Mobile ist die Drawer-Variante bereits eigens fürs
-   kleine Display ausgelegt, ein zusätzlicher Zoom-Faktor würde die dort schon knappe Fläche eher
-   verschlimmern. `zoom` skaliert die gesamte Baumstruktur (Schrift, Abstände, Radien, Icons) gleich
-   mit, exakt wie Browser-Zoom — 1.5 entspricht den 150%, bei denen es laut Rückmeldung schon gut
-   aussah, statt einzeln jeden rem-/px-Wert in den Komponenten anzufassen. */
 @media (min-width: 1024px) {
   .shell {
     zoom: 1.2;
@@ -37,8 +32,13 @@
 .sidebar {
   width: 196px;
   flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
   background: var(--surface-sunken);
   border-right: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   display: flex;
   flex-direction: column;
   padding: var(--space-5) var(--space-4);
@@ -55,7 +55,7 @@
 }
 
 .sidebarFooter {
-  margin-top: auto;
+  margin-top: var(--space-5);
   padding-top: var(--space-4);
   border-top: 1px solid var(--border-default);
 }
@@ -65,6 +65,10 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
+}
+
+.languageSwitcherRow {
+  padding: 0 var(--space-3);
 }
 
 .userInfo {
@@ -145,6 +149,10 @@
     transition: transform var(--duration-base) var(--ease-out);
     z-index: 50;
     box-shadow: var(--shadow-lg);
+    /* Full-height drawer here, unlike the desktop sidebar's short content-sized panel — no
+       bottom border/radius, it always reaches the edge of the screen. */
+    border-bottom: none;
+    border-radius: 0;
   }
 
   .sidebarOpen {

@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 // Exportiert für Fälle, in denen eine vom Backend gelieferte relative URL direkt als Browser-Ressource
 // gebraucht wird (z.B. <img src>), statt über apiClient zu laufen — z.B. das Profilbild (siehe
 // pages/Dashboard/Profile). Backend-URLs sind grundsätzlich router-relativ ohne /api-Präfix
@@ -14,17 +16,23 @@ export class ApiError extends Error {
   }
 }
 
-// FastAPI antwortet je nach Fehlerart unterschiedlich: HTTPException liefert {detail: "Text"},
-// eine Pydantic-Validierung {detail: [{msg, loc}, …]}. Beides wird hier auf einen anzeigbaren Satz
-// reduziert, damit Formulare die echte Ursache nennen können statt nur "fehlgeschlagen".
+// FastAPI antwortet je nach Fehlerart unterschiedlich: HTTPException liefert {detail: "CODE"} oder
+// {detail: {code, message}} (siehe app/core/error_codes.py), eine Pydantic-Validierung
+// {detail: [{msg: "Value error, CODE", loc}, …]}. In allen Fällen ist `detail` ein stabiler Code,
+// keine Anzeigetext — die Übersetzung passiert hier über i18next (errors.<CODE> in
+// src/i18n/locales), damit die gleiche Fehlermeldung in beiden Sprachen korrekt ist.
 export function errorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof ApiError)) return fallback;
   try {
     const detail = JSON.parse(error.message).detail;
-    if (typeof detail === "string") return detail;
+    const code = typeof detail === "string" ? detail : typeof detail === "object" && detail?.code ? detail.code : null;
+    if (code) return i18n.t(`errors.${code}`, fallback);
     if (Array.isArray(detail)) {
-      const messages = detail.map((item) => String(item?.msg ?? "").replace(/^Value error, /, "")).filter(Boolean);
-      if (messages.length) return messages.join(" ");
+      const codes = detail
+        .map((item) => String(item?.msg ?? "").replace(/^Value error, /, ""))
+        .filter(Boolean)
+        .map((c) => i18n.t(`errors.${c}`, c));
+      if (codes.length) return codes.join(" ");
     }
   } catch {
     // Kein JSON-Body (z.B. Proxy-/Netzwerkfehler) — dann bleibt es beim Fallback.

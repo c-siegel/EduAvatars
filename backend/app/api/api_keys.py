@@ -17,6 +17,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.deps import get_current_user, get_session
+from app.core.error_codes import ErrorCode
 from app.core.providers import KEY_TYPE_TTS, PROVIDERS
 from app.models.api_key import UserApiKey
 from app.models.project import Project
@@ -148,7 +149,7 @@ def update_key(
     """Update a stored API key; re-syncs any projects that use it as their LLM source."""
     key = get_key_by_id(session, current_user.id, key_id)
     if key is None:
-        raise HTTPException(status_code=404, detail="API-Key nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.API_KEY_NOT_FOUND)
 
     key.provider = data.provider
     key.key_type = data.key_type
@@ -186,7 +187,7 @@ def delete_key(
     """Delete a stored API key; projects using it fall back to "no key configured"."""
     key = get_key_by_id(session, current_user.id, key_id)
     if key is None:
-        raise HTTPException(status_code=404, detail="API-Key nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.API_KEY_NOT_FOUND)
 
     # Projects using this key as their model source lose that choice — they'll show the "no LLM
     # configured yet" hint in the configurator again, instead of pointing at a dead foreign key.
@@ -218,7 +219,7 @@ def test_key(
     # frontend/src/api/apiKeys.ts::test) — not a freshly-submitted one.
     key = get_key_by_id(session, current_user.id, key_id)
     if key is None:
-        raise HTTPException(status_code=404, detail="API-Key nicht gefunden.")
+        raise HTTPException(status_code=404, detail=ErrorCode.API_KEY_NOT_FOUND)
 
     message: str | None = None
     try:
@@ -235,10 +236,7 @@ def test_key(
         # during a plain key test. That's not a sign of an invalid key, hence "unverified" and
         # not "error".
         key.status = "unverified"
-        message = (
-            "Dieser Anbieter braucht für die Sprachausgabe eine Stimme, die es beim Key-Test noch "
-            "nicht gibt — probiere die Sprachausgabe direkt in einem Projekt aus."
-        )
+        message = ErrorCode.TTS_KEY_TEST_NEEDS_VOICE
     except Exception as exc:  # noqa: BLE001 — any provider/network failure counts as a test failure here
         key.status = "error"
         message = str(exc)[:_MAX_ERROR_LENGTH] or exc.__class__.__name__
