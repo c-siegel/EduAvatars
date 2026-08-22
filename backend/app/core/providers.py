@@ -40,6 +40,11 @@ OLLAMA_PROVIDER = "ollama"
 # Own integrations, independent of litellm (see services/tts_service.py:_synthesize_cartesia) —
 # Cartesia has a proprietary API that litellm doesn't support.
 CARTESIA_PROVIDER = "cartesia"
+# Also independent of litellm — the classic Google Cloud Text-to-Speech product (texttospeech.
+# googleapis.com), NOT the "gemini" provider's newer built-in multimodal TTS. Kept as its own
+# provider because it's a different API/pricing model (per-character, cheaper, mature WaveNet/
+# Neural2 voices with strong German coverage) and litellm doesn't wrap this REST shape.
+GOOGLE_CLOUD_TTS_PROVIDER = "google_cloud_tts"
 # Also independent of litellm (see services/llm_service.py::_send_chat_arcana) — the GWDG
 # Academic Cloud knowledge base (RAG) needs an extra request header and an "arcana" field that
 # litellm's OpenAI-compatible call path doesn't know about.
@@ -203,6 +208,29 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         hint="Direkte Cartesia-Anbindung (litellm unterstützt Cartesia nicht). Ohne hinterlegte "
         "Stimme (Feld „Stimme“ im Projekt) schlägt die Sprachausgabe fehl — die Stimmen-ID kommt "
         "aus der Cartesia-Dokumentation, dafür gibt es hier keine kuratierte Auswahl.",
+    ),
+    ProviderSpec(
+        value=GOOGLE_CLOUD_TTS_PROVIDER,
+        label="Google Cloud TTS",
+        key_placeholder="AIza…",
+        default_api_base="https://texttospeech.googleapis.com/v1",
+        api_base_required=False,
+        key_required=True,
+        supported_types=(KEY_TYPE_TTS,),
+        # Unused — doesn't go through litellm, see services/tts_service.py::_synthesize_google_cloud_tts.
+        model_prefix="",
+        models=(),
+        test_model=None,
+        # Not an actual model string (this provider never reaches _synthesize_litellm) — a
+        # non-None sentinel purely so the API-key form hides the model dropdown: there is no
+        # separate "model" here, the voice name itself encodes both language and quality tier
+        # (e.g. "de-DE-Wavenet-F"), see the hint below.
+        tts_model="n/a",
+        # No default_voice: a single default can't serve both German and English projects, same
+        # reasoning as Cartesia.
+        hint="Für die Sprachausgabe im Projekt eine vollständige Google-Stimme eintragen, z. B. "
+        "\"de-DE-Wavenet-F\" oder \"en-US-Neural2-C\" (Sprache steckt im Namen). Vollständige Liste: "
+        "https://cloud.google.com/text-to-speech/docs/voices",
     ),
     ProviderSpec(
         value=GWDG_ARCANA_PROVIDER,

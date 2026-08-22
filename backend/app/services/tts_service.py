@@ -11,16 +11,25 @@ How to use:
     audio_bytes, content_type = synthesize_speech(text, project.tts_voice, api_key)
 """
 
+import base64
+
 import httpx
 import litellm
 
 from app.core.error_codes import ErrorCode
-from app.core.providers import CARTESIA_PROVIDER, OPENAI_COMPATIBLE_PROVIDER, build_model_string, get_provider
+from app.core.providers import (
+    CARTESIA_PROVIDER,
+    GOOGLE_CLOUD_TTS_PROVIDER,
+    OPENAI_COMPATIBLE_PROVIDER,
+    build_model_string,
+    get_provider,
+)
 from app.models.api_key import UserApiKey
 from app.services.api_key_service import effective_api_base
 from app.services.crypto_service import reveal_api_key
 
 _CARTESIA_TTS_TIMEOUT = 30.0
+_GOOGLE_CLOUD_TTS_TIMEOUT = 30.0
 
 
 class VoiceRequiredError(ValueError):
@@ -37,6 +46,8 @@ def synthesize_speech(text: str, tts_voice: str | None, api_key_record: UserApiK
     """Generate speech for `text` using the given key, dispatching to the right provider integration."""
     if api_key_record.provider == CARTESIA_PROVIDER:
         return _synthesize_cartesia(text, tts_voice, api_key_record)
+    if api_key_record.provider == GOOGLE_CLOUD_TTS_PROVIDER:
+        return _synthesize_google_cloud_tts(text, tts_voice, api_key_record)
     return _synthesize_litellm(text, tts_voice, api_key_record)
 
 
@@ -129,3 +140,55 @@ def _synthesize_cartesia(text: str, tts_voice: str | None, api_key_record: UserA
         # actual error message.
         raise httpx.HTTPStatusError(f"{exc}: {response.text[:500]}", request=exc.request, response=exc.response) from exc
     return response.content, "audio/mpeg"
+
+
+def _language_code_from_voice(voice: str) -> str:
+    """Extract "de-DE" from a Google voice name like "de-DE-Wavenet-F".
+
+    Google's voice names always start with their BCP-47 language code as the first two
+    hyphen-separated segments — there's no separate language field in the request, the voice name
+    is the only place it's encoded.
+    """
+    parts = voice.split("-")
+    return "-".join(parts[:2])
+
+
+def _synthesize_google_cloud_tts(text: str, tts_voice: str | None, api_key_record: UserApiKey) -> tuple[bytes, str]:
+    """Direct HTTP call to the classic Google Cloud Text-to-Speech API — litellm doesn't support it.
+
+    Distinct from the "gemini" provider (Gemini's own newer, token-priced multimodal TTS) — this
+    is the older, cheaper, per-character WaveNet/Neural2/Standard voice API. Auth is a plain API
+    key on the query string, same as Google allows for this API in the Cloud Console.
+    """
+    if not tts_voice:
+        raise VoiceRequiredError(
+            "Google Cloud TTS braucht eine Stimme (Feld „Stimme“ im Projekt) — die Sprache steckt im "
+            "Stimmennamen, es gibt keinen sprachübergreifenden Standardwert."
+        )
+
+    api_key = reveal_api_key(api_key_record.encrypted_api_key)
+    default_api_base = get_provider(GOOGLE_CLOUD_TTS_PROVIDER).default_api_base or "https://texttospeech.googleapis.com/v1"
+    api_base = (api_key_record.api_base or default_api_base).rstrip("/")
+
+    response = httpx.post(
+        f"{api_base}/text:synthesize",
+        # Header, not a "?key=" query param — Google supports both, but a header is less likely to
+        # end up copied into a proxy/access log verbatim (consistent with every other provider
+        # integration here, which all send the key as an Authorization header).
+        headers={"X-Goog-Api-Key": api_key, "Content-Type": "application/json"},
+        json={
+            "input": {"text": text},
+            "voice": {"languageCode": _language_code_from_voice(tts_voice), "name": tts_voice},
+            "audioConfig": {"audioEncoding": "MP3"},
+        },
+        timeout=_GOOGLE_CLOUD_TTS_TIMEOUT,
+    )
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise httpx.HTTPStatusError(f"{exc}: {response.text[:500]}", request=exc.request, response=exc.response) from exc
+
+    # Unlike every other provider integration here, Google's REST API returns the audio
+    # base64-encoded inside a JSON envelope rather than as the raw response body.
+    audio_content = response.json()["audioContent"]
+    return base64.b64decode(audio_content), "audio/mpeg"

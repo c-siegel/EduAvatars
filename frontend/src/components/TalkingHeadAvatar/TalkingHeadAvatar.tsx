@@ -10,9 +10,25 @@ const DEFAULT_AVATAR_URL = "/avatars/julia.glb";
 
 type Status = "loading" | "ready" | "error" | "skipped";
 
+// How long the "thinking" gaze cue holds before it self-clears back to idle (see startThinking).
+// Not a measured value — a reasonable guess for a typical LLM+TTS round trip; if the real reply
+// usually takes longer, the avatar just reads as idle again for the remainder of the wait.
+const THINKING_LOOK_MS = 4000;
+
 export interface TalkingHeadAvatarHandle {
   /** Spielt vom Backend synthetisiertes Sprachaudio ab (siehe services/tts_service.py). */
   speak: (audioBase64: string) => Promise<void>;
+  /** Startet den "hört zu"-Blickkontakt-Modus der Bibliothek, gespeist vom Mikrofon-Stream. */
+  startListening: (stream: MediaStream) => void;
+  /** Beendet den Zuhör-Modus (z. B. wenn die Aufnahme gestoppt wird). */
+  stopListening: () => void;
+  /** Kurzer Blick-Cue für die Wartezeit zwischen Senden und Antwort ("überlegt gerade") — keine
+   * native TalkingHead-Funktion, aus lookAt() synthetisiert (siehe THINKING_LOOK_MS). */
+  startThinking: () => void;
+  /** Kein Gegenstück nötig, da lookAt() sich selbst nach THINKING_LOOK_MS zurücksetzt — als
+   * benannte Stelle im Aufrufcode trotzdem vorhanden, für den Fall dass das später ein echtes
+   * Zurücksetzen braucht (z. B. bei einem Fehler kurz nach dem Senden). */
+  stopThinking: () => void;
 }
 
 interface TalkingHeadAvatarProps {
@@ -59,6 +75,28 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           // Kein words/wtimes/wdurations nötig — HeadAudio treibt die Mundbewegung live aus
           // dem hier abgespielten Audiosignal, unabhängig von diesem Aufruf.
           head.speakAudio({ audio: audioBuffer });
+        },
+        startListening(stream: MediaStream) {
+          const head = headRef.current;
+          if (!head) return;
+          // Selbe Quelle wie der MediaRecorder für die Aufnahme — kein zweiter getUserMedia-Aufruf,
+          // und derselbe AudioContext, den TalkingHead ohnehin schon für die Sprachausgabe hält.
+          const source = head.audioCtx.createMediaStreamSource(stream);
+          const analyzer = head.audioCtx.createAnalyser();
+          source.connect(analyzer);
+          head.startListening(analyzer);
+        },
+        stopListening() {
+          headRef.current?.stopListening();
+        },
+        startThinking() {
+          // x/y = null: Blick geht zum Kamera-Augenpunkt statt zu festen Bildschirmkoordinaten —
+          // braucht keine Viewport-Berechnung und passt zum ohnehin schon stärkeren Blickkontakt
+          // der Bibliothek bei isSpeaking/isListening.
+          headRef.current?.lookAt(null, null, THINKING_LOOK_MS);
+        },
+        stopThinking() {
+          // Kein Aufruf nötig — siehe Kommentar am Interface oben.
         },
       }),
       [],
