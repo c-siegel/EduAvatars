@@ -269,7 +269,7 @@
       "noTtsSuffix": " (e.g. OpenAI, Google Gemini, Cartesia, or a custom endpoint).",
       "voiceOptional": "Voice (optional)",
       "voicePlaceholder": "e.g. alloy — depends on the chosen provider",
-      "voiceHint": "Cartesia requires a voice (no default) — without one, speech output for this project won't work.",
+      "voiceHint": "Cartesia and Google Cloud TTS require a voice (no default) — without one, speech output for this project won't work.",
       "sttTitle": "Voice input (STT)",
       "sttText": "Enables the microphone button in the public chat. Off by default."
     },

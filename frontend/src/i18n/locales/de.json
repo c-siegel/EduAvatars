@@ -269,7 +269,7 @@
       "noTtsSuffix": " einen Schlüssel vom Typ TTS an (z. B. OpenAI, Google Gemini, Cartesia oder ein eigener Endpunkt).",
       "voiceOptional": "Stimme (optional)",
       "voicePlaceholder": "z. B. alloy — abhängig vom gewählten Anbieter",
-      "voiceHint": "Für Cartesia ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die Sprachausgabe für dieses Projekt ins Leere.",
+      "voiceHint": "Für Cartesia und Google Cloud TTS ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die Sprachausgabe für dieses Projekt ins Leere.",
       "sttTitle": "Spracheingabe (STT)",
       "sttText": "Aktiviert den Mikrofon-Button im öffentlichen Chat. Standardmäßig aus."
     },
