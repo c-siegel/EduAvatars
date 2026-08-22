@@ -119,6 +119,7 @@ export function PublicChatPage() {
     mutationFn: ({ message, history }: { message: string; history: ChatMessage[]; latency?: MutationLatency }) =>
       publicChatApi.sendMessage(slug, message, history),
     onSuccess: async (res, variables) => {
+      avatarRef.current?.stopThinking();
       const replyReceivedAt = performance.now();
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
       let audioReadyAt = replyReceivedAt;
@@ -135,6 +136,7 @@ export function PublicChatPage() {
       }
     },
     onError: (err) => {
+      avatarRef.current?.stopThinking();
       if (err instanceof ApiError && err.status === 429) setRateLimited(true);
     },
   });
@@ -156,6 +158,7 @@ export function PublicChatPage() {
       // Erfassen ist praktisch kostenlos, daher immer, nicht nur wenn latencyTestEnabled.
       latencyRef.current = { micStopAt: performance.now() };
       mediaRecorderRef.current?.stop();
+      avatarRef.current?.stopListening();
       setIsRecording(false);
       return;
     }
@@ -163,6 +166,7 @@ export function PublicChatPage() {
     try {
       // Mikrofonanfrage mit warten auf Erlaubnis
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      avatarRef.current?.startListening(stream);
       // Mikrofon läuft und sammelt Audio-Chunks
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -185,6 +189,7 @@ export function PublicChatPage() {
     const trimmed = text.trim();
     if (!trimmed || sendMutation.isPending) return;
     setRateLimited(false);
+    avatarRef.current?.startThinking();
     // history = der bisherige Verlauf VOR dieser neuen Nachricht (messages ist an dieser Stelle noch
     // der alte State-Wert, das setMessages darunter wirkt erst beim nächsten Render).
     sendMutation.mutate({

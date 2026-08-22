@@ -43,6 +43,7 @@ export function Step4Preview({
     mutationFn: ({ message, history }: { message: string; history: ChatMessage[] }) =>
       projectsApi.previewMessage(projectId, message, history),
     onSuccess: (res) => {
+      avatarRef.current?.stopThinking();
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
       if (res.audioBase64) avatarRef.current?.speak(res.audioBase64);
     },
@@ -52,6 +53,7 @@ export function Step4Preview({
     event.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || sendMutation.isPending) return;
+    avatarRef.current?.startThinking();
     // history = der bisherige Verlauf VOR dieser neuen Nachricht, siehe PublicChat/index.tsx.
     sendMutation.mutate({ message: trimmed, history: messages });
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
