@@ -1,0 +1,71 @@
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Geschwister von .canvasHost, identisch positioniert (position:absolute;inset:0 im selben Elternteil
+   .stage) — dadurch bekommen Hintergrund und Canvas garantiert exakt dieselbe Box, kein
+   größenbedingter Versatz zwischen "Avatar-Fenster" und "Hintergrund-Fenster" mehr möglich. Ohne
+   backgroundImageUrl bleibt es transparent (kein eigenes background-color) — die Landingpage nutzt
+   diese Komponente z.B. ohne umgebende .avatarStage-Box und braucht weiterhin echte Transparenz,
+   den grauen Standard-Fallback stellt in dem Fall die jeweils umgebende Stelle selbst (siehe
+   PublicChat.module.css/Step4Preview.module.css, .avatarStage). */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.canvasHost {
+  position: absolute;
+  inset: 0;
+}
+
+.canvasHost canvas {
+  display: block;
+  /* TalkingHead setzt beim Erzeugen (renderer.setSize) feste Pixelmaße direkt als Inline-Style auf
+     den Canvas, gemessen an container.clientWidth/Height zu genau diesem Zeitpunkt — verschiebt
+     sich das Layout danach noch (z.B. durch den Fix in .avatarStage weiter oben in der Baumstruktur,
+     oder einfach je nach Ladereihenfolge), bleibt der Canvas bei seiner ursprünglichen Größe stehen
+     und bildet dadurch eine eigene, kleinere "Box" mit sichtbarer eigener Kante innerhalb von
+     .canvasHost, statt bündig mit dessen (und damit dem Hintergrundbild-) Rand abzuschließen.
+     Erzwingt hier stattdessen: Canvas füllt IMMER exakt seinen Container, unabhängig vom intern
+     gesetzten Pixelmaß (das bestimmt nur noch die Render-Auflösung, nicht mehr die Anzeigegröße). */
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-4);
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  background: var(--surface-sunken);
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.fallbackHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

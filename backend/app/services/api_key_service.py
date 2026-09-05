@@ -1,0 +1,114 @@
+"""
+Resolving a Project's API Keys
+
+Looks up which of a user's stored API keys a project should actually use for its LLM/TTS calls,
+and works out the endpoint override (if any) to pass to litellm. Kept central so
+app/api/projects.py and app/api/public_chat.py never duplicate this logic.
+
+How to use:
+    from app.services.api_key_service import resolve_llm_key
+
+    api_key = resolve_llm_key(session, project)
+"""
+
+from sqlmodel import Session, select
+
+from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_STT, KEY_TYPE_TTS, get_provider
+from app.models.api_key import UserApiKey
+from app.models.project import Project
+
+
+def get_user_api_key(
+    session: Session, user_id: str, provider: str, key_type: str | None = None
+) -> UserApiKey | None:
+    """Find a user's key for `provider` (optionally of a specific type); the oldest match wins."""
+    # Since the unique constraint was dropped, a user can have several keys per provider — the
+    # oldest one wins deterministically, so the result doesn't change between calls.
+    query = select(UserApiKey).where(UserApiKey.user_id == user_id).where(UserApiKey.provider == provider)
+    if key_type is not None:
+        query = query.where(UserApiKey.key_type == key_type)
+    return session.exec(query.order_by(UserApiKey.added_at)).first()
+
+
+def get_key_by_id(session: Session, user_id: str, key_id: str) -> UserApiKey | None:
+    """Look up one of a user's own keys by its ID."""
+    return session.exec(
+        select(UserApiKey).where(UserApiKey.user_id == user_id).where(UserApiKey.id == key_id)
+    ).first()
+
+
+def get_owned_key_of_type(session: Session, user_id: str, key_id: str, key_type: str) -> UserApiKey | None:
+    """Load a key, but only if it belongs to the user AND is of the expected type.
+
+    Without the key_type check, an LLM key could e.g. be entered as tts_api_key_id (or the other
+    way round) — both fields point at the same table, and the foreign-key constraint alone
+    doesn't distinguish what the key is meant for.
+    """
+    key = get_key_by_id(session, user_id, key_id)
+    if key is not None and key.key_type == key_type:
+        return key
+    return None
+
+
+def provider_from_model(llm_model: str) -> str:
+    """Extract the provider name from a litellm model string like "anthropic/claude-...''."""
+    # litellm model strings have the shape "<provider>/<model>" (e.g. "anthropic/claude-sonnet-4-5").
+    # Ollama has two litellm prefixes for the same server — "ollama/" and the chat-recommended
+    # "ollama_chat/" — both should match the same stored "ollama" key, so a trailing "_chat" on
+    # the provider part is ignored.
+    # This is now only a fallback for projects created before Project.llm_api_key_id existed; the
+    # normal path is resolve_llm_key().
+    prefix = llm_model.split("/")[0] if "/" in llm_model else llm_model
+    return prefix.removesuffix("_chat")
+
+
+def resolve_llm_key(session: Session, project: Project) -> UserApiKey | None:
+    """Find the LLM key configured for this project."""
+    if project.llm_api_key_id:
+        # If the key now belongs to someone else, was deleted, or was retyped (e.g. to "tts"),
+        # the project counts as unconfigured — a clean failure beats using someone else's or a
+        # mistyped key.
+        key = get_owned_key_of_type(session, project.user_id, project.llm_api_key_id, KEY_TYPE_LLM)
+        if key is not None:
+            return key
+    if project.llm_model:
+        return get_user_api_key(session, project.user_id, provider_from_model(project.llm_model), KEY_TYPE_LLM)
+    return None
+
+
+def resolve_tts_key(session: Session, project: Project) -> UserApiKey | None:
+    """Find the TTS key configured for this project (the TTS counterpart to resolve_llm_key).
+
+    No legacy string fallback needed — the "tts" key type never existed without this field.
+    """
+    if project.tts_api_key_id:
+        return get_owned_key_of_type(session, project.user_id, project.tts_api_key_id, KEY_TYPE_TTS)
+    return None
+
+
+def resolve_stt_key(session: Session, project: Project) -> UserApiKey | None:
+    """Find the STT key configured for this project (the STT counterpart to resolve_tts_key).
+
+    None (no key configured, or a stale/foreign one) means the caller should fall back to the
+    instance-wide local Whisper engine (see services/stt_service.py) — unlike LLM/TTS, having no
+    STT key is a normal, fully working state, not a missing configuration.
+    """
+    if project.stt_api_key_id:
+        return get_owned_key_of_type(session, project.user_id, project.stt_api_key_id, KEY_TYPE_STT)
+    return None
+
+
+def effective_api_base(key: UserApiKey) -> str | None:
+    """The endpoint address to pass to litellm, or None to use litellm's own default.
+
+    The address of the fixed SaaS providers is only shown in the form as a pre-filled default.
+    Passing that unchanged default through to litellm would change the previously working call
+    behavior (litellm already knows the official endpoints, including path quirks). Only a
+    deliberately different address (a proxy, a custom endpoint, an Ollama server) is passed on.
+    """
+    if not key.api_base:
+        return None
+    spec = get_provider(key.provider)
+    if spec is not None and spec.default_api_base and key.api_base.rstrip("/") == spec.default_api_base.rstrip("/"):
+        return None
+    return key.api_base

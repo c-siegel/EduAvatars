@@ -1,0 +1,37 @@
+[project]
+name = "eduavatars-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlmodel>=0.0.22",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic-settings>=2.4",
+    "email-validator>=2.0",
+    "python-multipart>=0.0.9",
+    "bcrypt>=4.1",
+    "pyjwt>=2.9",
+    "cryptography>=43.0",
+    "litellm>=1.48",
+    "httpx>=0.27",
+    "faster-whisper>=1.0",
+    "anyio>=4.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+# Ohne diese explizite Angabe bricht "pip install ." bzw. "pip install -e ." ab,
+# weil setuptools bei backend/ als Flat-Layout sowohl app/ als auch alembic/ als mögliche
+# Top-Level-Pakete erkennt und die automatische Erkennung deshalb verweigert
+# ("Multiple top-level packages discovered in a flat-layout"). alembic/ ist absichtlich
+# ausgeschlossen — es wird über "python -m alembic" aus dem Arbeitsverzeichnis heraus aufgerufen,
+# nicht als installiertes Package importiert.
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

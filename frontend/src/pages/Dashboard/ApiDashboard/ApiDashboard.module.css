@@ -1,0 +1,198 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  /* Breiter als die übrigen Dashboard-Seiten: die Schlüsseltabelle trägt seit der Typ- und
+     Modellspalte sieben Spalten. */
+  max-width: 1080px;
+}
+
+.header h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.calloutShort {
+  display: none;
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+/* Name (1) und Schlüssel (4) tragen den variablen Inhalt; Typ, Modell, Datum, Status und die
+   Aktionen bekommen nur so viel Breite wie nötig, damit dort nichts umbricht. */
+.table th:first-child {
+  min-width: 11rem;
+}
+
+.table th:nth-child(2),
+.table th:nth-child(3),
+.table th:nth-child(5),
+.table th:nth-child(6),
+.table th:last-child {
+  width: 1%;
+}
+
+.table td:nth-child(2),
+.table td:nth-child(3),
+.table td:nth-child(5),
+.table td:nth-child(6),
+.table td:last-child {
+  white-space: nowrap;
+}
+
+.table th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.keyCards {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.keyCard {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.keyCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.badgeRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.keyCardActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.keyCardActions > * {
+  flex: 1;
+}
+
+.empty {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.select {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+/* Endpunkt-Adressen können beliebig lang werden — in der Tabelle abschneiden statt die Spalte
+   aufblähen; die vollständige Adresse steht im Bearbeiten-Formular. */
+.table .hint {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customFormFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 860px) {
+  .calloutFull {
+    display: none;
+  }
+
+  .calloutShort {
+    display: inline;
+  }
+
+  .tableScroll {
+    display: none;
+  }
+
+  .keyCards {
+    display: flex;
+  }
+}

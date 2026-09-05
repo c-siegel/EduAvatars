@@ -1,0 +1,158 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.count {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-3);
+}
+
+.tileWrap {
+  position: relative;
+}
+
+/* Der Kreis (Avatar, size="md") ist mit 2.75rem deutlich kleiner als die Grid-Spalte — ohne dies
+   würde .tileWrap (und damit der daran positionierte Löschbutton) auf die volle, breitere
+   Zellbreite gestreckt, statt sich eng um den sichtbaren Kreis zu legen (der Button "schwebt" dann
+   rechts daneben statt an dessen Rand zu sitzen). Nur für die Avatar-Bibliothek nötig — die
+   rechteckigen Hintergrundbild-Kacheln füllen ihre Zelle bewusst vollständig aus. */
+.avatarGrid .tileWrap {
+  justify-self: center;
+  align-self: center;
+}
+
+.avatarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-avatar);
+}
+
+.tileDelete {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface-card);
+  background: var(--color-danger);
+  color: var(--neutral-0);
+  cursor: pointer;
+}
+
+.tileDelete:hover {
+  background: var(--red-700);
+}
+
+.tileDelete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploadTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-avatar);
+  border: 1px dashed var(--border-strong);
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.uploadTile:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.backgroundGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.backgroundTile {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background-color: var(--neutral-200);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.backgroundTile:hover {
+  border-color: var(--border-accent);
+}
+
+.backgroundTileSelected {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.backgroundNone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+}
+
+.backgroundUploadTile {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.backgroundUploadTile:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+@media (max-width: 640px) {
+  .avatarGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .backgroundGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

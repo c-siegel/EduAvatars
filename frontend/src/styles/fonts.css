@@ -1,0 +1,29 @@
+/*
+ * Selbst gehostete Schriften (kein Google Fonts CDN, aus Datenschutzgründen).
+ * Alle drei sind bei Google als Variable Fonts hinterlegt (per fontTools verifiziert) —
+ * eine Datei pro Familie deckt den jeweils genutzten Schnittbereich ab, statt einzelner
+ * statischer Dateien pro Gewicht.
+ */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-variable.woff2") format("woff2");
+  font-weight: 100 900; /* genutzt: 400/500/600/700 */
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus-jakarta-sans-variable.woff2") format("woff2");
+  font-weight: 200 800; /* genutzt: 500/800 */
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-variable.woff2") format("woff2");
+  font-weight: 400 800; /* genutzt: 400/500 */
+  font-style: normal;
+  font-display: swap;
+}

@@ -1,0 +1,691 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "login": "Log in",
+    "register": "Sign up",
+    "loading": "Loading …",
+    "close": "Close",
+    "replyBeingWritten": "Reply being written …"
+  },
+  "nav": {
+    "overview": "Overview",
+    "analytics": "Analytics",
+    "apiDashboard": "API dashboard",
+    "profile": "Profile settings",
+    "admin": "Admin",
+    "dashboardFallback": "Dashboard",
+    "dashboardNavAriaLabel": "Dashboard navigation",
+    "logout": "Log out",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu"
+  },
+  "auth": {
+    "tabsAriaLabel": "Log in or sign up",
+    "emailLabel": "Email",
+    "emailPlaceholder": "teacher@school.edu",
+    "passwordLabel": "Password",
+    "nameLabel": "Name",
+    "backToLogin": "Back to login",
+    "login": {
+      "subtitle": "Welcome back",
+      "rememberMe": "Stay signed in",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "errorGeneric": "Login failed. Please try again later."
+    },
+    "register": {
+      "subtitle": "Create your free account",
+      "hasAccount": "Already have an account?",
+      "terms": "I agree to the Terms of Service and Privacy Policy.",
+      "submit": "Create account",
+      "errorGeneric": "Registration failed. Please check your details.",
+      "disabledNotice": "Registration is currently disabled. This EduAvatars instance is currently only available for internal use. Please contact your institution if you need an account."
+    },
+    "forgotPassword": {
+      "subtitle": "Forgot password",
+      "remembered": "Remembered it?",
+      "submit": "Send reset link",
+      "sentNotice": "If an account exists for this email, we've sent a reset link. Please check your inbox (including spam)."
+    },
+    "resetPassword": {
+      "subtitle": "Reset password",
+      "formSubtitle": "Set a new password",
+      "doneSubtitle": "Password reset",
+      "doneNotice": "Your password has been changed.",
+      "loginNow": "Log in now",
+      "noValidLinkPrefix": "This link isn't valid. Request a new one via",
+      "noValidLinkSuffix": ".",
+      "newPasswordLabel": "New password",
+      "repeatLabel": "Repeat",
+      "hint": "At least {{min}} characters, one digit",
+      "submit": "Save password",
+      "errorTooShort": "New password needs at least {{min}} characters and a digit.",
+      "errorMismatch": "The repeated password doesn't match the new password.",
+      "errorInvalidLink": "This link is invalid or has expired. Please request a new one."
+    }
+  },
+  "surveyEmbed": {
+    "notice": "This survey is provided by an external provider (Tally). Loading it connects to tally.so.",
+    "loading": "Loading survey …",
+    "skip": "Skip"
+  },
+  "publicChat": {
+    "unavailable": "This chat isn't available.",
+    "online": "Online",
+    "endChat": "End chat",
+    "surveyBeforeTitle": "Survey before the chat",
+    "continueToChat": "Continue to chat",
+    "transcribing": "Transcribing …",
+    "stopRecording": "Stop recording",
+    "voiceInput": "Voice input",
+    "stopResponse": "Stop response",
+    "responseInterrupted": "Response interrupted.",
+    "recordingFailed": "Part of your voice message could not be transmitted — it may be incomplete.",
+    "micPermissionDenied": "Microphone access was denied. Allow it in your browser's site settings to use voice input.",
+    "micUnavailable": "Voice input isn't available — no microphone was found, or it's already in use.",
+    "messageFailed": "Your message could not be sent. Please try again.",
+    "editMessage": "Edit message",
+    "regenerateMessage": "Regenerate response",
+    "playGreeting": "Play greeting",
+    "collapseChat": "Collapse chat",
+    "expandChat": "Expand chat",
+    "chatTitle": "Chat",
+    "privacySaved": "This conversation is saved anonymously and can be read by your teacher.",
+    "privacySavedWithName": "This conversation is saved together with the name/ID you entered and can be read by your teacher.",
+    "privacyNotSaved": "This conversation is not saved.",
+    "whichModel": "Which AI am I talking to?",
+    "modelTooltip": "You're talking to the AI model {{model}}. Your messages are sent to it to generate a reply.",
+    "modelTooltipUnknown": "You're talking to an AI model. Your messages are sent to it to generate a reply.",
+    "messagePlaceholder": "Type your question …",
+    "messageAriaLabel": "Message",
+    "send": "Send",
+    "surveyAfterTitle": "Survey after the chat",
+    "done": "Done",
+    "chatEnded": "Chat ended. Thanks for taking part!",
+    "locked": {
+      "description": "This chat is password-protected. Ask your teacher for the password.",
+      "passwordLabel": "Password",
+      "submit": "Unlock",
+      "genericError": "That password didn't work. Please try again."
+    },
+    "nameGate": {
+      "description": "Before we start, please enter your name or ID.",
+      "nameLabel": "Name or ID",
+      "submit": "Continue"
+    }
+  },
+  "profile": {
+    "savedToast": "Profile saved.",
+    "pictureUpdatedToast": "Profile picture updated.",
+    "pictureUploadError": "Couldn't upload the image (5 MB max, PNG/JPEG/WebP).",
+    "pictureRemovedToast": "Profile picture removed.",
+    "passwordUpdatedToast": "Password updated.",
+    "passwordChangeError": "Current password is incorrect, or the request failed.",
+    "loggedOutEverywhereToast": "All other sessions have been signed out.",
+    "confirmLogoutEverywhere": "Sign out on all other devices/browsers? This session stays active.",
+    "confirmDeleteAccount": "All projects and links will be permanently removed. Really delete your account irreversibly?",
+    "account": "Account",
+    "changePicture": "Change picture",
+    "fullName": "First & last name",
+    "school": "School",
+    "saveError": "Save failed. Please try again.",
+    "saveChanges": "Save changes",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "updatePassword": "Update password",
+    "sessions": "Sessions",
+    "sessionsText": "If you suspect your account is signed in on another device: sign out of all other sessions immediately. This session stays active.",
+    "logoutOtherDevices": "Sign out on all other devices",
+    "deleteAccount": "Delete account",
+    "deleteAccountText": "All projects and links will be permanently removed."
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "subtitle": "What data this service processes, and why.",
+    "controller": {
+      "title": "Who is responsible",
+      "text": "The operator of this EduAvatars instance is responsible for the data processed here:"
+    },
+    "teachers": {
+      "title": "Teacher accounts",
+      "text": "If you create an account, we store your name, email address, optionally your school and profile picture, and the projects you configure. API keys you enter for AI providers are stored encrypted and are never shown again in full.",
+      "legalBasis": "This data is processed to provide the service you signed up for (Art. 6(1)(b) GDPR)."
+    },
+    "students": {
+      "title": "Students using a chat link",
+      "noAccount": "Students do not need an account. There is no registration, no login, and no tracking across websites.",
+      "cookie": "A single technical cookie holds a randomly generated visitor number. It is used to tell conversations apart and to enforce usage limits — it does not identify a person and is not shared with anyone.",
+      "recording": "Teachers can switch on recording per chat. When it is on, the chat page says so directly above the message box, and the conversation is stored under the anonymous visitor number so the teacher can read it later. When it is off, messages are not stored after the reply is sent.",
+      "visitorName": "Teachers can additionally require students to enter a name or ID before the chat starts. If that's enabled AND recording is switched on, that name is shown alongside the saved conversation — the chat is then no longer anonymous. If recording is off, the entered name is not stored anywhere."
+    },
+    "ai": {
+      "title": "AI processing",
+      "text": "Messages typed into a chat are sent to the AI provider the teacher configured for that chat, in order to generate a reply. Which model answers is shown in the chat via the \"?\" button. Operators are responsible for having an appropriate data processing agreement with the provider they choose.",
+      "speech": "If speech output is enabled, the reply text is additionally sent to the configured speech provider. Speech input is transcribed on this server itself — voice recordings are not sent to any third party and are not stored."
+    },
+    "retention": {
+      "title": "How long data is kept",
+      "text": "Account data is kept until the account is deleted. Saved conversations and access logs are deleted when the associated project or account is deleted, and additionally after the retention period the operator configured for this instance, if one is set."
+    },
+    "rights": {
+      "title": "Your rights",
+      "text": "You have the right to access, rectification, erasure, restriction of processing, and data portability regarding your personal data. Account holders can export or delete their account and all associated data at any time from their profile settings.",
+      "students": "Because student chats are usually stored without any identifying information (unless a teacher enabled the optional name/ID prompt), we generally cannot link them to an individual person, which limits our ability to answer an individual access or erasure request. Students should contact their teacher, who can delete the chat data of a project.",
+      "complaint": "You also have the right to lodge a complaint with a data protection supervisory authority."
+    }
+  },
+  "forcePasswordChange": {
+    "title": "Change your password",
+    "description": "An administrator set this password for you. Choose a new one to continue.",
+    "submit": "Save and continue"
+  },
+  "admin": {
+    "users": {
+      "title": "Accounts",
+      "subtitle": "Create, disable, and manage every account on this instance.",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status"
+      },
+      "roleAdmin": "Admin",
+      "roleTeacher": "Teacher",
+      "statusEnabled": "Enabled",
+      "statusDisabled": "Disabled",
+      "pendingPasswordChange": "Must change password",
+      "promote": "Make admin",
+      "demote": "Remove admin",
+      "enable": "Enable",
+      "disable": "Disable",
+      "resetPassword": "Reset password",
+      "resetPasswordTitle": "Reset password for {{name}}",
+      "empty": "No accounts yet.",
+      "actionFailed": "Action failed. Please try again.",
+      "addUser": "Add account",
+      "addUserButton": "Add account",
+      "form": {
+        "name": "Name",
+        "email": "Email",
+        "temporaryPassword": "Temporary password",
+        "grantAdmin": "Grant admin access",
+        "create": "Create account",
+        "reset": "Set new password"
+      }
+    },
+    "settings": {
+      "title": "Site settings",
+      "subtitle": "Instance-wide settings, changeable without a redeploy.",
+      "imprintTitle": "Imprint & contact",
+      "imprintHint": "Shown on the legal notice and privacy pages. Any field left empty shows a placeholder there instead.",
+      "providerNameLabel": "Provider / responsible person",
+      "providerStreetLabel": "Street and number",
+      "providerCityLabel": "Postal code and city",
+      "providerCountryLabel": "Country",
+      "contactEmailLabel": "Contact email",
+      "contactPhoneLabel": "Phone",
+      "privacyTitle": "Privacy & registration",
+      "retentionLabel": "Delete student chat data after (days)",
+      "retentionHint": "Saved conversations and access logs older than this are deleted automatically on server start. 0 keeps them forever.",
+      "registrationTitle": "Allow self-registration",
+      "registrationText": "When off, only an admin can create new accounts.",
+      "save": "Save settings",
+      "saveError": "Save failed. Please try again.",
+      "saved": "Settings saved."
+    }
+  },
+  "configurator": {
+    "steps": {
+      "appearance": "Appearance",
+      "technical": "Technical",
+      "behavior": "Behavior",
+      "preview": "Preview",
+      "publish": "Publish"
+    },
+    "progressSaved": "Progress saved.",
+    "loadError": "Couldn't load the project.",
+    "newProject": "New project",
+    "draftUnpublished": "Draft · not published",
+    "saveError": "Save failed. Please try again.",
+    "stepsAriaLabel": "Configurator steps",
+    "next": "Next",
+    "step1": {
+      "confirmDeleteLibraryItem": "Really delete \"{{name}}\" from the library?",
+      "projectName": "Project name",
+      "descriptionOptional": "Short description (optional)",
+      "descriptionPlaceholder": "Short description of what this avatar does",
+      "avatarLibrary": "Avatar library",
+      "available": "{{count}} available",
+      "deleteItem": "Delete {{name}}",
+      "uploadAvatar": "Upload avatar",
+      "backgroundImage": "Background image",
+      "noBackgroundAriaLabel": "No background image (neutral light gray)",
+      "default": "Default",
+      "uploadBackground": "Upload background image",
+      "chatVisibleTitle": "Chat visible by default",
+      "chatVisibleText": "On: the chat is visible right away when the page opens. Off: the chat starts collapsed, but visitors can expand it any time.",
+      "chatVisibleNote": "This setting is already saved — how it shows on the public page follows in a later step.",
+      "avatarActionError": "That didn't work. Please try again.",
+      "backgroundActionError": "That didn't work. Please try again."
+    },
+    "step2": {
+      "noLlmPrefix": "No LLM set up yet. First add a key of type LLM under",
+      "noLlmSuffix": " — that's also where you'll choose the model that should be available here.",
+      "modelHint": "Only models you've set up access for under API keys are selectable. Add another model there as a new key.",
+      "temperature": "Temperature",
+      "temperatureHint": "How much randomness the model is allowed. Low (0-0.3) gives focused, repeatable answers; around 0.7 is a good all-round setting; above 1.2 replies get creative but start to wander. Sent to the model as `temperature`.",
+      "topP": "Top P",
+      "topPHint": "Narrows the pool of words the model may pick from: at 1.0 all of them are allowed, at 0.5 only the most likely ones that together make up 50% of the probability. Leave it at 1.0 unless you have a reason \u2014 it does a similar job to temperature, and turning both down at once makes replies very monotonous.",
+      "language": "Language",
+      "spokenLanguageOptions": { "de": "German", "en": "English" },
+      "languageHint": "Determines the avatar's response language and speech recognition.",
+      "ttsTitle": "Speech output (TTS)",
+      "ttsText": "The avatar reads its replies out loud. Off by default.",
+      "ttsKey": "TTS key",
+      "noTtsPrefix": "No TTS set up yet. First add a key of type TTS under",
+      "noTtsSuffix": " (e.g. OpenAI, Google Gemini, Cartesia, or a custom endpoint).",
+      "voiceOptional": "Voice (optional)",
+      "voicePlaceholder": "e.g. alloy — depends on the chosen provider",
+      "voiceHint": "Cartesia and Google Cloud TTS require a voice (no default) — without one, speech output for this project won't work.",
+      "sttTitle": "Voice input (STT)",
+      "sttText": "Enables the microphone button in the public chat. Off by default.",
+      "sttKey": "STT key",
+      "sttKeyDefault": "Built-in (local Whisper)",
+      "sttKeyHint": "Optional — without a key, voice messages are transcribed locally on this server. Add a key of type STT under API keys to use GWDG SAIA instead.",
+      "streamingTitle": "Streamed replies",
+      "streamingText": "The avatar starts speaking after the first sentence instead of waiting for the full reply. Off by default."
+    },
+    "step3": {
+      "defaultPreprompt": "You are a helpful, AI-powered learning assistant.\n\nAnswer in an age-appropriate, patient, and encouraging way. If you don't know something, say so honestly instead of guessing.",
+      "targetGroup": "Target group / grade level",
+      "targetGroupPlaceholder": "e.g. Grade 7b",
+      "resetToDefault": "Reset to default",
+      "preprompt": "Preprompt / role",
+      "prepromptRawTab": "Raw",
+      "prepromptCompiledTab": "Preview",
+      "prepromptCompiledEmpty": "Nothing to preview yet — switch back to \"Raw\" and write the preprompt.",
+      "prepromptMarkdownHint": "Supports Markdown (e.g. **bold**, - lists, # headings) — switch to \"Preview\" to see it rendered.",
+      "resetHint": "\"Reset to default\" replaces the current text with the generic default text.",
+      "startMessageOptional": "Start message (optional)",
+      "startMessageHint": "Shown to students as the avatar's first message — unlike the preprompt above, the model also sees this text (e.g. for a task the students should respond to). Leave empty for a generic greeting.",
+      "generateAudio": "Generate audio",
+      "listenToAudio": "Listen",
+      "audioGenerated": "Audio has been generated and stored.",
+      "audioNotGenerated": "No audio generated yet — the start message is currently only shown as text, not spoken.",
+      "audioUnsavedHint": "You've changed the start message. Save in the top right first, before generating the audio.",
+      "audioTtsDisabledHint": "Text-to-speech isn't enabled for this project (see Step 2).",
+      "audioGenerateError": "The audio could not be generated."
+    },
+    "step4": {
+      "unsavedChanges": "You have unsaved changes — save in the top right so the preview picks them up.",
+      "livePreview": "Live preview",
+      "testBadge": "Test",
+      "defaultGreeting": "Hello! I'm {{name}}. How can I help you?",
+      "yourAvatar": "your avatar",
+      "testMessagePlaceholder": "Test a message …",
+      "testMessageAriaLabel": "Test message"
+    },
+    "step5": {
+      "recordConversationsTitle": "Record conversations",
+      "recordConversationsText": "Saves chat histories for later analysis (Analytics tab). Off by default.",
+      "requireVisitorNameTitle": "Ask for a name or ID",
+      "requireVisitorNameText": "Students must enter a name or ID before the chat starts. Only affects the analysis if conversations are also recorded — the entered name/ID then shows up there next to the conversation. Off by default.",
+      "surveyNotice": "The survey is embedded via an iframe from Tally.so — no extra script is loaded from tally.so, only the form address you enter. Participation is optional for students and can be skipped at any time.",
+      "surveyBeforeTitle": "Enable survey before the chat",
+      "surveyBeforeText": "Shown before students can start the chat.",
+      "surveyBeforeUrl": "Survey URL (before the chat)",
+      "surveyBeforeHint": "Only takes effect if the checkbox above is enabled. Leave empty or disable to skip this step. Getting the address right is up to you.",
+      "surveyAfterTitle": "Enable survey after the chat",
+      "surveyAfterText": "Shown when students end the chat via \"End chat\".",
+      "surveyAfterUrl": "Survey URL (after the chat)",
+      "surveyAfterHint": "Only takes effect if the checkbox above is enabled.",
+      "unpublish": "Unpublish",
+      "publish": "Publish",
+      "publishNeedsModel": "A model must be selected before publishing.",
+      "actionFailed": "Action failed. Please try again.",
+      "copy": "Copy",
+      "passwordProtection": {
+        "title": "Password protection",
+        "text": "Require students to enter a password before they can use the chat.",
+        "protected": "Protected",
+        "notProtected": "Not protected",
+        "change": "Change password",
+        "remove": "Remove password",
+        "passwordLabel": "Password",
+        "save": "Save"
+      }
+    }
+  },
+  "apiKeyForm": {
+    "provider": "Provider / communication protocol",
+    "keyTypeHint": "Only providers that support this are listed below.",
+    "apiBase": "Endpoint address (API base URL)",
+    "apiBaseOptional": "Endpoint address (API base URL, optional)",
+    "nameOptional": "Name (optional)",
+    "ttsModelFixedHint": "{{provider}} always uses a fixed model for speech output — there's no model choice here.",
+    "sttModelFixedHint": "{{provider}} always uses a fixed model for voice recognition — there's no model choice here.",
+    "pleaseChoose": "Please choose …",
+    "customModel": "Custom model (free text) …",
+    "modelId": "Model ID",
+    "modelIdPlaceholder": "e.g. \"llama-3.1-70b\" or \"qwen2.5\"",
+    "modelHint": "This exact model will then be selectable in the configurator. The model ID is passed to the provider unchanged — getting the spelling right is up to you.",
+    "arcanaId": "Arcana ID",
+    "arcanaIdPlaceholder": "e.g. username/projectname",
+    "apiKeyEditing": "API key (leave empty to keep unchanged)",
+    "apiKey": "API key",
+    "apiKeyOptional": "API key (optional)",
+    "defaultModel": "Default model"
+  },
+  "apiDashboard": {
+    "title": "API keys",
+    "subtitle": "Your keys are stored encrypted and never shown in plain text.",
+    "securityNoticeFull": "Security notice: keys apply to all your projects. If you suspect misuse, revoke it immediately and generate a new one with the provider.",
+    "securityNoticeShort": "Keys are stored encrypted.",
+    "testFailed": "Test failed: {{message}}",
+    "testFailedFallback": "The provider rejected the key.",
+    "testSucceeded": "Key tested successfully.",
+    "test": "Test",
+    "remove": "Remove",
+    "empty": "No API keys added yet.",
+    "editKey": "Edit key",
+    "addKey": "Add a new key",
+    "addKeyButton": "+ Add key",
+    "providersLoadError": "Couldn't load the provider list.",
+    "saveError": "Save failed. Please check your details.",
+    "statusActive": "Active",
+    "statusUnverified": "Unverified",
+    "statusError": "Error",
+    "removeConfirm": "Really remove key \"{{name}}\"?",
+    "removeUsedByProjects_one": "{{count}} project is using this model and will lose its model choice.",
+    "removeUsedByProjects_other": "{{count}} projects are using this model and will lose their model choice.",
+    "table": {
+      "name": "Name",
+      "type": "Type",
+      "model": "Model",
+      "key": "Key",
+      "added": "Added",
+      "status": "Status"
+    }
+  },
+  "analytics": {
+    "exportError": "Export failed. Please try again.",
+    "sessionsOverTime": "Sessions over time",
+    "chartEmpty": "No data for this period.",
+    "filters": {
+      "projectAll": "Project: All",
+      "period": "Period: {{days}} days",
+      "modelAll": "Model: All",
+      "apply": "Apply filters"
+    },
+    "stats": {
+      "sessions": "Sessions",
+      "messages": "Messages",
+      "avgDuration": "Avg. duration",
+      "tokenCost": "Token cost"
+    },
+    "granularity": { "day": "Day", "week": "Week", "month": "Month" },
+    "selection": {
+      "none": "Nothing selected",
+      "count": "{{count}} selected",
+      "selectAll": "Select all",
+      "clear": "Clear selection",
+      "download": "Download",
+      "delete": "Delete",
+      "deleteConfirm": "Permanently delete {{count}} conversation(s)? This cannot be undone.",
+      "deleteError": "Delete failed. Please try again."
+    },
+    "table": {
+      "project": "Project",
+      "visitorName": "Name/ID",
+      "started": "Started",
+      "messagesAbbr": "Msgs",
+      "duration": "Duration",
+      "lastQuestion": "Last question",
+      "view": "View",
+      "empty": "No sessions for this filter.",
+      "messagesCount": "{{count}} msgs",
+      "selectRow": "Select this conversation"
+    },
+    "transcript": {
+      "title": "Conversation",
+      "loadError": "Couldn't load the conversation."
+    },
+    "pagination": {
+      "zero": "0 of 0",
+      "range": "{{from}}–{{to}} of {{total}}"
+    }
+  },
+  "overview": {
+    "greeting": "Hello {{name}} 👋",
+    "subtitle": "You have {{total}} projects, {{published}} of them published.",
+    "newProject": "+ New project",
+    "createError": "Couldn't create the project. Please try again.",
+    "importProject": "Import project",
+    "importError": "Couldn't import this file. Make sure it's a project export from eduavatars (.yml).",
+    "myProjects": "My projects",
+    "stats": {
+      "projects": "Projects",
+      "published": "Published",
+      "sessions7d": "Sessions (7d)",
+      "messages": "Messages"
+    },
+    "filters": { "all": "All", "draft": "Drafts", "published": "Published" },
+    "card": {
+      "published": "Published",
+      "draft": "Draft",
+      "noModel": "No model selected",
+      "lastActive": "Last active: {{relative}}",
+      "edit": "Edit",
+      "copyLink": "Copy link",
+      "export": "Export as .yml",
+      "notPublishedYet": "Not published yet",
+      "moreActions": "More actions",
+      "delete": "Delete",
+      "deleteConfirm": "Delete \"{{title}}\" for good? Its share link stops working and every saved student conversation for it is deleted. This cannot be undone."
+    }
+  },
+  "landing": {
+    "getStarted": "Start for free",
+    "badge": "For teachers",
+    "headingFull": "Build flexible AI avatars.",
+    "headingShort": "Flexible AI avatars.",
+    "heroText": "Create an AI-powered learning avatar, describe its role in your own words, and share it via a link — no coding skills needed.",
+    "avatarLoading": "Loading avatar...",
+    "nav": {
+      "sourceCode": "Source code",
+      "mainAriaLabel": "Main navigation",
+      "mobileAriaLabel": "Mobile navigation",
+      "openMenu": "Open menu"
+    },
+    "features": {
+      "configure": {
+        "full": "Configure your avatar",
+        "short": "Configure",
+        "text": "Choose an avatar, and describe its role, appearance, and behavior."
+      },
+      "publish": {
+        "full": "Publish your project",
+        "short": "Publish",
+        "text": "One click creates a link your class can open without logging in."
+      },
+      "flexibility": {
+        "full": "Full flexibility",
+        "short": "API control",
+        "text": "All common LLMs and speech APIs can be used flexibly."
+      }
+    },
+    "footer": {
+      "legalAriaLabel": "Legal",
+      "privacy": "Privacy",
+      "imprint": "Legal notice",
+      "credits": "Credits"
+    }
+  },
+  "credits": {
+    "title": "Credits & Licenses",
+    "subtitle": "Thanks to all the projects and libraries that make EduAvatars possible",
+    "licenseLabel": "License:",
+    "noteLabel": "Note:",
+    "byAuthor": "by {{name}}",
+    "onGithub": "{{name}} on GitHub",
+    "avatar": {
+      "title": "Avatar Model & Animation",
+      "talkingHead": { "description": "3D avatar rendering and audio-based lip-sync for real-time animation" },
+      "headAudio": {
+        "description": "Real-time, audio-based viseme detection for precise lip-sync",
+        "note": "The model was trained on English voices. Recognition quality for German-language audio is unverified."
+      }
+    },
+    "fonts": {
+      "title": "Fonts",
+      "intro": "All fonts are self-hosted (instead of via the Google Fonts CDN) for privacy reasons.",
+      "inter": { "description": "Variable font (weight 100–900) for UI text and headings" },
+      "plusJakartaSans": { "description": "Variable font (weight 200–800) for modern typography" },
+      "jetBrainsMono": { "description": "Variable font (weight 400–800) for code and technical content" }
+    },
+    "frontend": {
+      "title": "Frontend Frameworks & Libraries",
+      "react": { "description": "JavaScript library for user interfaces" },
+      "reactRouter": { "description": "Routing library for single-page applications" },
+      "lucideReact": { "description": "A collection of consistent, customizable icons" },
+      "vite": { "description": "Next-generation frontend tooling for fast development" }
+    },
+    "backend": {
+      "title": "Backend Frameworks & Libraries",
+      "fastapi": { "description": "Modern, fast web framework for building APIs with Python" },
+      "sqlmodel": { "description": "SQL library for Python, based on Pydantic and SQLAlchemy" },
+      "fasterWhisper": { "description": "Fast implementation of OpenAI Whisper for speech recognition" },
+      "pydantic": { "description": "Data validation using Python type annotations" }
+    },
+    "privacy": {
+      "title": "Privacy & Hosting",
+      "selfHosting": {
+        "description": "All external resources (fonts, avatars, audio modules) are self-hosted to protect user privacy and avoid sending data to external CDNs."
+      }
+    },
+    "footer": {
+      "thanks": "Thanks to all the developers and communities who created these great open-source projects!"
+    }
+  },
+  "imprint": {
+    "title": "Legal Notice",
+    "subtitle": "Legal information pursuant to Section 5 of the German Telemedia Act (TMG)",
+    "placeholder": "[to be updated]",
+    "provider": {
+      "title": "Provider",
+      "name": "Name:",
+      "street": "Street and house number:",
+      "city": "ZIP code, city:",
+      "country": "Country:",
+      "countryValue": "Germany"
+    },
+    "contact": {
+      "title": "Contact",
+      "email": "Email:",
+      "phone": "Phone:",
+      "phonePlaceholder": "[+to be updated]"
+    },
+    "responsible": { "title": "Responsible for content" },
+    "liability": {
+      "contentTitle": "Liability for content",
+      "contentP1": "As a service provider, we are responsible for our own content on these pages under general law, pursuant to Section 7 (1) of the German Telemedia Act (TMG). Under Sections 8 to 10 TMG, however, we as a service provider are not obliged to monitor transmitted or stored third-party information, or to investigate circumstances that indicate illegal activity.",
+      "contentP2": "Obligations to remove or block the use of information under general law remain unaffected. Any liability in this respect is only possible from the point in time at which a specific legal violation becomes known. Upon becoming aware of such violations, we will remove this content immediately.",
+      "linksTitle": "Liability for links",
+      "linksP1": "Our site contains links to external third-party websites whose content we have no control over. We therefore cannot accept any liability for this external content. The respective provider or operator of the linked pages is always responsible for their content. The linked pages were checked for possible legal violations at the time of linking. No illegal content was identifiable at that time.",
+      "linksP2": "However, permanently monitoring the content of linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of any legal violations, we will remove such links immediately."
+    },
+    "asOf": "As of: {{date}}"
+  },
+  "time": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "weeksAgo_one": "{{count}} week ago",
+    "weeksAgo_other": "{{count}} weeks ago",
+    "monthsAgo_one": "{{count}} month ago",
+    "monthsAgo_other": "{{count}} months ago"
+  },
+  "errors": {
+    "NOT_AUTHENTICATED": "Not logged in.",
+    "SESSION_EXPIRED": "Session expired.",
+    "PROJECT_NOT_FOUND": "Project not found.",
+    "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Project not found or not published.",
+    "PROJECT_IMPORT_INVALID": "This file isn't a valid eduavatars project export.",
+    "PROJECT_IMPORT_FILE_TOO_LARGE": "File is too large (256 KB maximum).",
+    "CONVERSATION_NOT_FOUND": "Conversation not found.",
+    "REGISTRATION_DISABLED": "Registration is currently disabled.",
+    "EMAIL_ALREADY_REGISTERED": "This email address is already in use.",
+    "INVALID_CREDENTIALS": "Email or password is incorrect.",
+    "RESET_LINK_INVALID": "This link is invalid or has expired.",
+    "CURRENT_PASSWORD_INCORRECT": "Current password is incorrect.",
+    "PASSWORD_TOO_SHORT": "Password needs at least 10 characters and a digit.",
+    "PASSWORD_TOO_LONG": "Password must be at most 72 bytes long.",
+    "PROFILE_PICTURE_TOO_LARGE": "Image is too large (5 MB maximum).",
+    "PROFILE_PICTURE_INVALID_TYPE": "Only PNG, JPEG, or WebP images are allowed.",
+    "PROFILE_PICTURE_NOT_FOUND": "No profile picture set.",
+    "AVATAR_FILE_INVALID_TYPE": "Only .glb files are allowed.",
+    "AVATAR_FILE_TOO_LARGE": "File is too large (50 MB maximum).",
+    "AVATAR_FILE_INVALID_CONTENT": "File is not a valid .glb file.",
+    "AVATAR_NOT_FOUND": "Avatar not found.",
+    "AVATAR_THUMBNAIL_TOO_LARGE": "Thumbnail is too large (2 MB maximum).",
+    "AVATAR_THUMBNAIL_INVALID": "Thumbnail is not a valid PNG file.",
+    "AVATAR_THUMBNAIL_NOT_FOUND": "Thumbnail not found.",
+    "BACKGROUND_INVALID_TYPE": "Only .png or .jpg files are allowed.",
+    "BACKGROUND_FILE_TOO_LARGE": "File is too large (10 MB maximum).",
+    "BACKGROUND_INVALID_CONTENT": "File is not a valid PNG or JPEG.",
+    "BACKGROUND_NOT_FOUND": "Background image not found.",
+    "UNKNOWN_API_KEY": "Unknown API key.",
+    "API_KEY_NOT_FOUND": "API key not found.",
+    "NO_LLM_MODEL_SELECTED": "No model selected for this project. Add an LLM key first, in the API tab.",
+    "LLM_REQUEST_FAILED": "AI request failed.",
+    "STT_REQUEST_FAILED": "Speech recognition failed.",
+    "VOICE_INPUT_DISABLED": "Voice input isn't enabled for this project.",
+    "VOICE_INPUT_UNAVAILABLE": "Voice input is currently unavailable.",
+    "UNSUPPORTED_AUDIO_FORMAT": "Unsupported audio format.",
+    "AUDIO_FILE_TOO_LARGE": "Audio file is too large (10 MB maximum).",
+    "CHAT_UNAVAILABLE": "Chat is currently unavailable.",
+    "CHAT_MESSAGE_EMPTY": "Message can't be empty.",
+    "CHAT_MESSAGE_TOO_LONG": "Message is too long. Please shorten it.",
+    "CHAT_PASSWORD_TOO_SHORT": "Password needs at least 4 characters.",
+    "CHAT_PASSWORD_TOO_LONG": "Password must be at most 72 bytes long.",
+    "CHAT_PASSWORD_INCORRECT": "That password is incorrect.",
+    "CHAT_UNLOCK_REQUIRED": "This chat requires a password.",
+    "PROJECT_NOT_PASSWORD_PROTECTED": "This project doesn't have a password set.",
+    "VISITOR_NAME_REQUIRED": "Please enter your name or ID first.",
+    "TEMPERATURE_OUT_OF_RANGE": "Temperature must be between 0.0 and 2.0.",
+    "TOP_P_OUT_OF_RANGE": "Top P must be between 0.0 and 1.0.",
+    "START_PROMPT_REQUIRED": "Please enter a starting message first.",
+    "TTS_NOT_CONFIGURED": "Text-to-speech isn't set up for this project.",
+    "START_AUDIO_GENERATION_FAILED": "The audio could not be generated.",
+    "START_AUDIO_NOT_FOUND": "No audio exists for the starting message yet.",
+    "RATE_LIMIT_CHAT": "Too many messages. Please wait a moment.",
+    "RATE_LIMIT_TRANSCRIBE": "Too many voice recordings. Please wait a moment.",
+    "RATE_LIMIT_CHAT_UNLOCK": "Too many attempts. Please wait a moment.",
+    "RATE_LIMIT_LOGIN": "Too many login attempts. Please wait a moment.",
+    "RATE_LIMIT_REGISTER": "Too many registrations from this connection. Please wait a moment.",
+    "RATE_LIMIT_GENERIC": "Too many requests. Please wait a moment.",
+    "UNKNOWN_PROVIDER": "Unknown provider.",
+    "PROVIDER_UNSUPPORTED_KEY_TYPE": "This provider doesn't support this key type.",
+    "PROVIDER_NEEDS_BASE_URL": "This provider needs an endpoint address (API base URL).",
+    "PROVIDER_BASE_URL_NOT_ALLOWED": "This endpoint address isn't allowed. Use a regular http(s) address, not a cloud metadata endpoint.",
+    "PROVIDER_NEEDS_ARCANA_ID": "This provider needs an Arcana ID.",
+    "PROVIDER_NEEDS_API_KEY": "This provider requires an API key.",
+    "MODEL_REQUIRED": "Please choose a model or enter a model ID.",
+    "ARCANA_KEY_MISSING_MODEL": "No model is set for this Arcana key.",
+    "ARCANA_KEY_MISSING_ID": "No Arcana ID is set for this Arcana key.",
+    "API_KEY_NO_TESTABLE_MODEL": "No model is set for this entry that could be tested.",
+    "TTS_KEY_MISSING_MODEL": "No model is set for this TTS key.",
+    "TTS_KEY_TEST_NEEDS_VOICE": "This provider needs a voice for speech output, which isn't available during a key test — try speech output directly in a project instead.",
+    "TTS_PROVIDER_UNSUPPORTED": "Speech output isn't supported for this provider yet.",
+    "CARTESIA_KEY_MISSING_MODEL": "No model is set for this Cartesia key.",
+    "STT_KEY_MISSING_MODEL": "No model is set for this STT key.",
+    "STT_PROVIDER_UNSUPPORTED": "Voice recognition isn't supported for this provider yet.",
+    "ADMIN_REQUIRED": "This action requires an administrator account.",
+    "USER_NOT_FOUND": "User not found.",
+    "CANNOT_DISABLE_SELF": "You can't disable your own account.",
+    "LAST_ADMIN_PROTECTED": "At least one active administrator must remain."
+  }
+}

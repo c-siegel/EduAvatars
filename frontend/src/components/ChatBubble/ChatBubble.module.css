@@ -1,0 +1,168 @@
+/* Column, not row: the optional message-actions row (pencil/regenerate, see .messageActions below)
+   needs to sit directly BELOW the bubble, still aligned to the same side as the bubble itself —
+   align-items does that job here, where justify-content used to when this was a row. */
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.me {
+  align-items: flex-end;
+}
+
+.bubble {
+  max-width: 80%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.me .bubble {
+  background: var(--gradient-brand);
+  color: var(--color-accent-contrast);
+}
+
+/* Markdown-Inhalte (react-markdown) — Browser-Defaults der Blockelemente passen nicht zu einer
+   kompakten Chat-Bubble (z.B. Absatz-Ränder), deshalb hier zurückgesetzt/angepasst. :global, weil
+   react-markdown die Tags selbst rendert, ohne CSS-Module-Klassen zu vergeben. */
+.bubble :global(p) {
+  margin: 0;
+}
+
+.bubble :global(p + p),
+.bubble :global(ul),
+.bubble :global(ol),
+.bubble :global(pre),
+.bubble :global(blockquote) {
+  margin-top: var(--space-2);
+}
+
+.bubble :global(ul),
+.bubble :global(ol) {
+  padding-left: 1.25em;
+}
+
+.bubble :global(li + li) {
+  margin-top: 0.25em;
+}
+
+.bubble :global(code) {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+
+.bubble :global(pre) {
+  overflow-x: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.bubble :global(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.bubble :global(a) {
+  color: inherit;
+}
+
+.bubble :global(blockquote) {
+  padding-left: var(--space-3);
+  border-left: 2px solid currentColor;
+  opacity: 0.85;
+}
+
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  animation: blink 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Pencil/regenerate row under an editable user message — always visible (not hover-only), since
+   this is a touch-first page where hover doesn't exist. */
+.messageActions {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+}
+
+.messageActions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.messageActions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* .row already stretches to the thread's full width (its parent's default flex align-items is
+   stretch) — widening the bubble itself here, rather than relying on width:100% against a normally
+   shrink-to-fit bubble, is what gives the textarea inside a stable, non-circular width to resolve
+   its own width:100% against. */
+.bubbleEditing {
+  width: 100%;
+  max-width: 100%;
+}
+
+.editTextarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
+.editTextarea:focus {
+  outline: none;
+}

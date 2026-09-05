@@ -1,0 +1,17 @@
+[Unit]
+Description=EduAvatars (Docker Compose Stack)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/eduavatars
+# Hardcode the Compose project name so "systemctl restart eduavatars" hits the same
+# containers/volumes after a "git pull", regardless of the directory name.
+ExecStart=/usr/bin/docker compose -p eduavatars -f /opt/eduavatars/docker/docker-compose.yml --env-file /opt/eduavatars/.env up -d
+ExecStop=/usr/bin/docker compose -p eduavatars -f /opt/eduavatars/docker/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target

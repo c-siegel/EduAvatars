@@ -1,0 +1,28 @@
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border-left: 3px solid transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.navItem:hover {
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.active {
+  background: var(--surface-accent-soft);
+  border-left-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.active:hover {
+  background: var(--surface-accent-soft);
+  color: var(--text-accent);
+}

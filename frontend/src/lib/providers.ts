@@ -1,0 +1,41 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiKeysApi } from "@/api/apiKeys";
+import i18n from "@/i18n";
+import type { ApiKey, ProviderSpec } from "@/types/apiKey";
+
+// Anbieter, Endpunkt-Vorbelegungen und kuratierte Modelle kommen aus der Backend-Registry
+// (backend/app/core/providers.py) statt aus einer zweiten Liste hier — sonst kann das Frontend
+// Anbieter oder Modelle anbieten, für die es serverseitig keinen Aufrufpfad gibt.
+export function useProviders() {
+  return useQuery({
+    queryKey: ["api-key-providers"],
+    queryFn: apiKeysApi.listProviders,
+    // Stammdaten ändern sich nur mit einem Deployment.
+    staleTime: Infinity,
+  });
+}
+
+export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
+  return specs.find((spec) => spec.value === value);
+}
+
+export function providerLabel(specs: ProviderSpec[], value: string): string {
+  return findProvider(specs, value)?.label ?? value;
+}
+
+/** Anzeigename eines Schlüssels: der individuelle Name der Lehrkraft, sonst das Anbieter-Label. */
+export function keyDisplayName(key: ApiKey, specs: ProviderSpec[]): string {
+  return key.label?.trim() || providerLabel(specs, key.provider);
+}
+
+/** Anzeigename des hinterlegten Modells — kuratierter Titel, sonst die eingetragene Modell-ID. */
+export function modelLabel(key: ApiKey, specs: ProviderSpec[]): string | null {
+  const spec = findProvider(specs, key.provider);
+  if (!key.modelId) {
+    // A provider with a fixed model (TTS: OpenAI/Gemini; STT: GWDG SAIA) deliberately stores no
+    // model_id (see ApiKeyForm.tsx) — not "no model", just no choice needed.
+    const modelFixed = (key.keyType === "tts" && spec?.ttsModelFixed) || (key.keyType === "stt" && spec?.sttModelFixed);
+    return modelFixed ? i18n.t("apiKeyForm.defaultModel") : null;
+  }
+  return spec?.models.find((model) => model.value === key.modelId)?.label ?? key.modelId;
+}

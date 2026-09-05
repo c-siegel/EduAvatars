@@ -1,0 +1,95 @@
+"""
+Auth Request/Response Shapes
+
+The request/response shapes for app/api/auth.py, plus the shared password-strength check used
+by both registration and password reset/change (see also schemas/profile.py).
+
+How to use:
+    from app.models.schemas.auth import LoginRequest
+"""
+
+import re
+
+from pydantic import EmailStr, field_validator
+
+from app.core.error_codes import ErrorCode
+from app.core.schema import CamelModel
+
+MIN_PASSWORD_LENGTH = 10
+MAX_PASSWORD_BYTES = 72  # bcrypt's limit — above this, bcrypt raises an error instead of truncating
+
+
+def _validate_password_strength(password: str) -> str:
+    """Enforce "at least 10 characters, one digit", raising ValueError if the password is too weak."""
+    # Same rule as changing a password in the profile (Screen 1h: "Min. 10 characters, one
+    # digit") — previously only checked client-side, now also enforced server-side on
+    # registration (Phase 2.1, a safety net in case the client doesn't check, e.g. direct API calls).
+    if len(password) < MIN_PASSWORD_LENGTH or not re.search(r"\d", password):
+        raise ValueError(ErrorCode.PASSWORD_TOO_SHORT)
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ValueError(ErrorCode.PASSWORD_TOO_LONG)
+    return password
+
+
+def _cap_password_bytes(password: str) -> str:
+    """Reject a password over bcrypt's 72-byte limit before it ever reaches bcrypt.checkpw.
+
+    Unlike _validate_password_strength (for setting a NEW password), this doesn't check
+    minimum length/digit — it's used on login, where an existing password must still be
+    accepted no matter how it was chosen. bcrypt itself raises an unhandled ValueError above
+    72 bytes instead of truncating, which would otherwise 500 the request.
+    """
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ValueError(ErrorCode.PASSWORD_TOO_LONG)
+    return password
+
+
+class LoginRequest(CamelModel):
+    email: EmailStr
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_length(cls, value: str) -> str:
+        return _cap_password_bytes(value)
+
+
+class RegisterRequest(CamelModel):
+    name: str
+    email: EmailStr
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return _validate_password_strength(value)
+
+
+class UserOut(CamelModel):
+    id: str
+    name: str
+    school: str | None
+    email: str
+    avatar_url: str | None = None
+    is_admin: bool = False
+    # Whether the frontend should force a change-password screen before anything else — see
+    # User.must_change_password.
+    must_change_password: bool = False
+
+
+class RegistrationStatusOut(CamelModel):
+    enabled: bool
+
+
+class ForgotPasswordRequest(CamelModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(CamelModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return _validate_password_strength(value)

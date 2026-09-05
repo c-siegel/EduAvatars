@@ -1,0 +1,94 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.select {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.hint {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sliderValue {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  /* 4ch fits the widest value any slider shows ("0.85"), so the temperature and Top P rows keep
+     their sliders the same length instead of one ending a character short. */
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.toggleCopy {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggleCopy strong {
+  font-size: 0.9375rem;
+}
+
+.toggleCopy span {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.publishCard {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.publishHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.linkField {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: 0.875rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}

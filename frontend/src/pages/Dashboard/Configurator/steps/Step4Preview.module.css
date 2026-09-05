@@ -1,0 +1,60 @@
+.avatarStage {
+  height: 16rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+  /* Nur noch Fallback-Fläche für "kein Hintergrundbild gewählt" — das Bild selbst rendert jetzt
+     TalkingHeadAvatar direkt (.backdrop), siehe TalkingHeadAvatar.module.css/.tsx. */
+  background-color: var(--neutral-200);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 28rem;
+}
+
+.header {
+  background: var(--gradient-brand);
+  color: var(--color-accent-contrast);
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.headerTitle {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.composer {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--border-default);
+}
+
+.composer input {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+}
