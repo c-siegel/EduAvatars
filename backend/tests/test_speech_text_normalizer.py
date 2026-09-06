@@ -104,3 +104,19 @@ def test_despeaks_em_dash_without_touching_minus(text: str, language: str, expec
 )
 def test_strips_math_delimiters(text: str, language: str, expected: str) -> None:
     assert normalize_for_speech(text, language) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "language", "expected"),
+    [
+        ("Pflanzen nehmen CO2 auf.", "de", "Pflanzen nehmen C O Zwei auf."),
+        ("Pflanzen nehmen CO_2 auf.", "de", "Pflanzen nehmen C O Zwei auf."),
+        ("Plants absorb CO2.", "en", "Plants absorb C O Two."),
+        ("Plants absorb CO_2.", "en", "Plants absorb C O Two."),
+        # Must not fire inside a larger token or on a different number.
+        ("ECO2000 ist ein Gerät.", "de", "ECO2000 ist ein Gerät."),
+        ("CO23 ist keine Formel.", "de", "CO23 ist keine Formel."),
+    ],
+)
+def test_spells_out_co2(text: str, language: str, expected: str) -> None:
+    assert normalize_for_speech(text, language) == expected

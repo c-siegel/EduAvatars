@@ -2,13 +2,13 @@
 Speech Text Normalizer
 
 Rewrites assistant reply text into a form that TTS (text-to-speech) engines pronounce correctly
-before it is sent for speech synthesis. Markdown formatting, decimal numbers, math symbols, and
-an em dash all look right in the chat but are misread out loud — "**wichtig**" comes out as "star
-star wichtig star star", "1,23" as "one twenty-three" instead of "one comma two three", "\\cdot"
-spelled out letter by letter instead of said as "times", and an em dash ("—", used for a
-parenthetical aside) read as "minus", the same as a real formula's minus sign. This module only
-changes the copy of the text handed to the TTS engine; the reply stored and displayed in the chat
-keeps its original formatting.
+before it is sent for speech synthesis. Markdown formatting, decimal numbers, math symbols, an
+em dash, and chemical formulas like CO2 all look right in the chat but are misread out loud —
+"**wichtig**" comes out as "star star wichtig star star", "1,23" as "one twenty-three" instead of
+"one comma two three", "\\cdot" spelled out letter by letter instead of said as "times", an em dash
+("—", used for a parenthetical aside) read as "minus", the same as a real formula's minus sign, and
+"CO2" read as one made-up word instead of "C O two". This module only changes the copy of the text
+handed to the TTS engine; the reply stored and displayed in the chat keeps its original formatting.
 
 How to use:
     from app.services.speech_text_normalizer import normalize_for_speech
@@ -113,6 +113,20 @@ def _despeak_em_dash(text: str) -> str:
     return _EM_DASH_AS_PAUSE.sub(", ", text)
 
 
+# A TTS engine reads "CO2"/"CO_2" (the two common ways to write the CO2 molecule; the underscore is
+# a LaTeX-style subscript) as if it were one word instead of spelling it out. The underscore variant
+# also uses the same character _ITALIC looks for above, but that rule only strips a *paired*
+# "_..._" span, so a single subscript underscore like this reaches here untouched.
+_CO2_FORMULA = re.compile(r"\bCO_?2\b")
+_CO2_NUMBER_WORD: dict[str, str] = {"de": "Zwei", "en": "Two"}
+
+
+def _spell_out_co2(text: str, language: str) -> str:
+    """Rewrites "CO2"/"CO_2" into "C O Zwei"/"C O Two" so the TTS spells it out letter by letter."""
+    number_word = _CO2_NUMBER_WORD.get(language, _CO2_NUMBER_WORD[_DEFAULT_LANGUAGE])
+    return _CO2_FORMULA.sub(f"C O {number_word}", text)
+
+
 # (pattern, separator word) per language. Requires a digit immediately on both sides of the
 # separator, so it never fires on a prose list ("1, 2, 3") or a sentence ending in a digit
 # ("...Punkt 1. Nächstes...").
@@ -168,6 +182,7 @@ def normalize_for_speech(text: str, language: str) -> str:
     result = _strip_markdown(text)
     result = _strip_math_delimiters(result)
     result = _despeak_em_dash(result)
+    result = _spell_out_co2(result, language)
     result = _spell_out_decimal_digits(result, language)
     for pattern, replacement in _SYMBOL_RULES.get(language, _SYMBOL_RULES[_DEFAULT_LANGUAGE]):
         result = pattern.sub(replacement, result)
