@@ -286,6 +286,8 @@
       "ttsKey": "TTS key",
       "noTtsPrefix": "No TTS set up yet. First add a key of type TTS under",
       "noTtsSuffix": " (e.g. OpenAI, Google Gemini, Cartesia, or a custom endpoint).",
+      "ttsKeyDefault": "Built-in (local voice)",
+      "ttsKeyHint": "Optional — without a key, replies are read aloud with the built-in local voice. Add a key of type TTS under API keys to use a cloud provider instead.",
       "voiceOptional": "Voice (optional)",
       "voicePlaceholder": "e.g. alloy — depends on the chosen provider",
       "voiceHint": "Cartesia and Google Cloud TTS require a voice (no default) — without one, speech output for this project won't work.",

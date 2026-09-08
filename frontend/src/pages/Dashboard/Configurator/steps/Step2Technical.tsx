@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
 import { apiKeysApi } from "@/api/apiKeys";
-import { findProvider, keyDisplayName, modelLabel, useProviders } from "@/lib/providers";
+import { findProvider, keyDisplayName, modelLabel, useLocalTtsStatus, useProviders } from "@/lib/providers";
 import { SPOKEN_LANGUAGE_VALUES } from "@/lib/speechOptions";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
@@ -27,6 +27,8 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   // nach dem Hinterlegen eines passenden Keys bestand — der Fehler fiel dann erst im Chat auf.
   const providersQuery = useProviders();
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
+  const localTtsStatusQuery = useLocalTtsStatus();
+  const localTtsAvailable = localTtsStatusQuery.data?.available ?? false;
   const specs = providersQuery.data ?? [];
   const llmKeys = (keysQuery.data ?? []).filter((key) => key.keyType === "llm" && key.modelId);
   // TTS wählt wie das LLM-Modell direkt einen eingerichteten Key (Screen 1g), keine feste
@@ -41,7 +43,8 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   });
   // STT (currently only GWDG SAIA) is optional — with no key selected, transcription keeps
   // running through the built-in local Whisper engine (see backend services/stt_service.py), so
-  // unlike TTS/LLM there's no "nothing set up" warning callout here.
+  // unlike LLM there's no "nothing set up" warning callout here. TTS below follows the same rule
+  // once local TTS is available for this deployment (localTtsAvailable).
   const sttKeys = (keysQuery.data ?? []).filter((key) => {
     if (key.keyType !== "stt") return false;
     if (key.modelId) return true;
@@ -157,7 +160,7 @@ export function Step2Technical({ draft, onChange }: StepProps) {
           <label className={styles.label} htmlFor="tts-key">
             {t("configurator.step2.ttsKey")}
           </label>
-          {hasNoTtsKeys ? (
+          {hasNoTtsKeys && !localTtsAvailable ? (
             <Callout variant="warning">
               {t("configurator.step2.noTtsPrefix")} <Link to="/dashboard/api">{t("apiDashboard.title")}</Link>
               {t("configurator.step2.noTtsSuffix")}
@@ -171,13 +174,19 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                 onChange={(e) => onChange({ ttsApiKeyId: e.target.value || null })}
                 disabled={!keysLoaded}
               >
-                <option value={NO_MODEL_SELECTED}>{t("apiKeyForm.pleaseChoose")}</option>
+                <option value={NO_MODEL_SELECTED}>
+                  {localTtsAvailable ? t("configurator.step2.ttsKeyDefault") : t("apiKeyForm.pleaseChoose")}
+                </option>
                 {ttsKeys.map((key) => (
                   <option key={key.id} value={key.id}>
                     {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
                   </option>
                 ))}
               </select>
+              {/* Shown whenever leaving this project's key unset falls back to local TTS — not just
+                  when the account has no TTS keys at all (this account may have keys for OTHER
+                  projects and still leave this one on the local fallback). */}
+              {localTtsAvailable && <p className={styles.hint}>{t("configurator.step2.ttsKeyHint")}</p>}
               <Input
                 label={t("configurator.step2.voiceOptional")}
                 placeholder={t("configurator.step2.voicePlaceholder")}

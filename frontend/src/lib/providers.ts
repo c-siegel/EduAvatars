@@ -15,6 +15,16 @@ export function useProviders() {
   });
 }
 
+/** Whether this deployment can fall back to local TTS synthesis when a project has no TTS key selected. */
+export function useLocalTtsStatus() {
+  return useQuery({
+    queryKey: ["local-tts-status"],
+    queryFn: apiKeysApi.localTtsStatus,
+    // A deployment-level fact, only ever changes with a redeploy.
+    staleTime: Infinity,
+  });
+}
+
 export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
   return specs.find((spec) => spec.value === value);
 }

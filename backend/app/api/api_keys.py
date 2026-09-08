@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_session
 from app.core.error_codes import ErrorCode
 from app.core.providers import KEY_TYPE_STT, KEY_TYPE_TTS, PROVIDERS
@@ -26,6 +27,7 @@ from app.models.schemas.api_key import (
     ApiKeyOut,
     ApiKeyTestResult,
     ApiKeyUpdate,
+    LocalTtsStatusOut,
     ProviderModelOut,
     ProviderSpecOut,
 )
@@ -82,6 +84,12 @@ def list_providers(_: User = Depends(get_current_user)):
         )
         for spec in PROVIDERS
     ]
+
+
+@router.get("/local-tts-status", response_model=LocalTtsStatusOut)
+def local_tts_status(_: User = Depends(get_current_user)):
+    """Whether the local-TTS sidecar is enabled for this deployment (see Settings.local_tts_enabled)."""
+    return LocalTtsStatusOut(available=settings.local_tts_enabled)
 
 
 @router.get("", response_model=list[ApiKeyOut])

@@ -74,6 +74,14 @@ _NO_CHAT_PASSWORD_SENT = object()
 _MAX_AUDIO_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB — individual chat voice messages are short
 _ALLOWED_AUDIO_CONTENT_TYPES = {"audio/webm", "audio/ogg", "audio/mp4", "audio/wav", "audio/mpeg"}
 
+# The only two content types synthesize_speech ever returns (see tts_service.py) — used to pick a
+# matching file extension when caching start-prompt audio to disk, and the reverse mapping below
+# to serve it back with the right Content-Type. Not Python's stdlib `mimetypes` module: its
+# audio/wav guess is inconsistent across platforms ("audio/x-wav" on some), and this only ever
+# needs to cover these two known cases.
+_AUDIO_FILE_EXTENSIONS = {"audio/mpeg": ".mp3", "audio/wav": ".wav"}
+_AUDIO_CONTENT_TYPE_BY_EXTENSION = {ext: content_type for content_type, ext in _AUDIO_FILE_EXTENSIONS.items()}
+
 
 def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_type: str) -> None:
     """Raise HTTP 400 unless `key_id` is one of `user_id`'s own API keys of the given type."""
@@ -85,14 +93,17 @@ def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_
 
 
 def _synthesize_if_enabled(session: Session, project: Project, text: str) -> tuple[str | None, str | None]:
-    """Generate speech for `text` if the project has TTS enabled and a usable key; never raises."""
-    # Speech output is an addition to the text reply — if it fails (no key, provider error), the
-    # user still gets the text back, instead of a 500/502 just because of the audio generation.
+    """Generate speech for `text` if the project has TTS enabled; never raises.
+
+    `resolve_tts_key` returning None (no cloud key configured) isn't itself a reason to skip —
+    synthesize_speech falls back to the local-TTS sidecar in that case, or raises, caught below
+    like any other TTS failure (no key, provider error, ...).
+    """
+    # Speech output is an addition to the text reply — if it fails, the user still gets the text
+    # back, instead of a 500/502 just because of the audio generation.
     if not project.tts_enabled:
         return None, None
     api_key = resolve_tts_key(session, project)
-    if api_key is None:
-        return None, None
     try:
         audio_bytes, content_type = synthesize_speech(text, project.tts_voice, api_key, project.spoken_language)
     except Exception:
@@ -275,10 +286,12 @@ def generate_start_audio(
     if not project.start_prompt or not project.start_prompt.strip():
         raise HTTPException(status_code=400, detail=ErrorCode.START_PROMPT_REQUIRED)
     api_key = resolve_tts_key(session, project) if project.tts_enabled else None
-    if api_key is None:
+    # A missing key is only a hard failure without the local-TTS fallback available — with it,
+    # synthesize_speech(..., None, ...) below succeeds via the sidecar instead.
+    if not project.tts_enabled or (api_key is None and not settings.local_tts_enabled):
         raise HTTPException(status_code=400, detail=ErrorCode.TTS_NOT_CONFIGURED)
     try:
-        audio_bytes, _content_type = synthesize_speech(
+        audio_bytes, content_type = synthesize_speech(
             project.start_prompt, project.tts_voice, api_key, project.spoken_language
         )
     except Exception as exc:
@@ -286,15 +299,24 @@ def generate_start_audio(
             status_code=502,
             detail={
                 "code": ErrorCode.START_AUDIO_GENERATION_FAILED,
-                "message": scrub_key_from_text(str(exc), api_key.encrypted_api_key),
+                # No key to scrub when the local-TTS sidecar (not a cloud provider) failed.
+                "message": scrub_key_from_text(str(exc), api_key.encrypted_api_key) if api_key else str(exc),
             },
         ) from exc
 
     # Deterministic filename (not a fresh UUID per generation, unlike avatar_library.py) —
     # regenerating just overwrites the same file, so there's never a stale one left behind.
+    # Extension follows the actual content type (every cloud provider returns MP3; the local-TTS
+    # sidecar returns real WAV, see tts_service.py) — get_start_audio below infers media_type the
+    # same way, so a mismatched Content-Type header never reaches the browser.
+    extension = _AUDIO_FILE_EXTENSIONS.get(content_type, ".mp3")
     project_dir = Path(settings.start_audio_upload_dir) / project.user_id
     project_dir.mkdir(parents=True, exist_ok=True)
-    file_path = project_dir / f"{project.id}.mp3"
+    file_path = project_dir / f"{project.id}{extension}"
+    # A previous generation may have used a different provider (and therefore extension) — clear
+    # it so switching providers doesn't leave an orphaned file behind alongside the new one.
+    if project.start_audio_path and project.start_audio_path != str(file_path):
+        Path(project.start_audio_path).unlink(missing_ok=True)
     file_path.write_bytes(audio_bytes)
 
     project.start_audio_path = str(file_path)
@@ -321,7 +343,12 @@ def get_start_audio(
     if not is_owner and not project.published:
         raise HTTPException(status_code=404, detail=ErrorCode.START_AUDIO_NOT_FOUND)
 
-    return FileResponse(project.start_audio_path, media_type="audio/mpeg")
+    # Matches whichever extension generate_start_audio picked for the actual content (mp3 for
+    # every cloud provider, wav for local TTS) — defaulting to mpeg keeps serving files that were
+    # written before this mapping existed (always real MP3s back then).
+    extension = Path(project.start_audio_path).suffix
+    media_type = _AUDIO_CONTENT_TYPE_BY_EXTENSION.get(extension, "audio/mpeg")
+    return FileResponse(project.start_audio_path, media_type=media_type)
 
 
 @router.post("/{project_id}/transcribe", response_model=TranscriptionOut)

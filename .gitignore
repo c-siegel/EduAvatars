@@ -17,6 +17,7 @@ backend/build/
 backend/whisper-cache
 .pytest_cache/
 local-tts/voices/*.wav
+local-tts/.cache/
 
 # Env
 .env

@@ -123,15 +123,17 @@ def _save_conversation_turn(
 
 
 def _synthesize_if_enabled(
-    api_key: UserApiKey | None, tts_voice: str | None, project_id: str, text: str, spoken_language: str
+    tts_enabled: bool, api_key: UserApiKey | None, tts_voice: str | None, project_id: str, text: str, spoken_language: str
 ) -> tuple[str | None, str | None]:
-    """Generate speech for `text` if a TTS key was resolved for the project; logs failures instead of raising.
+    """Generate speech for `text` if TTS is enabled for the project; logs failures instead of raising.
 
     Takes the already-resolved key (not `session`/`project`) so the caller can resolve it up
     front and close its DB session before this runs — see send_message, which must not hold a
-    pooled connection open for the whole TTS call.
+    pooled connection open for the whole TTS call. `api_key` may be None even when `tts_enabled`
+    is True (no cloud key configured) — synthesize_speech itself decides whether that falls back
+    to the local-TTS sidecar or fails, so a failure there is caught below like any other.
     """
-    if api_key is None:
+    if not tts_enabled:
         return None, None
     try:
         audio_bytes, content_type = synthesize_speech(text, tts_voice, api_key, spoken_language)
@@ -250,6 +252,7 @@ def send_message(
     temperature = project.temperature
     top_p = project.top_p
     start_prompt = project.start_prompt
+    tts_enabled = project.tts_enabled
     tts_voice = project.tts_voice
     spoken_language = project.spoken_language
     project_id = project.id
@@ -281,9 +284,10 @@ def send_message(
                 visitor_name,
             )
 
-    # None (not ~0ms) when TTS didn't actually run (disabled/no key) — see _synthesize_if_enabled.
+    # None (not ~0ms) when TTS didn't actually run (disabled, or enabled with nothing configured
+    # to synthesize with) — see _synthesize_if_enabled.
     tts_start = time.perf_counter()
-    audio_base64, content_type = _synthesize_if_enabled(tts_api_key, tts_voice, project_id, reply, spoken_language)
+    audio_base64, content_type = _synthesize_if_enabled(tts_enabled, tts_api_key, tts_voice, project_id, reply, spoken_language)
     tts_ms = (time.perf_counter() - tts_start) * 1000 if audio_base64 is not None else None
     return ChatMessageOut(
         reply=reply, audio_base64=audio_base64, content_type=content_type, llm_ms=llm_ms, tts_ms=tts_ms
@@ -338,6 +342,7 @@ def send_message_stream(
     temperature = project.temperature
     top_p = project.top_p
     start_prompt = project.start_prompt
+    tts_enabled = project.tts_enabled
     tts_voice = project.tts_voice
     spoken_language = project.spoken_language
     project_id = project.id
@@ -346,8 +351,13 @@ def send_message_stream(
     user_message = data.message
 
     def synthesize_chunk(text: str) -> tuple[str | None, str | None, float]:
-        """Runs in the background TTS worker thread; never raises. Returns (audioBase64, contentType, ms)."""
-        if tts_api_key is None:
+        """Runs in the background TTS worker thread; never raises. Returns (audioBase64, contentType, ms).
+
+        `tts_api_key` may be None even when `tts_enabled` is True (no cloud key configured) —
+        synthesize_speech itself falls back to the local-TTS sidecar in that case, or raises,
+        caught below like any other TTS failure.
+        """
+        if not tts_enabled:
             return None, None, 0.0
         synth_start = time.perf_counter()
         try:
@@ -365,7 +375,7 @@ def send_message_stream(
         # in submit() itself since that's the one place both the per-delta loop and the
         # chunker.flush() tail path funnel through.
         first_chunk_ready_ms: float | None = None
-        total_tts_ms: float | None = 0.0 if tts_api_key is not None else None
+        total_tts_ms: float | None = 0.0 if tts_enabled else None
         full_text_parts: list[str] = []
         chunker = SentenceChunker()
         # Chunks are submitted to the shared _tts_executor (module-level, see its definition

@@ -286,6 +286,8 @@
       "ttsKey": "TTS-Schlüssel",
       "noTtsPrefix": "Noch kein TTS eingerichtet. Lege zuerst unter",
       "noTtsSuffix": " einen Schlüssel vom Typ TTS an (z. B. OpenAI, Google Gemini, Cartesia oder ein eigener Endpunkt).",
+      "ttsKeyDefault": "Eingebaut (lokale Stimme)",
+      "ttsKeyHint": "Optional — ohne Schlüssel werden Antworten mit der eingebauten lokalen Stimme vorgelesen. Lege unter API-Schlüsseln einen Schlüssel vom Typ TTS an, um stattdessen einen Cloud-Anbieter zu nutzen.",
       "voiceOptional": "Stimme (optional)",
       "voicePlaceholder": "z. B. alloy — abhängig vom gewählten Anbieter",
       "voiceHint": "Für Cartesia und Google Cloud TTS ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die Sprachausgabe für dieses Projekt ins Leere.",

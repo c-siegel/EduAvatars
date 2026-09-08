@@ -307,6 +307,30 @@ class Settings(BaseSettings):
     request-serving thread pool of CPU while it runs.
     """
 
+    # ==================== LOCAL TEXT-TO-SPEECH (TTS) SETTINGS ====================
+
+    # Unlike local STT (faster-whisper, above), local TTS does NOT run in this process — the
+    # model needs more CPU/RAM than fits comfortably alongside the request-serving backend, so it
+    # runs in its own optional sidecar container instead (see local-tts/ and
+    # docker/local-tts.Dockerfile). This backend only makes an HTTP call to it, and only when
+    # local_tts_enabled is set — a deployment that doesn't run that sidecar sees no change at all.
+
+    local_tts_enabled: bool = False
+    """
+    Whether the local-TTS sidecar (see local-tts/) is reachable and should be used as the
+    fallback when a project has TTS enabled but no cloud key configured — the TTS counterpart to
+    how a missing STT key falls back to local Whisper (see stt_service.py).
+
+    False by default: unlike Whisper, this fallback needs a separate container actually running
+    (docker/docker-compose.yml's "local-tts" profile), so it's opt-in rather than always-on.
+    """
+
+    local_tts_url: str = "http://tts-local:8080"
+    """Base URL of the local-TTS sidecar container. Only used when local_tts_enabled is True."""
+
+    local_tts_request_timeout_seconds: float = 30.0
+    """How long to wait for the local-TTS sidecar before giving up on one synthesis request."""
+
     # ==================== PUBLIC CHAT & VOICE INPUT RATE LIMITS ====================
 
     # Sized for a school class of ~30 students in one 45-minute lesson (see

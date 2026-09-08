@@ -3,7 +3,9 @@ Text-to-Speech (TTS) Synthesis
 
 Turns text into spoken audio using the API key configured for a project. Most providers go
 through litellm; Cartesia has its own direct HTTP integration (see _synthesize_cartesia)
-because litellm doesn't support it.
+because litellm doesn't support it. With no key configured, falls back to the optional local-TTS
+sidecar (see _synthesize_local) — the TTS counterpart to stt_service.py's local Whisper fallback,
+just out-of-process since the model needs more compute than fits in this container.
 
 How to use:
     from app.services.tts_service import synthesize_speech
@@ -16,6 +18,7 @@ import base64
 import httpx
 import litellm
 
+from app.core.config import settings
 from app.core.error_codes import ErrorCode
 from app.core.providers import (
     CARTESIA_PROVIDER,
@@ -56,19 +59,45 @@ class VoiceRequiredError(ValueError):
 
 
 def synthesize_speech(
-    text: str, tts_voice: str | None, api_key_record: UserApiKey, language: str = "de"
+    text: str, tts_voice: str | None, api_key_record: UserApiKey | None, language: str = "de"
 ) -> tuple[bytes, str]:
-    """Generate speech for `text` using the given key, dispatching to the right provider integration.
+    """Generate speech for `text`, dispatching to the right provider integration for the given key.
 
     `text` is normalized for speech first (see speech_text_normalizer.py) — decimal numbers and
     math symbols read correctly, but this only affects what's spoken, never what's displayed.
+
+    `api_key_record` is None when the caller has TTS enabled but no cloud key configured — same
+    convention as stt_service.py::transcribe_audio's `api_key_record`. Raises ValueError if the
+    local-TTS sidecar isn't enabled either (settings.local_tts_enabled) — callers in the public
+    chat already only reach this when TTS is actually enabled for the project, so this only fires
+    for a genuinely unconfigured deployment, and is caught the same way as any other TTS failure.
     """
     text = normalize_for_speech(text, language)
+    if api_key_record is None:
+        if not settings.local_tts_enabled:
+            raise ValueError(ErrorCode.TTS_NOT_CONFIGURED)
+        return _synthesize_local(text, language)
     if api_key_record.provider == CARTESIA_PROVIDER:
         return _synthesize_cartesia(text, tts_voice, api_key_record)
     if api_key_record.provider == GOOGLE_CLOUD_TTS_PROVIDER:
         return _synthesize_google_cloud_tts(text, tts_voice, api_key_record)
     return _synthesize_litellm(text, tts_voice, api_key_record)
+
+
+def _synthesize_local(text: str, language: str) -> tuple[bytes, str]:
+    """Generate speech via the optional local-TTS sidecar (see local-tts/ and
+    docker/local-tts.Dockerfile) — used when a project has TTS enabled but no cloud key is
+    configured. Only called when settings.local_tts_enabled is True (see synthesize_speech)."""
+    response = _client.post(
+        f"{settings.local_tts_url.rstrip('/')}/synthesize",
+        json={"text": text, "language": language},
+        timeout=settings.local_tts_request_timeout_seconds,
+    )
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise httpx.HTTPStatusError(f"{exc}: {response.text[:500]}", request=exc.request, response=exc.response) from exc
+    return response.content, "audio/wav"
 
 
 def _synthesize_litellm(text: str, tts_voice: str | None, api_key_record: UserApiKey) -> tuple[bytes, str]:
