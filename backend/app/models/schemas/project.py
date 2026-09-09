@@ -57,6 +57,7 @@ class ProjectOut(CamelModel):
     spoken_language: str
     stt_api_key_id: str | None
     stt_enabled: bool
+    stt_browser_enabled: bool
     streaming_enabled: bool
     chat_default_open: bool
     password_protected: bool
@@ -92,6 +93,7 @@ class ProjectUpdate(CamelModel):
     spoken_language: str | None = None
     stt_api_key_id: str | None = None
     stt_enabled: bool | None = None
+    stt_browser_enabled: bool | None = None
     streaming_enabled: bool | None = None
     chat_default_open: bool | None = None
     require_visitor_name: bool | None = None

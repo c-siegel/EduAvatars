@@ -62,6 +62,11 @@ class PublicProjectOut(CamelModel):
     spoken_language: str = "de"
     tts_enabled: bool = False
     stt_enabled: bool = False
+    # The transformers.js model id the frontend should load for on-device (WebGPU) transcription,
+    # or None if that's unavailable (deployment opt-out, project opt-out, or password-locked) —
+    # see services/api_key_service.py::browser_stt_model_for. The frontend's whole decision is
+    # "is this non-null"; it never needs to know the deployment's model settings exist.
+    browser_stt_model: str | None = None
     # Whether the frontend should use POST /message/stream instead of /message — see
     # api/public_chat.py::send_message_stream. Meaningless (and always False here) without
     # tts_enabled, since the whole point is audio starting before the full reply is ready.

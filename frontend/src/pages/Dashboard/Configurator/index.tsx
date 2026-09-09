@@ -55,6 +55,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     ttsVoice: project.ttsVoice ?? "",
     sttApiKeyId: project.sttApiKeyId,
     sttEnabled: project.sttEnabled,
+    sttBrowserEnabled: project.sttBrowserEnabled,
     streamingEnabled: project.streamingEnabled,
   };
 }
@@ -86,6 +87,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.ttsVoice !== (project.ttsVoice ?? "") ||
     draft.sttApiKeyId !== project.sttApiKeyId ||
     draft.sttEnabled !== project.sttEnabled ||
+    draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
     draft.streamingEnabled !== project.streamingEnabled
   );
 }
@@ -142,6 +144,7 @@ export function ConfiguratorPage() {
         ttsVoice: data.ttsVoice || null,
         sttApiKeyId: data.sttApiKeyId,
         sttEnabled: data.sttEnabled,
+        sttBrowserEnabled: data.sttBrowserEnabled,
         streamingEnabled: data.streamingEnabled,
       }),
     onSuccess: (updated) => {

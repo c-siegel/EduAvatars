@@ -41,6 +41,7 @@ class ProjectExportData(BaseModel):
     tts_voice: str | None = None
     spoken_language: str = "de"
     stt_enabled: bool = True
+    stt_browser_enabled: bool = False
     streaming_enabled: bool = True
     chat_default_open: bool = True
     require_visitor_name: bool = False

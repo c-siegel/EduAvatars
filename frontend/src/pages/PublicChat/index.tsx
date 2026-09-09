@@ -13,6 +13,7 @@ import { SurveyEmbed } from "@/components/SurveyEmbed";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle, type FpsTrackingResult } from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/api/publicChat";
+import { BrowserSttEngine } from "@/lib/browserStt";
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
@@ -273,6 +274,11 @@ export function PublicChatPage() {
   // the resulting sendMessage) has been kicked off — drives the mic button's spinner/disabled state,
   // the same role transcribeMutation.isPending used to play before segmentation replaced it.
   const [isFinalizingRecording, setIsFinalizingRecording] = useState(false);
+  // Drives the loading bar below the composer while the browser-side Whisper model downloads
+  // (see toggleRecording, which kicks this off) — null once it's not relevant at all (no
+  // browser engine for this project) or the download has finished/failed, a number 0-100 while
+  // it's actually in progress.
+  const [browserSttLoadPercent, setBrowserSttLoadPercent] = useState<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const stopWatchingPausesRef = useRef<(() => void) | null>(null);
@@ -306,6 +312,11 @@ export function PublicChatPage() {
   // null = no segment has reported an sttMs yet this recording, as opposed to a legitimate sum of
   // exactly 0 — distinguishing the two matters so the final latency log reports null, not 0.
   const segmentSttMsSumRef = useRef<number | null>(null);
+  // Lazily created on the first recording of the page visit (see toggleRecording) — not on page
+  // load, so a visitor who never uses voice input never triggers the model download. Persists
+  // across every recording in the session once built, so the (possibly large, one-time) model
+  // load only ever happens once per visit.
+  const browserSttEngineRef = useRef<BrowserSttEngine | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   // Überlebt die Kette toggleRecording -> recorder.onstop -> transcribeSegment, die über mehrere
   // async Hops läuft — nur so lässt sich der ursprüngliche "Sprechende"-Zeitpunkt bis zum
@@ -595,11 +606,33 @@ export function PublicChatPage() {
   // instead — same "no manual send click needed" behavior the single-shot flow had before.
   // Always called chained onto transcriptionChainRef (see startSegmentRecorder) so segments never
   // read/reset transcriptSoFarRef out of order relative to each other.
+  // Transcribes via the in-browser WebGPU engine when it's actually ready; otherwise (not built
+  // for this project, still loading its model, unsupported browser, or a prior call errored) via
+  // the backend's /transcribe route — exactly as before browser transcription existed.
+  async function transcribeViaBrowserOrServer(
+    blob: Blob,
+    initialPrompt: string | undefined,
+  ): Promise<{ text: string; sttMs: number | null }> {
+    const engine = browserSttEngineRef.current;
+    if (engine?.status === "ready") {
+      try {
+        const sttStart = performance.now();
+        const text = await engine.transcribe(blob, tutor.spokenLanguage);
+        return { text, sttMs: performance.now() - sttStart };
+      } catch (error) {
+        // Falls back to the server for this one segment rather than failing it outright — same
+        // posture as sendMutation's streamed-to-plain fallback below.
+        console.error("Browser-Transkription fehlgeschlagen, falle auf Server zurück.", error);
+      }
+    }
+    return publicChatApi.transcribe(slug, blob, initialPrompt);
+  }
+
   async function transcribeSegment(blob: Blob, isFinal: boolean) {
     if (blob.size > 0) {
       try {
         const initialPrompt = transcriptSoFarRef.current.slice(-MAX_INITIAL_PROMPT_CHARS) || undefined;
-        const res = await publicChatApi.transcribe(slug, blob, initialPrompt);
+        const res = await transcribeViaBrowserOrServer(blob, initialPrompt);
         if (res.sttMs != null) {
           segmentSttMsSumRef.current = (segmentSttMsSumRef.current ?? 0) + res.sttMs;
         }
@@ -699,6 +732,9 @@ export function PublicChatPage() {
     if (sendMutation.isPending) return;
     // Wird nicht aufgenommen, Erlaubnis fürs Gerät einholen, aufnehmen und transkribieren
     setMicErrorKey(null);
+    // The browser-side Whisper model (if any) is already warming up well before this point — see
+    // the dedicated effect below, triggered as soon as the visitor passes any password/name gate
+    // rather than waiting for a first recording — so there's nothing to kick off here anymore.
     try {
       // Mikrofonanfrage mit warten auf Erlaubnis
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -836,6 +872,36 @@ export function PublicChatPage() {
     return () => {
       if (greetingGraceTimerRef.current) clearTimeout(greetingGraceTimerRef.current);
     };
+  }, []);
+
+  // Warms up the browser-side Whisper model as soon as the visitor has passed any password/name
+  // gate — not on the very first paint of a locked/name-gated page (a visitor who never actually
+  // unlocks it, or leaves at the name prompt, would otherwise have started a multi-hundred-MB
+  // download for nothing), but well before the chat itself, not deferred until a first recording
+  // either. With a pre-chat survey configured, this gives the whole time the visitor spends
+  // filling it out for the download to finish in the background, so voice input is already fast
+  // by the time they reach the chat.
+  useEffect(() => {
+    const tutor = tutorQuery.data;
+    if (!tutor?.browserSttModel) return;
+    if (tutor.passwordProtected && !tutor.unlocked) return;
+    if (tutor.requireVisitorName && !visitorNameProvided) return;
+    if (browserSttEngineRef.current?.model === tutor.browserSttModel) return;
+    browserSttEngineRef.current?.dispose();
+    browserSttEngineRef.current = new BrowserSttEngine(tutor.browserSttModel);
+    setBrowserSttLoadPercent(0);
+    void browserSttEngineRef.current
+      .ensureReady((percent) => setBrowserSttLoadPercent(percent))
+      // Resolves on "unsupported"/"error" too (see BrowserSttEngine.ensureReady's own doc
+      // comment) — nothing left to show a download bar for either way once this settles.
+      .then(() => setBrowserSttLoadPercent(null));
+  }, [tutorQuery.data, visitorNameProvided]);
+
+  // Terminates the Whisper worker (if one was ever built, see the warm-up effect above) on
+  // unmount — leaving it running would keep its loaded model in memory for a tab that's no longer
+  // showing this chat at all.
+  useEffect(() => {
+    return () => browserSttEngineRef.current?.dispose();
   }, []);
 
   if (tutorQuery.isLoading) {
@@ -1167,6 +1233,28 @@ export function PublicChatPage() {
               {micErrorKey && (
                 <div className={styles.notice}>
                   <Callout variant="warning">{t(micErrorKey)}</Callout>
+                </div>
+              )}
+
+              {/* Shown for as long as the browser-side Whisper model is still downloading (see
+                  toggleRecording) — independent of isRecording, since the download keeps running
+                  in the background across recordings until it either finishes or gives up. */}
+              {browserSttLoadPercent != null && (
+                <div className={styles.notice}>
+                  <div
+                    className={styles.sttLoadingBar}
+                    role="progressbar"
+                    aria-valuenow={Math.round(browserSttLoadPercent)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <span className={styles.sttLoadingLabel}>
+                      {t("publicChat.loadingLocalStt", { percent: Math.round(browserSttLoadPercent) })}
+                    </span>
+                    <div className={styles.sttLoadingTrack}>
+                      <div className={styles.sttLoadingFill} style={{ width: `${browserSttLoadPercent}%` }} />
+                    </div>
+                  </div>
                 </div>
               )}
 

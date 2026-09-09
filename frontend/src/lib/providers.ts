@@ -25,6 +25,16 @@ export function useLocalTtsStatus() {
   });
 }
 
+/** Whether this deployment allows browser-side (WebGPU) transcription at all — gates the
+ * Configurator's per-project "on-device transcription" checkbox (see Step2Technical.tsx). */
+export function useBrowserSttStatus() {
+  return useQuery({
+    queryKey: ["browser-stt-status"],
+    queryFn: apiKeysApi.browserSttStatus,
+    staleTime: Infinity,
+  });
+}
+
 export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
   return specs.find((spec) => spec.value === value);
 }

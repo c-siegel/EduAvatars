@@ -26,6 +26,7 @@ export interface ConfiguratorDraft {
   ttsVoice: string;
   sttApiKeyId: string | null;
   sttEnabled: boolean;
+  sttBrowserEnabled: boolean;
   streamingEnabled: boolean;
 }
 

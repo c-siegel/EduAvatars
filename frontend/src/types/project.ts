@@ -40,6 +40,10 @@ export interface Project {
   // (see backend services/stt_service.py).
   sttApiKeyId: string | null;
   sttEnabled: boolean;
+  // Whether this project prefers on-device (browser, WebGPU) transcription over sttApiKeyId/the
+  // server's local Whisper — only shown/usable in the Configurator when the deployment also
+  // allows it (see useBrowserSttStatus in lib/providers.ts).
+  sttBrowserEnabled: boolean;
   // Whether the public chat should use sentence-chunked streaming (text+audio per sentence)
   // instead of waiting for the full reply — see backend api/public_chat.py's /message/stream.
   // Meaningless without ttsEnabled, so the configurator only shows this toggle when TTS is on.

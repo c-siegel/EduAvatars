@@ -278,7 +278,7 @@ class Settings(BaseSettings):
     container restart.
     """
 
-    stt_max_concurrent_transcriptions: int = 1
+    stt_max_concurrent_transcriptions: int = 2
     """
     How many Whisper transcriptions may run at the same time, in this one process.
 
@@ -330,6 +330,48 @@ class Settings(BaseSettings):
 
     local_tts_request_timeout_seconds: float = 30.0
     """How long to wait for the local-TTS sidecar before giving up on one synthesis request."""
+
+    # ==================== BROWSER SPEECH-TO-TEXT (WEBGPU) SETTINGS ====================
+
+    # An alternative to both local STT (faster-whisper, above) and a cloud STT key: transcription
+    # runs entirely in the visitor's own browser via WebGPU (a browser API for using the GPU for
+    # general-purpose computation, not just graphics), through the transformers.js JavaScript
+    # library — see frontend/src/lib/browserStt.ts. Unlike local TTS, this needs no backend
+    # compute or sidecar container at all; the backend's only role is handing out this
+    # deployment-wide opt-in (and which model id to load) via PublicProjectOut, per project (see
+    # api/public_chat.py::load_tutor and services/api_key_service.py::browser_stt_model_for).
+
+    browser_stt_enabled: bool = False
+    """
+    Whether browser-side (WebGPU) transcription may be offered to visitors at all, for projects
+    that also opt in via their own "stt_browser_enabled" checkbox (see models/project.py).
+
+    False by default: this only makes sense once the deployment has verified real classroom
+    devices actually support WebGPU well enough — with it off, every project keeps transcribing
+    exactly as it does today (cloud key, else local server Whisper).
+    """
+
+    browser_stt_model_de: str = "onnx-community/whisper-small"
+    """
+    transformers.js-compatible ONNX model repository to load in the browser for a project whose
+    spoken_language is "de".
+
+    Was a German fine-tune of Whisper's "turbo" architecture (more accurate on German), but
+    "turbo" only prunes the *decoder* — its encoder is still full large-v3 size (~635M
+    parameters) regardless of quantization, which reliably ran iPadOS Safari's WASM memory out
+    partway through loading (a silent OS-level tab reload, not something a try/catch can recover
+    from). Generic "small" has a ~7x smaller encoder (~88M parameters) and reliably fits — accept
+    the German-specific accuracy loss over risking that crash. A self-hosted, properly quantized
+    ONNX conversion of a small/base-sized German fine-tune would be worth revisiting if one
+    becomes available.
+    """
+
+    browser_stt_model_en: str = "onnx-community/whisper-base.en"
+    """
+    Same as browser_stt_model_de, for a project whose spoken_language is "en". English-only
+    models drop multilingual-token overhead and stay accurate even at a small size, since
+    English is Whisper's best-supported language.
+    """
 
     # ==================== PUBLIC CHAT & VOICE INPUT RATE LIMITS ====================
 

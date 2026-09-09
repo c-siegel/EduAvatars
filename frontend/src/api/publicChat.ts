@@ -18,6 +18,10 @@ export interface PublicProject {
   spokenLanguage: SpokenLanguage;
   ttsEnabled: boolean;
   sttEnabled: boolean;
+  // transformers.js model id the frontend should load for on-device (WebGPU) transcription, or
+  // null if that's unavailable (deployment/project opt-out, or the browser can't run it — see
+  // lib/browserStt.ts). Whenever null, voice input keeps going through the /transcribe route below.
+  browserSttModel: string | null;
   // See types/project.ts — the page only uses the streaming endpoint when this AND ttsEnabled
   // are both true (see pages/PublicChat/index.tsx).
   streamingEnabled: boolean;

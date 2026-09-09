@@ -4,7 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
 import { apiKeysApi } from "@/api/apiKeys";
-import { findProvider, keyDisplayName, modelLabel, useLocalTtsStatus, useProviders } from "@/lib/providers";
+import {
+  findProvider,
+  keyDisplayName,
+  modelLabel,
+  useBrowserSttStatus,
+  useLocalTtsStatus,
+  useProviders,
+} from "@/lib/providers";
 import { SPOKEN_LANGUAGE_VALUES } from "@/lib/speechOptions";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
@@ -29,6 +36,8 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
   const localTtsStatusQuery = useLocalTtsStatus();
   const localTtsAvailable = localTtsStatusQuery.data?.available ?? false;
+  const browserSttStatusQuery = useBrowserSttStatus();
+  const browserSttAvailable = browserSttStatusQuery.data?.available ?? false;
   const specs = providersQuery.data ?? [];
   const llmKeys = (keysQuery.data ?? []).filter((key) => key.keyType === "llm" && key.modelId);
   // TTS wählt wie das LLM-Modell direkt einen eingerichteten Key (Screen 1g), keine feste
@@ -243,6 +252,20 @@ export function Step2Technical({ draft, onChange }: StepProps) {
             ))}
           </select>
           <p className={styles.hint}>{t("configurator.step2.sttKeyHint")}</p>
+
+          {browserSttAvailable && (
+            <label className={styles.toggleRow}>
+              <input
+                type="checkbox"
+                checked={draft.sttBrowserEnabled}
+                onChange={(e) => onChange({ sttBrowserEnabled: e.target.checked })}
+              />
+              <span className={styles.toggleCopy}>
+                <strong>{t("configurator.step2.sttBrowserTitle")}</strong>
+                <span>{t("configurator.step2.sttBrowserText")}</span>
+              </span>
+            </label>
+          )}
         </div>
       )}
     </>

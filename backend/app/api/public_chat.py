@@ -45,7 +45,7 @@ from app.models.schemas.chat import (
 )
 from app.models.schemas.speech import TranscriptionOut
 from app.models.user import User
-from app.services.api_key_service import resolve_llm_key, resolve_stt_key, resolve_tts_key
+from app.services.api_key_service import browser_stt_model_for, resolve_llm_key, resolve_stt_key, resolve_tts_key
 from app.services.chat_password_service import assert_unlocked, is_unlocked, issue_unlock_token, verify_chat_password
 from app.services.llm_service import _strip_arcana_references, send_chat_message, stream_chat_message
 from app.services.stt_service import transcribe_audio
@@ -181,6 +181,7 @@ def load_tutor(
         spoken_language=project.spoken_language,
         tts_enabled=project.tts_enabled,
         stt_enabled=project.stt_enabled,
+        browser_stt_model=browser_stt_model_for(project),
         streaming_enabled=project.streaming_enabled,
         chat_default_open=project.chat_default_open,
         # The checkbox and URL are combined here, before anything goes out to the anonymous page —

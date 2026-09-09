@@ -27,6 +27,7 @@ from app.models.schemas.api_key import (
     ApiKeyOut,
     ApiKeyTestResult,
     ApiKeyUpdate,
+    BrowserSttStatusOut,
     LocalTtsStatusOut,
     ProviderModelOut,
     ProviderSpecOut,
@@ -90,6 +91,13 @@ def list_providers(_: User = Depends(get_current_user)):
 def local_tts_status(_: User = Depends(get_current_user)):
     """Whether the local-TTS sidecar is enabled for this deployment (see Settings.local_tts_enabled)."""
     return LocalTtsStatusOut(available=settings.local_tts_enabled)
+
+
+@router.get("/browser-stt-status", response_model=BrowserSttStatusOut)
+def browser_stt_status(_: User = Depends(get_current_user)):
+    """Whether browser-side (WebGPU) transcription is enabled for this deployment (see
+    Settings.browser_stt_enabled)."""
+    return BrowserSttStatusOut(available=settings.browser_stt_enabled)
 
 
 @router.get("", response_model=list[ApiKeyOut])

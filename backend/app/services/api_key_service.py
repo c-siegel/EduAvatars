@@ -2,8 +2,10 @@
 Resolving a Project's API Keys
 
 Looks up which of a user's stored API keys a project should actually use for its LLM/TTS calls,
-and works out the endpoint override (if any) to pass to litellm. Kept central so
-app/api/projects.py and app/api/public_chat.py never duplicate this logic.
+and works out the endpoint override (if any) to pass to litellm. Also decides which (if any)
+browser-side transcription model a project should use — the STT counterpart to a resolved key,
+just picked from Settings instead of the database. Kept central so app/api/projects.py and
+app/api/public_chat.py never duplicate this logic.
 
 How to use:
     from app.services.api_key_service import resolve_llm_key
@@ -13,6 +15,7 @@ How to use:
 
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_STT, KEY_TYPE_TTS, get_provider
 from app.models.api_key import UserApiKey
 from app.models.project import Project
@@ -96,6 +99,22 @@ def resolve_stt_key(session: Session, project: Project) -> UserApiKey | None:
     if project.stt_api_key_id:
         return get_owned_key_of_type(session, project.user_id, project.stt_api_key_id, KEY_TYPE_STT)
     return None
+
+
+def browser_stt_model_for(project: Project) -> str | None:
+    """The transformers.js model id the visitor's browser should load for on-device (WebGPU)
+    transcription, or None if browser transcription isn't available for this project at all.
+
+    None unless BOTH the deployment (Settings.browser_stt_enabled) and the project itself
+    (project.stt_browser_enabled, a per-project Configurator checkbox) opt in — the deployment
+    flag alone changes nothing for a project that hasn't turned this on, and vice versa. When
+    both are on, the model choice still depends on project.spoken_language (see
+    Settings.browser_stt_model_de/_en): the frontend never needs to know either setting exists,
+    it just loads whatever id comes back here.
+    """
+    if not (settings.browser_stt_enabled and project.stt_enabled and project.stt_browser_enabled):
+        return None
+    return settings.browser_stt_model_de if project.spoken_language == "de" else settings.browser_stt_model_en
 
 
 def effective_api_base(key: UserApiKey) -> str | None:
