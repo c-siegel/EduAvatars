@@ -4,7 +4,7 @@ each failing before its fix."""
 from sqlmodel import Session
 
 from app.features.projects.models import Project
-from conftest import PASSWORD, browser_url, create_project, login_as, make_user, new_client, parse_sse, publish
+from conftest import PASSWORD, browser_url, create_key, create_project, login_as, make_user, new_client, parse_sse, publish
 
 GLB = b"glTF" + b"\x00" * 16
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
@@ -137,3 +137,21 @@ def test_foreign_published_project_does_not_expose_a_users_avatar_or_background(
 
     assert new_client().get(browser_url(avatar["fileUrl"])).status_code == 404
     assert new_client().get(browser_url(background["fileUrl"])).status_code == 404
+
+
+# ==================== STT key references are checked ====================
+
+
+def test_project_only_accepts_the_users_own_stt_key(client, engine, teacher):
+    stt_key = create_key(client, key_type="stt", provider="gwdg_saia")
+    llm_key = create_key(client)
+    other = login_as(new_client(), make_user(engine, email="other@example.com"))
+    foreign_stt_key = create_key(other, key_type="stt", provider="gwdg_saia")
+
+    for wrong_id in (foreign_stt_key["id"], llm_key["id"], "does-not-exist"):
+        response = client.post("/projects", json={"title": "X", "sttApiKeyId": wrong_id})
+        assert response.status_code == 400
+        assert response.json() == {"detail": "UNKNOWN_API_KEY"}
+    project = create_project(client)
+    assert client.put(f"/projects/{project['id']}", json={"sttApiKeyId": llm_key["id"]}).status_code == 400
+    assert client.put(f"/projects/{project['id']}", json={"sttApiKeyId": stt_key["id"]}).json()["sttApiKeyId"] == stt_key["id"]

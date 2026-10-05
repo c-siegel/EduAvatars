@@ -16,7 +16,7 @@ from sqlmodel import Session, select
 
 from app.core.error_codes import ErrorCode
 from app.core.errors import DomainError
-from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_TTS, build_model_string
+from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_STT, KEY_TYPE_TTS, build_model_string
 from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_owned_key_of_type
@@ -132,9 +132,9 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
 
 def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_type: str) -> None:
     """Raise UnknownApiKey (HTTP 400) unless `key_id` is one of `user_id`'s own API keys of the given type."""
-    # Shared check for llm_api_key_id/tts_api_key_id: the key must exist, belong to the calling
-    # user, AND be of the matching type — otherwise a TTS key could e.g. be entered as
-    # llm_api_key_id (both fields point at the same table).
+    # Shared check for llm_api_key_id/tts_api_key_id/stt_api_key_id: the key must exist, belong
+    # to the calling user, AND be of the matching type — otherwise a TTS key could e.g. be entered
+    # as llm_api_key_id (all three fields point at the same table).
     if get_owned_key_of_type(session, user_id, key_id, key_type) is None:
         raise UnknownApiKey()
 
@@ -147,6 +147,8 @@ def _check_references(session: Session, user_id: str, data: ProjectUpdate) -> No
         _require_owned_key_of_type(session, user_id, data.llm_api_key_id, KEY_TYPE_LLM)
     if data.tts_api_key_id:
         _require_owned_key_of_type(session, user_id, data.tts_api_key_id, KEY_TYPE_TTS)
+    if data.stt_api_key_id:
+        _require_owned_key_of_type(session, user_id, data.stt_api_key_id, KEY_TYPE_STT)
     # Same for library assets — a foreign avatar/background would also be served to the
     # project's public chat visitors (see media/service.py::is_used_by_published_project).
     if data.avatar_model_id and get_owned_avatar(session, user_id, data.avatar_model_id) is None:
