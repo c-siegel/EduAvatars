@@ -625,6 +625,7 @@
     "REGISTRATION_DISABLED": "Registrierung ist aktuell nicht möglich.",
     "EMAIL_ALREADY_REGISTERED": "Diese E-Mail-Adresse wird bereits verwendet.",
     "INVALID_CREDENTIALS": "E-Mail oder Passwort ist falsch.",
+    "ACCOUNT_DISABLED": "Dieses Konto wurde deaktiviert. Bitte wende dich an die Administration.",
     "RESET_LINK_INVALID": "Link ist ungültig oder abgelaufen.",
     "CURRENT_PASSWORD_INCORRECT": "Aktuelles Passwort ist falsch.",
     "PASSWORD_TOO_SHORT": "Passwort muss mindestens 10 Zeichen und eine Zahl enthalten.",

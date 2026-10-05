@@ -15,11 +15,18 @@ How to use:
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.error_codes import ErrorCode
+from app.core.errors import DomainError
 from app.core.security import hash_password, verify_password
 from app.core.urls import profile_picture_url
 from app.features.auth.schemas import UserOut
 from app.features.users.models import User
 from app.features.users.service import EmailAlreadyRegistered
+
+
+class AccountDisabled(DomainError):
+    status_code = 403
+    detail = ErrorCode.ACCOUNT_DISABLED
 
 
 def register_user(session: Session, name: str, email: str, password: str) -> User:
@@ -36,10 +43,18 @@ def register_user(session: Session, name: str, email: str, password: str) -> Use
 
 
 def authenticate_user(session: Session, email: str, password: str) -> User | None:
-    """Verify email + password, returning the User on success or None otherwise."""
+    """Verify email + password, returning the User on success or None otherwise.
+
+    Raises AccountDisabled (HTTP 403) for a correct password on a disabled account — otherwise
+    login would hand out a cookie that every following request rejects (core/deps.py checks
+    User.enabled), leaving the user stuck on a dashboard that keeps logging them out. Only
+    reachable with the right password, so it doesn't reveal which accounts exist.
+    """
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None or not verify_password(password, user.password_hash):
         return None
+    if not user.enabled:
+        raise AccountDisabled()
     return user
 
 

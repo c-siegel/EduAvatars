@@ -625,6 +625,7 @@
     "REGISTRATION_DISABLED": "Registration is currently disabled.",
     "EMAIL_ALREADY_REGISTERED": "This email address is already in use.",
     "INVALID_CREDENTIALS": "Email or password is incorrect.",
+    "ACCOUNT_DISABLED": "This account has been disabled. Please contact an administrator.",
     "RESET_LINK_INVALID": "This link is invalid or has expired.",
     "CURRENT_PASSWORD_INCORRECT": "Current password is incorrect.",
     "PASSWORD_TOO_SHORT": "Password needs at least 10 characters and a digit.",
