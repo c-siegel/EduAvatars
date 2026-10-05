@@ -89,6 +89,8 @@ def reset_password(session: Session, raw_token: str, new_password: str) -> User 
         return None
 
     user.password_hash = hash_password(new_password)
+    # The user just chose this password themselves, which is all an admin-forced change asks for.
+    user.must_change_password = False
     # Also invalidates all existing sessions — a reset password suggests a compromised account,
     # so old tokens shouldn't just keep working (see token_version).
     user.token_version += 1

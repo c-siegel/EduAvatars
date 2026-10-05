@@ -277,3 +277,20 @@ def test_a_new_or_used_reset_link_invalidates_the_older_ones(client, engine, mon
     assert reset(tokens[1]).status_code == 200
     assert reset(tokens[1]).json() == {"detail": "RESET_LINK_INVALID"}
     assert reset("legacy-token").json() == {"detail": "RESET_LINK_INVALID"}
+
+
+# ==================== A password reset clears the forced password change ====================
+
+
+def test_self_service_reset_clears_must_change_password(client, engine, monkeypatch):
+    admin = make_user(engine, email="admin@example.com", is_admin=True)
+    user = make_user(engine, email="reset@example.com")
+    login_as(client, admin).post(f"/admin/users/{user.id}/reset-password", json={"newPassword": "admin-set-pass-1"})
+
+    tokens = _capture_reset_tokens(monkeypatch)
+    visitor = new_client()
+    visitor.post("/auth/forgot-password", json={"email": "reset@example.com"})
+    assert visitor.post("/auth/reset-password", json={"token": tokens[0], "newPassword": "own-pass-123"}).status_code == 200
+
+    login = visitor.post("/auth/login", json={"email": "reset@example.com", "password": "own-pass-123"})
+    assert login.json()["mustChangePassword"] is False
