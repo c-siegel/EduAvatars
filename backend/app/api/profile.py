@@ -19,14 +19,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.core.deps import ACCESS_TOKEN_COOKIE, get_current_user, get_session
+from app.core.cookies import clear_auth_cookie, set_auth_cookie
+from app.core.deps import get_current_user, get_session
 from app.core.error_codes import ErrorCode
 from app.core.security import hash_password, verify_password
 from app.models.schemas.auth import UserOut
 from app.models.schemas.profile import PasswordChange, ProfileUpdate
 from app.models.user import User
 from app.services.account_service import delete_user_account
-from app.services.auth_service import set_auth_cookie, user_to_out
+from app.services.auth_service import user_to_out
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -191,5 +192,5 @@ def delete_account(
     delete_user_account(session, current_user)
     # The auth cookie outlives the account otherwise: the JWT stays validly signed for its full
     # lifetime, and only fails once a request looks the (now missing) user up.
-    response.delete_cookie(ACCESS_TOKEN_COOKIE)
+    clear_auth_cookie(response)
     return None

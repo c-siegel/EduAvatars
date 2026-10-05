@@ -25,28 +25,15 @@ How to use:
         return project
 """
 
-import uuid
-
-from fastapi import Depends, HTTPException, Request, Response
+from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session, select
 
-from app.core.config import settings
+from app.core.cookies import ACCESS_TOKEN_COOKIE
 from app.core.error_codes import ErrorCode
 from app.core.security import decode_access_token
 from app.db.session import get_session
 from app.models.project import Project
 from app.models.user import User
-
-# Cookie names used for authentication and visitor tracking
-ACCESS_TOKEN_COOKIE = "access_token"
-VISITOR_ID_COOKIE = "ah_visitor_id"
-
-# How long a visitor's identity cookie persists. Matches the order of magnitude already assumed
-# elsewhere for "one visit" to a public chat (_CHAT_UNLOCK_TOKEN_EXPIRE_MINUTES in core/security.py
-# is 240 minutes too) — long enough that closing/reopening a browser tab mid-lesson doesn't hand
-# out a fresh identity (losing rate-limit continuity and the ability to keep unlocking a
-# password-protected chat), short enough that it isn't effectively permanent tracking.
-_VISITOR_ID_COOKIE_MAX_AGE_SECONDS = 4 * 60 * 60
 
 
 def get_current_user(
@@ -260,52 +247,3 @@ def get_published_project(
     if project is None:
         raise HTTPException(status_code=404, detail=ErrorCode.PROJECT_NOT_FOUND_OR_UNPUBLISHED)
     return project
-
-
-def get_or_set_visitor_id(request: Request, response: Response) -> str:
-    """
-    Get or create a visitor ID for anonymous users.
-    
-    This function provides anonymous visitor identification for the public chat page.
-    It doesn't require login and has no relation to User accounts.
-    
-    How it works:
-    1. Checks if the visitor_id cookie exists in the request
-    2. If not, generates a new UUID and sets it as a cookie
-    3. Returns the visitor ID
-    
-    Use cases:
-    - Tracking anonymous usage statistics
-    - Rate limiting anonymous users
-    - Storing preferences for anonymous users
-    
-    Args:
-        request: The FastAPI request object (contains cookies)
-        response: The FastAPI response object (used to set cookies)
-    
-    Returns:
-        str: The visitor ID (UUID string)
-    
-    Example:
-        @router.post("/public/chat")
-        def send_message(
-            message: str,
-            visitor_id: str = Depends(get_or_set_visitor_id)
-        ):
-            # Track this message for the anonymous visitor
-            log_message(visitor_id, message)
-            return {"response": "Hello!"}
-    """
-    # Anonymous visitor identification for the public chat page (no login, no relation to User)
-    visitor_id = request.cookies.get(VISITOR_ID_COOKIE)
-    if not visitor_id:
-        visitor_id = str(uuid.uuid4())
-        response.set_cookie(
-            VISITOR_ID_COOKIE,
-            visitor_id,
-            httponly=True,
-            secure=settings.cookie_secure,
-            samesite="lax",
-            max_age=_VISITOR_ID_COOKIE_MAX_AGE_SECONDS,
-        )
-    return visitor_id

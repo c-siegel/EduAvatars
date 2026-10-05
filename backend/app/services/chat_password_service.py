@@ -12,11 +12,16 @@ How to use:
 """
 
 import jwt
-from fastapi import HTTPException
 
 from app.core.error_codes import ErrorCode
+from app.core.errors import DomainError
 from app.core.security import create_chat_unlock_token, decode_chat_unlock_token, verify_password
 from app.models.project import Project
+
+
+class ChatUnlockRequired(DomainError):
+    status_code = 401
+    detail = ErrorCode.CHAT_UNLOCK_REQUIRED
 
 
 def verify_chat_password(project: Project, password: str) -> bool:
@@ -40,9 +45,9 @@ def is_unlocked(project: Project, visitor_id: str, token: str | None) -> bool:
 
 
 def assert_unlocked(project: Project, visitor_id: str, token: str | None) -> None:
-    """Raise HTTP 401 unless `token` proves `visitor_id` already unlocked `project`'s chat."""
+    """Raise ChatUnlockRequired (HTTP 401) unless `token` proves `visitor_id` already unlocked `project`'s chat."""
     if not is_unlocked(project, visitor_id, token):
-        raise HTTPException(status_code=401, detail=ErrorCode.CHAT_UNLOCK_REQUIRED)
+        raise ChatUnlockRequired()
 
 
 def issue_unlock_token(project: Project, visitor_id: str) -> str:

@@ -11,12 +11,22 @@ How to use:
     user = create_user_as_admin(session, name, email, password, is_admin=False)
 """
 
-from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.error_codes import ErrorCode
+from app.core.errors import DomainError
 from app.core.security import hash_password
 from app.models.user import User
+
+
+class CannotDisableSelf(DomainError):
+    status_code = 400
+    detail = ErrorCode.CANNOT_DISABLE_SELF
+
+
+class LastAdminProtected(DomainError):
+    status_code = 400
+    detail = ErrorCode.LAST_ADMIN_PROTECTED
 
 
 def count_active_admins(session: Session) -> int:
@@ -61,14 +71,14 @@ def admin_update_user(session: Session, admin: User, target: User, data: dict) -
     enabled = data.get("enabled", target.enabled)
 
     if target.id == admin.id and "enabled" in data and not enabled:
-        raise HTTPException(status_code=400, detail=ErrorCode.CANNOT_DISABLE_SELF)
+        raise CannotDisableSelf()
 
     # Would this change remove the last active admin? Only relevant if target is currently an
     # active admin and the change would make them not one (demoted, or disabled, or both).
     target_is_active_admin_now = target.is_admin and target.enabled
     target_would_stay_active_admin = is_admin and enabled
     if target_is_active_admin_now and not target_would_stay_active_admin and count_active_admins(session) <= 1:
-        raise HTTPException(status_code=400, detail=ErrorCode.LAST_ADMIN_PROTECTED)
+        raise LastAdminProtected()
 
     target.is_admin = is_admin
     target.enabled = enabled

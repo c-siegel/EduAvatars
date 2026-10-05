@@ -25,7 +25,8 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.core.deps import get_or_set_visitor_id, get_published_project, get_session
+from app.core.cookies import get_or_set_visitor_id
+from app.core.deps import get_published_project, get_session
 from app.core.error_codes import ErrorCode
 from app.core.rate_limit import (
     enforce_chat_unlock_rate_limit,

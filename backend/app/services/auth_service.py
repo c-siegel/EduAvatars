@@ -3,22 +3,18 @@ Authentication Helpers
 
 Shared logic behind the auth routes (app/api/auth.py) and anywhere else a User needs to become
 an authenticated session or an API response: registering/authenticating a user, converting a
-User to its public UserOut shape, and issuing the signed auth cookie.
+User to its public UserOut shape. The auth cookie itself is set in the HTTP layer (see
+app/core/cookies.py::set_auth_cookie).
 
 How to use:
-    from app.services.auth_service import authenticate_user, set_auth_cookie
+    from app.services.auth_service import authenticate_user
 
     user = authenticate_user(session, email, password)
-    if user:
-        set_auth_cookie(response, user)
 """
 
-from fastapi import Response
 from sqlmodel import Session, select
 
-from app.core.config import settings
-from app.core.deps import ACCESS_TOKEN_COOKIE
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import hash_password, verify_password
 from app.models.schemas.auth import UserOut
 from app.models.user import User
 
@@ -56,22 +52,4 @@ def user_to_out(user: User) -> UserOut:
         avatar_url=avatar_url,
         is_admin=user.is_admin,
         must_change_password=user.must_change_password,
-    )
-
-
-def issue_token_for(user: User) -> str:
-    """Issue a signed JWT (JSON Web Token) for this user."""
-    return create_access_token(user.id, user.token_version)
-
-
-def set_auth_cookie(response: Response, user: User) -> None:
-    """Issue a fresh auth token for `user` and set it as the response's httponly cookie."""
-    token = issue_token_for(user)
-    response.set_cookie(
-        ACCESS_TOKEN_COOKIE,
-        token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        max_age=settings.access_token_expire_minutes * 60,
     )

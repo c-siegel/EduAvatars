@@ -1,13 +1,13 @@
-"""Tests for get_or_set_visitor_id's cookie attributes (app/core/deps.py). The visitor-id cookie
+"""Tests for get_or_set_visitor_id's cookie attributes (app/core/cookies.py). The visitor-id cookie
 previously had no `secure` flag (unlike the auth cookie's matching cookie_secure setting) and no
 max_age (a bare session cookie) — unlike everything else it's supposed to persist through for the
 length of one visit (rate-limit continuity, an already-unlocked password-protected chat)."""
 
-import app.core.deps as deps_module
+import app.core.cookies as cookies_module
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.deps import VISITOR_ID_COOKIE, get_or_set_visitor_id
+from app.core.cookies import VISITOR_ID_COOKIE, get_or_set_visitor_id
 
 
 def _make_app() -> FastAPI:
@@ -21,7 +21,7 @@ def _make_app() -> FastAPI:
 
 
 def test_sets_a_secure_cookie_with_a_max_age(monkeypatch) -> None:
-    monkeypatch.setattr(deps_module.settings, "cookie_secure", True)
+    monkeypatch.setattr(cookies_module.settings, "cookie_secure", True)
     client = TestClient(_make_app())
 
     response = client.get("/whoami")

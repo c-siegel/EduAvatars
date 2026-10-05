@@ -15,7 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
-from app.core.deps import ACCESS_TOKEN_COOKIE, get_current_user, get_session
+from app.core.cookies import clear_auth_cookie, set_auth_cookie
+from app.core.deps import get_current_user, get_session
 from app.core.error_codes import ErrorCode
 from app.core.rate_limit import (
     enforce_login_rate_limit,
@@ -31,7 +32,7 @@ from app.models.schemas.auth import (
     UserOut,
 )
 from app.models.user import User
-from app.services.auth_service import authenticate_user, register_user, set_auth_cookie, user_to_out
+from app.services.auth_service import authenticate_user, register_user, user_to_out
 from app.services.password_reset_service import request_password_reset, reset_password
 from app.services.site_settings_service import get_or_create_site_settings
 
@@ -78,7 +79,7 @@ def login(data: LoginRequest, request: Request, response: Response, session: Ses
 @router.post("/logout")
 def logout(response: Response):
     """Clear the auth cookie."""
-    response.delete_cookie(ACCESS_TOKEN_COOKIE)
+    clear_auth_cookie(response)
     return None
 
 

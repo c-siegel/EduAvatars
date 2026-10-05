@@ -16,14 +16,18 @@ How to use:
 
 from urllib.parse import unquote
 
-from fastapi import HTTPException
-
 from app.core.error_codes import ErrorCode
+from app.core.errors import DomainError
 from app.models.project import Project
 
 # Generous enough for a real name or a classroom ID, short enough that nothing absurd ends up in
 # the exported CSV/protocol.
 MAX_VISITOR_NAME_LENGTH = 100
+
+
+class VisitorNameRequired(DomainError):
+    status_code = 400
+    detail = ErrorCode.VISITOR_NAME_REQUIRED
 
 
 def clean_visitor_name(x_visitor_name: str | None) -> str | None:
@@ -43,4 +47,4 @@ def clean_visitor_name(x_visitor_name: str | None) -> str | None:
 def assert_visitor_name_provided(project: Project, visitor_name: str | None) -> None:
     """Reject the request if this project requires a visitor name and none was sent."""
     if project.require_visitor_name and not visitor_name:
-        raise HTTPException(status_code=400, detail=ErrorCode.VISITOR_NAME_REQUIRED)
+        raise VisitorNameRequired()

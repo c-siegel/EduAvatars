@@ -15,7 +15,7 @@ from sqlmodel import Session
 from app.models.project_access import ProjectAccess
 
 # Deliberately independent of core/security.py: the public chat page has no user login, only an
-# anonymous visitor_id (see app.core.deps.get_or_set_visitor_id).
+# anonymous visitor_id (see app.core.cookies.get_or_set_visitor_id).
 
 
 def log_access(session: Session, project_id: str, visitor_id: str) -> None:
