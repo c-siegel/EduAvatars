@@ -228,3 +228,52 @@ def test_analytics_rejects_zero_or_negative_page_and_period(client, teacher):
         assert client.get(path).status_code == 422, path
     assert client.get("/conversations?page=1&period_days=7").status_code == 200
     assert client.get("/analytics/stats?period_days=1").status_code == 200
+
+
+# ==================== Older password-reset links stop working ====================
+
+
+def _capture_reset_tokens(monkeypatch) -> list[str]:
+    """Make the reset flow's raw tokens predictable and return the list they're recorded in."""
+    from types import SimpleNamespace
+
+    from app.features.auth import password_reset
+
+    issued: list[str] = []
+
+    def token_urlsafe(_nbytes: int) -> str:
+        issued.append(f"reset-token-{len(issued)}")
+        return issued[-1]
+
+    monkeypatch.setattr(password_reset, "secrets", SimpleNamespace(token_urlsafe=token_urlsafe))
+    return issued
+
+
+def test_a_new_or_used_reset_link_invalidates_the_older_ones(client, engine, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    from app.features.auth.models import PasswordResetToken
+    from app.features.auth.password_reset import _hash_token
+
+    user = make_user(engine, email="reset@example.com")
+    tokens = _capture_reset_tokens(monkeypatch)
+    visitor = new_client()
+
+    def reset(token: str):
+        return visitor.post("/auth/reset-password", json={"token": token, "newPassword": "another-pass-2"})
+
+    visitor.post("/auth/forgot-password", json={"email": "reset@example.com"})
+    visitor.post("/auth/forgot-password", json={"email": "reset@example.com"})
+    assert reset(tokens[0]).json() == {"detail": "RESET_LINK_INVALID"}
+
+    # A second unused token left over from before this fix must not survive a successful reset.
+    with Session(engine) as session:
+        session.add(PasswordResetToken(
+            user_id=user.id,
+            token_hash=_hash_token("legacy-token"),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=30),
+        ))
+        session.commit()
+    assert reset(tokens[1]).status_code == 200
+    assert reset(tokens[1]).json() == {"detail": "RESET_LINK_INVALID"}
+    assert reset("legacy-token").json() == {"detail": "RESET_LINK_INVALID"}

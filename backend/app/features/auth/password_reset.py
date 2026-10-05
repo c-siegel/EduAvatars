@@ -14,6 +14,7 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import update
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -28,6 +29,17 @@ def _hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
+def _invalidate_unused_tokens(session: Session, user_id: str, now: datetime) -> None:
+    """Mark all of the user's still-unused reset tokens as used (not committed)."""
+    # Only the newest reset link should ever work: an older one may sit in a mailbox someone
+    # else can read, and the user asking again is a sign they don't trust (or can't find) it.
+    session.execute(
+        update(PasswordResetToken)
+        .where(PasswordResetToken.user_id == user_id, PasswordResetToken.used_at.is_(None))
+        .values(used_at=now)
+    )
+
+
 def request_password_reset(session: Session, email: str) -> None:
     """Issue a password-reset token and email the reset link, if an account with `email` exists."""
     # Always responds the same way to the caller (see features/auth/router.py), whether or not the email
@@ -36,11 +48,13 @@ def request_password_reset(session: Session, email: str) -> None:
     if user is None or not user.enabled:
         return
 
+    now = datetime.now(timezone.utc)
+    _invalidate_unused_tokens(session, user.id, now)
     raw_token = secrets.token_urlsafe(32)
     reset_token = PasswordResetToken(
         user_id=user.id,
         token_hash=_hash_token(raw_token),
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.password_reset_token_expire_minutes),
+        expires_at=now + timedelta(minutes=settings.password_reset_token_expire_minutes),
     )
     session.add(reset_token)
     session.commit()
@@ -78,8 +92,7 @@ def reset_password(session: Session, raw_token: str, new_password: str) -> User 
     # Also invalidates all existing sessions — a reset password suggests a compromised account,
     # so old tokens shouldn't just keep working (see token_version).
     user.token_version += 1
-    reset_token.used_at = now
+    _invalidate_unused_tokens(session, user.id, now)
     session.add(user)
-    session.add(reset_token)
     session.commit()
     return user
