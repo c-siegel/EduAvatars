@@ -268,7 +268,7 @@ a "bring your own endpoint" field.
 | Database | SQLite via SQLModel/SQLAlchemy, migrations with Alembic |
 | Auth | JWT (JSON Web Tokens) + bcrypt password hashing |
 | LLM / TTS providers | [litellm](https://github.com/BerriAI/litellm) (provider-agnostic client) |
-| Speech-to-text | [Parakeet Redux](https://huggingface.co/moondream/parakeet-redux) on the visitor's device via [onnxruntime-web](https://onnxruntime.ai/) + WebGPU (default, live text while speaking); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) in the backend process as the fallback |
+| Speech-to-text | [Parakeet Redux](https://huggingface.co/moondream/parakeet-redux) on the visitor's device via [onnxruntime-web](https://onnxruntime.ai/) + WebGPU (default, live text while speaking); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (or optionally Parakeet, `STT_ENGINE=parakeet`) in the backend process as the fallback |
 | Local text-to-speech (optional) | [sopro](https://github.com/samuel-vitorino/sopro), runs in its own sidecar process (see `local-tts/`) |
 | Frontend framework | React 18 + TypeScript, built with Vite |
 | 3D avatar rendering | three.js + [@met4citizen/talkinghead](https://github.com/met4citizen/TalkingHead) |

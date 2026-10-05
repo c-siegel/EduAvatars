@@ -2,9 +2,10 @@
 Speech-to-Text (STT) Transcription
 
 Transcribes uploaded audio to text. By default this runs locally inside the backend process via
-faster-whisper (whisper_local.py). A project can instead configure a "bring your own key" (BYOK)
-STT provider (currently GWDG SAIA, see core/providers.py::GWDG_SAIA_PROVIDER); passing that key's
-record dispatches to saia.py instead of the local model.
+faster-whisper (whisper_local.py), or via Parakeet (parakeet_local.py) when Settings.stt_engine
+says so. A project can instead configure a "bring your own key" (BYOK) STT provider (currently
+GWDG SAIA, see core/providers.py::GWDG_SAIA_PROVIDER); passing that key's record dispatches to
+saia.py instead of a local model.
 
 How to use:
     from app.features.ai.stt import transcribe_audio
@@ -12,8 +13,10 @@ How to use:
     text = transcribe_audio(audio_bytes, project.spoken_language, api_key_record=stt_key)
 """
 
+from app.core.config import settings
 from app.core.providers import GWDG_SAIA_PROVIDER
 from app.features.ai.stt.base import STTClient
+from app.features.ai.stt.parakeet_local import LocalParakeetClient
 from app.features.ai.stt.saia import SaiaClient
 from app.features.ai.stt.whisper_local import LocalWhisperClient
 from app.features.api_keys.models import UserApiKey
@@ -22,10 +25,12 @@ __all__ = ["STTClient", "get_stt_client", "transcribe_audio"]
 
 
 def get_stt_client(api_key_record: UserApiKey | None) -> STTClient:
-    """The client for `api_key_record`'s provider, or the local Whisper engine for None (no STT
-    key configured — a normal, fully working state, unlike a missing LLM/TTS key)."""
+    """The client for `api_key_record`'s provider, or the local engine (Settings.stt_engine) for
+    None (no STT key configured — a normal, fully working state, unlike a missing LLM/TTS key)."""
     if api_key_record is not None and api_key_record.provider == GWDG_SAIA_PROVIDER:
         return SaiaClient(api_key_record)
+    if settings.stt_engine == "parakeet":
+        return LocalParakeetClient()
     return LocalWhisperClient()
 
 

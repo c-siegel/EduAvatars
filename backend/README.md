@@ -13,7 +13,8 @@ file only covers backend-specific details.
 - **litellm** — a single client that talks to different LLM/TTS providers, so the app isn't
   locked to one vendor.
 - **faster-whisper** — runs speech-to-text directly inside the backend process (no separate
-  service needed).
+  service needed). Optionally replaced by **Parakeet Redux** on ONNX Runtime (`STT_ENGINE=parakeet`),
+  the same model the browsers use for on-device recognition.
 - **JWT (JSON Web Tokens) + bcrypt** — authentication and password hashing.
 
 ## Folder map
@@ -251,7 +252,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 |---|---|---|
 | `features/ai/llm/` | LLM chat completion (litellm, plus a direct integration for GWDG Arcana) | `get_llm_client(api_key_record)` → `.complete(request)`, `.stream(request)`, `.test()`.<br>`complete(api_key_record, ChatRequest(...))` — one-shot reply.<br>`stream(api_key_record, ChatRequest(...))` — text deltas, falling back to a plain call if streaming fails before the first delta. |
 | `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language)` — routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
-| `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — via faster-whisper locally, or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`. |
+| `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — locally via faster-whisper or Parakeet (`Settings.stt_engine`), or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`.<br>`capacity.transcription_slot()` — limits concurrent local transcriptions. |
 | `features/chat/pipeline.py` | One chat turn for the public and preview chat | `prepare_chat(session, project)` — resolve keys and snapshot the project.<br>`reply_turn(context, turn)` — LLM → save → TTS.<br>`stream_turn(context, turn)` — `(event, data)` pairs for the SSE stream. |
 | `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_url_for(project)`, `effective_api_base(key)`. |
 | `features/api_keys/service.py` | Managing stored keys | `list_keys_with_usage(session, user_id)`, `create_key(...)`, `update_key(...)`, `delete_key(...)`, `run_key_test(session, key)`. |
@@ -327,7 +328,7 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
-| `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text, via faster-whisper) call. |
+| `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text) call — local Whisper or Parakeet, or the cloud provider. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio

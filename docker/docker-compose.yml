@@ -76,6 +76,9 @@ services:
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-172.16.0.0/12,10.0.0.0/8,192.168.0.0/16}
 
       STT_MODEL_CACHE_DIR: /data/whisper-cache
+      # Only used with STT_ENGINE=parakeet: the same files the stt-model service downloads for
+      # the browsers.
+      STT_PARAKEET_MODEL_DIR: /data/models/parakeet-redux/v1
 
       # --- Admin bootstrap, optional — creates/promotes this account to admin on startup, see
       #     backend/app/cli/bootstrap_admin.py. Safe to leave unset (no admin gets created) or to
