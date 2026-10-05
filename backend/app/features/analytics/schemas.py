@@ -1,7 +1,7 @@
 """
 Analytics Request/Response Shapes
 
-The response shapes for app/api/analytics.py's endpoints: aggregate stats, one row in the
+The response shapes for app/features/analytics/stats_router.py's and conversations_router.py's endpoints: aggregate stats, one row in the
 paginated session list, and one point on the timeseries chart.
 
 How to use:
@@ -31,7 +31,7 @@ class SessionRowOut(CamelModel):
     duration_seconds: int
     last_question: str | None
     # The name/ID the visitor typed in, if the project's teacher enabled that gate (see
-    # models/project.py::Project.require_visitor_name) — None for every session that didn't ask.
+    # features/projects/models.py::Project.require_visitor_name) — None for every session that didn't ask.
     visitor_name: str | None
 
 

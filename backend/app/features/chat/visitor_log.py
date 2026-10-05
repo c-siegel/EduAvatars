@@ -2,7 +2,7 @@
 Visitor Access Logging
 
 Records that an anonymous visitor loaded a published project's public chat page, for analytics
-(see app/services/analytics_service.py).
+(see app/features/analytics/service.py).
 
 How to use:
     from app.features.chat.visitor_log import log_access

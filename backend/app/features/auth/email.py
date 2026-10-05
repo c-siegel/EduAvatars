@@ -5,7 +5,7 @@ Sends the password-reset email. Deliberately uses the stdlib smtplib instead of 
 dependency (e.g. a transactional-mail SDK) — fits an institutional hosting context (a
 university/school IT department usually runs its own SMTP relay, so no third-party API key is
 needed). If SMTP_HOST is empty (settings.smtp_configured is False), nothing is actually sent —
-see password_reset_service.py.
+see features/auth/password_reset.py.
 
 How to use:
     from app.features.auth.email import send_password_reset_email

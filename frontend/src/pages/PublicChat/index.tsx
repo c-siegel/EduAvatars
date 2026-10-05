@@ -86,18 +86,18 @@ function toApiHistory(history: ChatMessage[]): ChatMessage[] {
 }
 
 // Pause-triggered incremental transcription while recording a voice message (see backend
-// services/stt_service.py). Hardcoded constants, not project settings — same posture as the TTS
-// chunker's thresholds (services/text_chunk_service.py).
+// features/ai/stt). Hardcoded constants, not project settings — same posture as the TTS
+// chunker's thresholds (features/chat/streaming.py).
 const RECORDING_SEGMENT_MIN_MS = 2000; // shorter than this, a pause doesn't cut a segment yet
 const SILENCE_PAUSE_MS = 700; // how long a pause must last before it counts as a cut point
 // Empirical cutoff for "quiet" on normalized mic samples (RMS, root mean square) — not measured
 // against real hardware/rooms, may need tuning for a very noisy classroom.
 const SILENCE_RMS_THRESHOLD = 0.015;
-// Mirrors the backend's own truncation (_MAX_INITIAL_PROMPT_CHARS in app/api/public_chat.py) —
+// Mirrors the backend's own truncation (_MAX_INITIAL_PROMPT_CHARS in app/features/chat/public_router.py) —
 // trimming here too avoids uploading an ever-growing prompt on every segment of a long recording,
 // most of which the backend would immediately discard anyway.
 const MAX_INITIAL_PROMPT_CHARS = 500;
-// Mirrors the backend's own cap (_MAX_CHAT_MESSAGE_CHARS in app/models/schemas/chat.py) — caps
+// Mirrors the backend's own cap (_MAX_CHAT_MESSAGE_CHARS in app/features/chat/schemas.py) — caps
 // typing here too so a too-long message shows as "can't type more" instead of a round trip to
 // the backend just to get a 422 back.
 const MAX_CHAT_MESSAGE_CHARS = 8000;
@@ -286,20 +286,20 @@ export function PublicChatPage() {
   const finalRecorderRef = useRef<MediaRecorder | null>(null);
   const segmentStartedAtRef = useRef(0);
   // Accumulates across every segment of the CURRENT recording — sent back as initial_prompt (see
-  // stt_service.py) so each new segment gets cross-segment context, and used as the final message
+  // features/ai/stt) so each new segment gets cross-segment context, and used as the final message
   // text once recording stops.
   const transcriptSoFarRef = useRef("");
   // Chains every segment's transcribeSegment() call onto the one before it (same pattern as
   // playChainRef below), so segments are always folded into transcriptSoFarRef in the order they
   // were spoken. Without this, each pause-triggered segment's /transcribe request races the
   // others — usually resolving in order on a quiet server, but not guaranteed, and far more likely
-  // to reorder once the shared, single-slot STT queue (see stt_service.py) is also busy with a
+  // to reorder once the shared, single-slot STT queue (see features/ai/stt) is also busy with a
   // second visitor's recording. An out-of-order final segment would otherwise read/reset
   // transcriptSoFarRef before an earlier segment's words had been folded in, silently dropping
   // them from the sent message (or leaking them into the next recording instead).
   const transcriptionChainRef = useRef<Promise<void>>(Promise.resolve());
   // True if ANY segment of the CURRENT recording failed to transcribe (network error, or the
-  // shared STT slot timing out under contention — see stt_service.py); reset at the start of each
+  // shared STT slot timing out under contention — see features/ai/stt); reset at the start of each
   // new recording. Read once the final segment finishes, to decide whether to warn the student
   // their message may be missing words (or didn't send at all) — see transcribeSegment.
   const recordingHadFailureRef = useRef(false);
@@ -369,7 +369,7 @@ export function PublicChatPage() {
       if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text }];
       const next = [...prev];
       const last = next[next.length - 1];
-      // Chunks come pre-trimmed (see text_chunk_service.py), so the original spacing/newlines
+      // Chunks come pre-trimmed (see features/chat/streaming.py), so the original spacing/newlines
       // between them is already lost — a single space is a reasonable stand-in for the few
       // hundred ms until the "done" event replaces this with the exact original text below.
       next[next.length - 1] = { ...last, content: `${last.content} ${chunk.text}` };
@@ -585,7 +585,7 @@ export function PublicChatPage() {
       // before this request even resolves), so with no notice it just sits there forever with no
       // reply and no explanation. More likely to actually happen with two people chatting on the
       // same project at once: a shared LLM key's own rate limit or a transient provider error
-      // under doubled load isn't retried indefinitely (see llm_service.py's retry budget).
+      // under doubled load isn't retried indefinitely (see features/ai/llm's retry budget).
       setMessages((prev) => [...prev, { role: "system", content: t("publicChat.messageFailed") }]);
     },
   });
@@ -875,7 +875,7 @@ export function PublicChatPage() {
 
   // Plays the project's pre-generated spoken greeting (see api/projects.ts::generateStartAudio) —
   // used both for the autoplay attempt below and the overlay play button. startAudioUrl is
-  // router-relative (see api/projects.py's start-audio route), so it needs the API origin
+  // router-relative (see features/projects/start_audio_router.py), so it needs the API origin
   // prefixed before fetch() can reach it — same as avatarModelUrl/avatarBackgroundUrl below.
   function playGreeting() {
     const url = toAbsoluteAvatarUrl(tutor.startAudioUrl);

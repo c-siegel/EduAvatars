@@ -2,7 +2,7 @@
 Password Reset Token Table
 
 A single-use, expiring token issued when a user requests a password reset — see
-app/services/password_reset_service.py.
+app/features/auth/password_reset.py.
 
 How to use:
     from app.features.auth.models import PasswordResetToken

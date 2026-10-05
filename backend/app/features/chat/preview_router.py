@@ -43,7 +43,7 @@ def preview_message(
         # gets translated on the frontend (see errorMessage() in api/client.ts); `message` is the
         # raw provider exception, appended untranslated since it's already technical/English.
         # Scrubbed in case the provider embeds the key itself in the failing request (e.g. Gemini
-        # puts it in the URL) — see services/crypto_service.py::scrub_key_from_text.
+        # puts it in the URL) — see features/api_keys/crypto.py::scrub_key_from_text.
         raise HTTPException(
             status_code=502,
             detail={

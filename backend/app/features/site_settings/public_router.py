@@ -3,12 +3,7 @@ Public Site Settings Routes
 
 The unauthenticated view of the instance-wide site settings — just the pieces public pages need
 (contact email for the Impressum, whether self-registration is open for the Register page). See
-app/api/admin.py for the admin-only read/write versions of the same data.
-
-How to use:
-    from app.api import site_settings
-
-    app.include_router(site_settings.router)
+admin_router.py for the admin-only read/write versions of the same data.
 """
 
 from fastapi import APIRouter, Depends

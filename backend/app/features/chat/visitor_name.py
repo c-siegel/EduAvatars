@@ -2,10 +2,10 @@
 Visitor Name Gate
 
 The optional per-project gate that asks a visitor to type their name or ID before the public
-chat starts (see models/project.py::Project.require_visitor_name) — the sibling of the chat
-password gate in services/chat_password_service.py, but with no secret to verify: the entered
+chat starts (see features/projects/models.py::Project.require_visitor_name) — the sibling of the chat
+password gate in features/chat/unlock.py, but with no secret to verify: the entered
 value just becomes a label on the visitor's saved Conversation, so a teacher can tell sessions
-apart when downloading the chat protocol (app/api/analytics.py).
+apart when downloading the chat protocol (app/features/analytics/conversations_router.py).
 
 How to use:
     from app.features.chat.visitor_name import assert_visitor_name_provided, clean_visitor_name

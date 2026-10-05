@@ -101,7 +101,7 @@ to:
   `Host` instead of forwarding the original one, which makes Caddy reject the request.
 - **Forward `X-Forwarded-For` and `X-Forwarded-Proto`** — otherwise the backend can't see the real
   visitor address (see `FORWARDED_ALLOW_IPS` below) or scheme.
-- **Not buffer the streamed chat reply** — `backend/app/api/public_chat.py`'s chat endpoint streams
+- **Not buffer the streamed chat reply** — `backend/app/features/chat/public_router.py`'s chat endpoint streams
   its reply as `text/event-stream` so a student hears the first words as soon as they're ready.
   A proxy that buffers the whole response before forwarding it defeats that.
 

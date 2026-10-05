@@ -1,7 +1,7 @@
 """
 API Key Request/Response Shapes
 
-The request/response shapes for app/api/api_keys.py, plus the shared validation that checks a
+The request/response shapes for app/features/api_keys/router.py, plus the shared validation that checks a
 submitted key against the provider registry (app/core/providers.py) before it's created or
 updated.
 
@@ -31,7 +31,7 @@ _BLOCKED_API_BASE_LITERAL_HOSTS = {"169.254.169.254", "fd00:ec2::254"}
 def _validate_api_base(v: str | None) -> str | None:
     """Reject api_base values that would turn this field into an SSRF (server-side request
     forgery) vector against cloud-metadata endpoints — the request is made by the backend
-    itself (see services/llm_service.py, tts_service.py), whenever a project using this key
+    itself (see features/ai/llm, features/ai/tts), whenever a project using this key
     is used or "tested". Domain names aren't resolved here (that happens at request time, and
     DNS can change), so this only catches literal IPs/hostnames, not rebinding.
     """
@@ -69,7 +69,7 @@ def _validate_against_registry(
     if spec.api_base_required and not api_base:
         raise ValueError(ErrorCode.PROVIDER_NEEDS_BASE_URL)
     # TTS keys for providers with a fixed, provider-side speech model (spec.tts_model, e.g.
-    # OpenAI/Gemini) don't need a model choice — tts_service.py always uses spec.tts_model for
+    # OpenAI/Gemini) don't need a model choice — features/ai/tts always uses spec.tts_model for
     # them, never model_id. Same idea for STT keys with spec.stt_model (currently GWDG SAIA).
     model_required = not (
         (key_type == KEY_TYPE_TTS and spec.tts_model) or (key_type == KEY_TYPE_STT and spec.stt_model)

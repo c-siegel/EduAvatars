@@ -179,7 +179,7 @@ class Settings(BaseSettings):
 
     start_audio_upload_dir: str = "uploads/start-audio"
     """
-    Directory where a project's once-generated start-prompt audio (see api/projects.py's
+    Directory where a project's once-generated start-prompt audio (see features/projects/start_audio.py's
     start-audio routes) is stored, so it doesn't need to be re-synthesized on every chat load.
     """
 
@@ -210,7 +210,7 @@ class Settings(BaseSettings):
     
     # For initial deployment, the instance should only be internally usable
     # (accounts are created manually) — Login remains unaffected, only
-    # self-registration is disabled (see api/auth.py).
+    # self-registration is disabled (see features/auth/router.py).
     
     registration_enabled: bool = True
     """
@@ -218,7 +218,7 @@ class Settings(BaseSettings):
     When True: Anyone can create an account via the registration page.
 
     Only used as the INITIAL value the first time the DB-backed site settings row is created
-    (see services/site_settings_service.py) — after that, an admin toggles this from the
+    (see features/site_settings/service.py) — after that, an admin toggles this from the
     dashboard instead, and this env var no longer has any effect.
     """
 
@@ -247,7 +247,7 @@ class Settings(BaseSettings):
     # ==================== SPEECH-TO-TEXT (STT) SETTINGS ====================
     
     # Speech recognition runs directly in the backend process using the
-    # faster-whisper library (see services/stt_service.py) — no separate
+    # faster-whisper library (see features/ai/stt) — no separate
     # Whisper container or cloud service needed.
     # stt_model is either a short name ("small", "medium", …) or a Hugging Face
     # repository (like the default) — both are accepted directly by faster-whisper.

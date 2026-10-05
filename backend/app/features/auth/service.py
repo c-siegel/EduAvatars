@@ -1,7 +1,7 @@
 """
 Authentication Helpers
 
-Shared logic behind the auth routes (app/api/auth.py) and anywhere else a User needs to become
+Shared logic behind the auth routes (app/features/auth/router.py) and anywhere else a User needs to become
 an authenticated session or an API response: registering/authenticating a user, converting a
 User to its public UserOut shape. The auth cookie itself is set in the HTTP layer (see
 app/core/cookies.py::set_auth_cookie).

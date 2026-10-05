@@ -20,10 +20,10 @@ class Conversation(SQLModel, table=True):
     project_id: str = Field(foreign_key="project.id", index=True)
     visitor_id: str = Field(index=True)
     # Visitor-entered name/ID, only asked for if Project.require_visitor_name is set (see
-    # services/visitor_name_service.py) — None for every project that doesn't ask for one.
+    # features/chat/visitor_name.py) — None for every project that doesn't ask for one.
     visitor_name: str | None = None
     messages_json: str = "[]"
-    # Indexed: analytics_service.py orders/filters on both, and retention_service.py deletes
+    # Indexed: features/analytics/service.py orders/filters on both, and tasks/retention.py deletes
     # WHERE updated_at < cutoff — without an index, both are full-table scans on the
     # fastest-growing table in the app (see the matching alembic migration).
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)

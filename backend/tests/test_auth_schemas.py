@@ -1,4 +1,4 @@
-"""Tests for LoginRequest's password-length guard (app/models/schemas/auth.py) — bcrypt raises
+"""Tests for LoginRequest's password-length guard (app/features/auth/schemas.py) — bcrypt raises
 an unhandled error above 72 bytes instead of truncating, so this is the backstop that keeps a
 single oversized login attempt from 500ing the request."""
 

@@ -1,7 +1,7 @@
 """
 Auth Request/Response Shapes
 
-The request/response shapes for app/api/auth.py, plus the shared password-strength check used
+The request/response shapes for app/features/auth/router.py, plus the shared password-strength check used
 by both registration and password reset/change (see also schemas/profile.py).
 
 How to use:

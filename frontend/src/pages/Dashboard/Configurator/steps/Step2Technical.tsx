@@ -14,7 +14,7 @@ import styles from "./shared.module.css";
 const NO_MODEL_SELECTED = "";
 
 // Obergrenzen der beiden Sampling-Parameter — dieselben Werte prüft das Backend nochmal
-// (MAX_TEMPERATURE/MAX_TOP_P in backend/app/models/schemas/project.py), damit ein per API
+// (MAX_TEMPERATURE/MAX_TOP_P in backend/app/features/projects/schemas.py), damit ein per API
 // gesetzter Wert nicht am Slider vorbeikommt.
 const MAX_TEMPERATURE = 2;
 const MAX_TOP_P = 1;
@@ -40,7 +40,7 @@ export function Step2Technical({ draft, onChange }: StepProps) {
     return Boolean(findProvider(specs, key.provider)?.ttsModelFixed);
   });
   // STT (currently only GWDG SAIA) is optional — with no key selected, transcription keeps
-  // running through the built-in local Whisper engine (see backend services/stt_service.py), so
+  // running through the built-in local Whisper engine (see backend features/ai/stt), so
   // unlike TTS/LLM there's no "nothing set up" warning callout here.
   const sttKeys = (keysQuery.data ?? []).filter((key) => {
     if (key.keyType !== "stt") return false;

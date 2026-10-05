@@ -29,7 +29,7 @@ http://{$SITE_ADDRESS} {
 	}
 
 	# Explicit content-type allowlist instead of Caddy's own default: the streamed chat reply
-	# (backend/app/api/public_chat.py::send_message_stream, Content-Type: text/event-stream)
+	# (backend/app/features/chat/pipeline.py::stream_turn, Content-Type: text/event-stream)
 	# must NOT be gzip-encoded — it's already base64 audio (barely compressible) sent as a long-
 	# lived stream, and holding a compression buffer open across it just burns CPU per student
 	# for no space saved.

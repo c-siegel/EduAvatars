@@ -46,7 +46,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
   const showFreeTextModel = freeTextModel || (Boolean(modelId) && !isCuratedModel);
   const modelSelectValue = showFreeTextModel ? FREE_TEXT_MODEL : modelId || NO_MODEL;
   // TTS-Anbieter mit fest verdrahtetem Sprachausgabe-Modell (spec.ttsModelFixed, z. B.
-  // OpenAI/Gemini) brauchen keine Modellwahl — tts_service.py nutzt dort ohnehin immer dasselbe
+  // OpenAI/Gemini) brauchen keine Modellwahl — features/ai/tts nutzt dort ohnehin immer dasselbe
   // Modell, nie das hier hinterlegte model_id.
   // (Same for an STT provider with spec.sttModelFixed, currently GWDG SAIA.)
   const showModelField = !((keyType === "tts" && spec.ttsModelFixed) || (keyType === "stt" && spec.sttModelFixed));

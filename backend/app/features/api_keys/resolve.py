@@ -3,7 +3,8 @@ Resolving a Project's API Keys
 
 Looks up which of a user's stored API keys a project should actually use for its LLM/TTS calls,
 and works out the endpoint override (if any) to pass to litellm. Kept central so
-app/api/projects.py and app/api/public_chat.py never duplicate this logic.
+the chat pipeline (app/features/chat/pipeline.py), the transcribe routes, and start-audio
+generation never duplicate this logic.
 
 How to use:
     from app.features.api_keys.resolve import resolve_llm_key
@@ -90,7 +91,7 @@ def resolve_stt_key(session: Session, project: Project) -> UserApiKey | None:
     """Find the STT key configured for this project (the STT counterpart to resolve_tts_key).
 
     None (no key configured, or a stale/foreign one) means the caller should fall back to the
-    instance-wide local Whisper engine (see services/stt_service.py) — unlike LLM/TTS, having no
+    instance-wide local Whisper engine (see features/ai/stt) — unlike LLM/TTS, having no
     STT key is a normal, fully working state, not a missing configuration.
     """
     if project.stt_api_key_id:

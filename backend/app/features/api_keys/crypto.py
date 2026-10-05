@@ -35,8 +35,8 @@ def reveal_api_key(ciphertext: str) -> str:
 def scrub_key_from_text(text: str, encrypted_api_key: str) -> str:
     """Redact a stored key's own plaintext value out of arbitrary text before it's shown or logged.
 
-    Used on raw provider/network exception messages (api/api_keys.py's "Test" button,
-    api/projects.py's preview chat and start-audio generation) before they reach the response
+    Used on raw provider/network exception messages (features/api_keys/router.py's "Test" button,
+    features/chat/preview_router.py's preview chat and features/projects/start_audio.py) before they reach the response
     body. Some providers (e.g. Google Gemini) put the API key directly in the request URL, and
     some HTTP client error messages include that full URL — without this, a raw exception can
     echo the key back to its own owner in a response body (browser devtools, a support

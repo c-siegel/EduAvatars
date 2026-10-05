@@ -1,4 +1,4 @@
-"""Tests for get_sessions_paginated (app/services/analytics_service.py). Used to look up each
+"""Tests for get_sessions_paginated (app/features/analytics/service.py). Used to look up each
 row's Project via a separate session.get() call per conversation — an N+1 query pattern, since
 Project is already joined into the same query for its WHERE filters. Selecting Project.title
 alongside Conversation instead should return identical results from a single query."""

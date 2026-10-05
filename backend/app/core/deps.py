@@ -127,7 +127,7 @@ def get_current_user_optional(
     """
     # Like get_current_user, but never raises — for routes that can be called both
     # authenticated (teacher) and anonymous (public chat) and decide themselves what's
-    # allowed without a logged-in user (see api/avatar_library.py::get_avatar_file).
+    # allowed without a logged-in user (see features/media/avatars_router.py::get_avatar_file).
     token = request.cookies.get(ACCESS_TOKEN_COOKIE)
     if not token:
         return None

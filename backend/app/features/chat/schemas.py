@@ -33,7 +33,7 @@ class ChatHistoryEntry(CamelModel):
     role: Literal["user", "assistant"]
     content: str
     # ISO 8601 timestamp of this message, set server-side when a conversation is saved (see
-    # api/public_chat.py::_save_conversation_turn) — always None on the way in, since the
+    # features/chat/conversation_store.py::save_turn) — always None on the way in, since the
     # frontend never sends one with its request history. Saved conversations from before this
     # field existed also don't have one.
     timestamp: str | None = None
@@ -52,7 +52,7 @@ class PublicProjectOut(CamelModel):
     teacher_name: str
     # The avatar's first message — empty means the frontend shows a generic greeting (see
     # pages/PublicChat/index.tsx). Also passed to the model as context, see
-    # services/llm_service.py::send_chat_message.
+    # features/ai/llm/__init__.py::complete.
     start_prompt: str | None = None
     avatar_model_url: str | None = None
     avatar_background_url: str | None = None
@@ -60,25 +60,25 @@ class PublicProjectOut(CamelModel):
     tts_enabled: bool = False
     stt_enabled: bool = False
     # Whether the frontend should use POST /message/stream instead of /message — see
-    # api/public_chat.py::send_message_stream. Meaningless (and always False here) without
+    # features/chat/pipeline.py::stream_turn. Meaningless (and always False here) without
     # tts_enabled, since the whole point is audio starting before the full reply is ready.
     streaming_enabled: bool = False
     # Controls whether the chat should start open or collapsed-but-expandable — configurable from
-    # the Configurator (see models/project.py), but the frontend doesn't render a collapsed state
+    # the Configurator (see features/projects/models.py), but the frontend doesn't render a collapsed state
     # yet, so this currently has no visible effect.
     chat_default_open: bool = True
     # Already combined server-side with the respective checkbox (see
-    # public_chat.py::load_tutor) — not enabled or without a URL both end up as None here, the
+    # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.
     survey_before_url: str | None = None
     survey_after_url: str | None = None
     # Whether this project requires a password before start_prompt/avatar/etc. are shown at all —
     # when True and unlocked is False, every field above is deliberately left at its default
-    # (nothing persona-related leaks pre-unlock), see public_chat.py::load_tutor.
+    # (nothing persona-related leaks pre-unlock), see features/chat/public_router.py::load_tutor.
     password_protected: bool = False
     unlocked: bool = True
     # Whether a visitor must type a name or ID before the chat starts (see
-    # services/visitor_name_service.py) — unlike password_protected/unlocked above, this doesn't
+    # features/chat/visitor_name.py) — unlike password_protected/unlocked above, this doesn't
     # gate any other field here: the name has no secrecy purpose, so nothing needs to be withheld
     # while it's still missing. Whether it's already been entered lives entirely client-side (see
     # lib/visitorNameStorage.ts), since there's nothing server-side to verify it against.
@@ -88,17 +88,17 @@ class PublicProjectOut(CamelModel):
     # type — see the notice under the chat and the "?" in the header (pages/PublicChat).
     save_conversations: bool = False
     llm_model: str | None = None
-    # Route to the once-generated start_prompt audio (see api/projects.py's start-audio routes) —
+    # Route to the once-generated start_prompt audio (see features/projects/start_audio_router.py) —
     # None means it hasn't been generated (yet), in which case the frontend just shows the
     # start_prompt as text without trying to speak it. Populated the same way as start_prompt
-    # (stays None while password-locked), see public_chat.py::load_tutor.
+    # (stays None while password-locked), see features/chat/public_router.py::load_tutor.
     start_audio_url: str | None = None
 
 
 class ChatUnlockRequest(CamelModel):
     password: str
 
-    # bcrypt.checkpw (see chat_password_service.py) raises an unhandled ValueError above 72
+    # bcrypt.checkpw (see features/chat/unlock.py) raises an unhandled ValueError above 72
     # bytes instead of truncating — without this, a single oversized guess 500s this endpoint,
     # which needs no login at all.
     @field_validator("password")
@@ -118,7 +118,7 @@ class ChatMessageIn(CamelModel):
     # The visible conversation so far, from the frontend (lives only in the browser tab, see
     # pages/PublicChat/index.tsx) — without it, every request would be stateless and the model
     # wouldn't know earlier rounds of the conversation. Additionally capped server-side, see
-    # services/llm_service.py::_build_messages.
+    # features/ai/llm/history.py::build_messages.
     history: list[ChatHistoryEntry] = []
 
     # Belt and braces alongside the frontend's own guard (sendMessage's trim-check in

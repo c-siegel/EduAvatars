@@ -41,7 +41,7 @@ class UserApiKey(SQLModel, table=True):
 
     # Endpoint address. Pre-filled in the form from ProviderSpec.default_api_base and stays
     # editable; only passed on to litellm if it differs from the default (see
-    # services/api_key_service.py::effective_api_base) — otherwise a merely pre-filled value
+    # features/api_keys/resolve.py::effective_api_base) — otherwise a merely pre-filled value
     # would change the existing SaaS providers' call behavior.
     api_base: str | None = None
     # The chosen model without the litellm prefix (e.g. "gpt-4o", "llama3.1"). Required, except
@@ -50,5 +50,5 @@ class UserApiKey(SQLModel, table=True):
     # key form).
     model_id: str | None = None
     # Only for providers with ProviderSpec.requires_arcana_id (currently GWDG Arcana) — selects
-    # the knowledge base (RAG) to query, see services/llm_service.py::_send_chat_arcana.
+    # the knowledge base (RAG) to query, see features/ai/llm/arcana.py::ArcanaClient.
     arcana_id: str | None = None

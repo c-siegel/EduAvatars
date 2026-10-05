@@ -8,7 +8,7 @@ export interface PublicProject {
   title: string;
   teacherName: string;
   // Erste Nachricht des Avatars, dem Modell ebenfalls als Kontext mitgegeben (siehe Backend
-  // services/llm_service.py::send_chat_message). Leer = generische Begrüßung im Frontend.
+  // features/ai/llm/__init__.py::complete). Leer = generische Begrüßung im Frontend.
   startPrompt: string | null;
   // Route to the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see pages/PublicChat/index.tsx's autoplay-on-load and overlay play button.
@@ -48,7 +48,7 @@ function unlockHeader(slug: string): Record<string, string> | undefined {
 }
 
 // Attaches the visitor-entered name/ID (see visitorNameStorage.ts), if any — encoded because raw
-// HTTP header values can't carry arbitrary Unicode (see visitor_name_service.py::clean_visitor_name
+// HTTP header values can't carry arbitrary Unicode (see features/chat/visitor_name.py::clean_visitor_name
 // on the backend, which decodes it again).
 function visitorNameHeader(slug: string): Record<string, string> | undefined {
   const name = getVisitorName(slug);
@@ -62,7 +62,7 @@ function requestHeaders(slug: string): Record<string, string> {
 }
 
 // One sentence-sized piece of the reply, text and audio together — see
-// app/api/public_chat.py::send_message_stream's SSE (server-sent events) schema. Keys are already
+// app/features/chat/pipeline.py::stream_turn's SSE (server-sent events) schema. Keys are already
 // camelCase as sent by the backend (a plain dict there, not a CamelModel), so no conversion needed.
 export interface StreamChunkEvent {
   index: number;
@@ -167,7 +167,7 @@ export const publicChatApi = {
   loadTutor: (slug: string) => apiClient.get<PublicProject>(`/public/${slug}`, requestHeaders(slug)),
   unlock: (slug: string, password: string) =>
     apiClient.post<{ unlockToken: string }>(`/public/${slug}/unlock`, { password }),
-  // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/api/public_chat.py) —
+  // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/features/chat/public_router.py) —
   // war zuvor fälschlich als Conversation typisiert.
   sendMessage: (slug: string, message: string, history: ChatMessage[], signal?: AbortSignal) =>
     // llmMs/ttsMs: backend-side call durations, only meaningful together with the client-side

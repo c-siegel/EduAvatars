@@ -29,7 +29,7 @@ def _hash_token(raw_token: str) -> str:
 
 def request_password_reset(session: Session, email: str) -> None:
     """Issue a password-reset token and email the reset link, if an account with `email` exists."""
-    # Always responds the same way to the caller (see api/auth.py), whether or not the email
+    # Always responds the same way to the caller (see features/auth/router.py), whether or not the email
     # exists — this prevents using it to enumerate registered accounts.
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None or not user.enabled:

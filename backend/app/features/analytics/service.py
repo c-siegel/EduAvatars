@@ -29,22 +29,6 @@ MAX_STATS_DAYS = 90
 MAX_TIMESERIES_DAYS = 365
 
 
-def weekly_active_students(session: Session, user_id: str) -> int:
-    """Count distinct visitors across a user's projects in the last 7 days."""
-    since = datetime.now(timezone.utc) - timedelta(days=7)
-    return session.exec(
-        select(func.count(func.distinct(ProjectAccess.visitor_id)))
-        .join(Project, Project.id == ProjectAccess.project_id)
-        .where(Project.user_id == user_id, ProjectAccess.accessed_at >= since)
-    ).one()
-
-
-def conversations_for_project(session: Session, project_id: str) -> list[Conversation]:
-    """List all saved conversations for one project."""
-    # Only meaningful if Project.save_conversations was enabled.
-    return list(session.exec(select(Conversation).where(Conversation.project_id == project_id)))
-
-
 def get_conversation_detail(session: Session, user_id: str, conversation_id: str) -> ConversationDetailOut | None:
     """Full message-by-message transcript of one saved conversation — None if it doesn't exist
     or doesn't belong to one of user_id's own projects (the session-list table only ever shows a

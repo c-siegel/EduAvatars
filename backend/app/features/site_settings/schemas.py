@@ -2,7 +2,7 @@
 Site Settings Request/Response Shapes
 
 The request/response shapes for the admin-editable, DB-backed instance settings (see
-app/api/admin.py and app/api/site_settings.py): the imprint details, whether self-registration
+app/features/site_settings/admin_router.py and public_router.py): the imprint details, whether self-registration
 is open, and how long student chat data is kept.
 
 How to use:

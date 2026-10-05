@@ -63,7 +63,7 @@ export const analyticsApi = {
   },
 
   // Permanently deletes the checked-off conversations — ids that don't belong to the current
-  // user are silently skipped server-side (see app/api/analytics.py::delete_conversations_route).
+  // user are silently skipped server-side (see app/features/analytics/conversations_router.py::delete_conversations_route).
   deleteConversations: (conversationIds: string[]) => {
     const body: ConversationIdsRequest = { conversationIds };
     return apiClient.post<void>("/analytics/delete", body);

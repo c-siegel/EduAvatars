@@ -6,7 +6,7 @@ flow. Every route here is rate-limited (see app/core/rate_limit.py) to protect a
 brute-force login attempts, credential stuffing, and mass account creation.
 
 How does login work here?
-On success, login/register set an httponly cookie (see app/core/deps.py) containing a signed
+On success, login/register set an httponly cookie (see app/core/cookies.py) containing a signed
 JWT (JSON Web Token) — the browser sends it automatically on later requests, and JavaScript
 can't read it. There's no bearer token in request headers to manage on the frontend.
 """
@@ -43,7 +43,7 @@ def registration_status(session: Session = Depends(get_session)):
     """Whether self-registration is currently enabled."""
     # Public (no login needed) — the registration page checks this before rendering the form,
     # see pages/Register. The actual enforcement happens below, in register(). DB-backed (see
-    # services/site_settings_service.py) so an admin can toggle it without a redeploy.
+    # features/site_settings/service.py) so an admin can toggle it without a redeploy.
     return RegistrationStatusOut(enabled=get_or_create_site_settings(session).registration_enabled)
 
 
@@ -90,7 +90,7 @@ def forgot_password(data: ForgotPasswordRequest, request: Request, session: Sess
     enforce_password_reset_rate_limit(request, data.email)
     request_password_reset(session, data.email)
     # Always the same response, whether or not the email exists or SMTP is configured — this
-    # prevents enumerating which accounts are registered (see password_reset_service.py).
+    # prevents enumerating which accounts are registered (see features/auth/password_reset.py).
     return {"detail": "Falls ein Konto mit dieser E-Mail existiert, wurde eine Nachricht verschickt."}
 
 

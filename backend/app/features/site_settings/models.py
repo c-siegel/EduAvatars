@@ -7,7 +7,7 @@ long student chat data is kept.
 
 What is a singleton row?
 This table only ever holds one row, with id fixed to 1 — there's exactly one instance-wide
-settings record, not one per user. See services/site_settings_service.py for how it's read/
+settings record, not one per user. See features/site_settings/service.py for how it's read/
 created/updated; nothing else should query or write this table directly.
 
 How to use:
@@ -33,9 +33,9 @@ class SiteSettings(SQLModel, table=True):
     provider_country: str | None = None
     # Mirrors Settings.registration_enabled (core/config.py) as the initial value the first time
     # this row is created — after that, this DB value is authoritative and the env var only
-    # matters for a fresh install (see services/site_settings_service.py).
+    # matters for a fresh install (see features/site_settings/service.py).
     registration_enabled: bool = True
     # How long saved student conversations and page-view logs are kept, in days. 0 = keep forever
-    # (the previous behaviour). Enforced by services/retention_service.py, re-checked
+    # (the previous behaviour). Enforced by tasks/retention.py, re-checked
     # periodically for as long as the process runs (see main.py's _retention_loop).
     conversation_retention_days: int = 0

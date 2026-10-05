@@ -59,7 +59,7 @@ def build_conversation_csv(conversation: Conversation, project: Project) -> str:
     message, so the two columns read top-to-bottom as each side's messages in order.
 
     Messages saved before per-message timestamps existed (see
-    app/models/schemas/chat.py::ChatHistoryEntry) leave the "Zeitpunkt" cell blank for that row.
+    app/features/chat/schemas.py::ChatHistoryEntry) leave the "Zeitpunkt" cell blank for that row.
     """
     messages = json.loads(conversation.messages_json)
 

@@ -1,4 +1,4 @@
-"""Tests for the project export/import round-trip (app/services/project_export_service.py) —
+"""Tests for the project export/import round-trip (app/features/projects/export.py) —
 in particular that secrets (API keys, chat password hash) never leave in an export, that a
 freshly imported project is always an unpublished draft, and that avatar/background library
 references are dropped rather than carried over when they don't belong to the importing user."""

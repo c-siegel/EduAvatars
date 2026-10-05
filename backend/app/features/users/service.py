@@ -107,7 +107,7 @@ def admin_reset_password(session: Session, user: User, new_password: str) -> Non
     user.password_hash = hash_password(new_password)
     user.must_change_password = True
     # Invalidates any already-issued tokens, same as a self-service password change
-    # (see api/profile.py::change_password) — an admin-forced reset should sign out old sessions.
+    # (see features/users/profile_router.py::change_password) — an admin-forced reset should sign out old sessions.
     user.token_version += 1
     session.add(user)
     session.commit()

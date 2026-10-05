@@ -19,7 +19,7 @@ from app.features.auth.schemas import MAX_PASSWORD_BYTES
 from app.features.chat.schemas import ChatHistoryEntry
 
 # A shared classroom PIN, not an account password — short and memorable is fine, unlike the
-# stricter 10-char+digit rule enforced on User passwords (schemas/auth.py).
+# stricter 10-char+digit rule enforced on User passwords (features/auth/schemas.py).
 MIN_CHAT_PASSWORD_LENGTH = 4
 
 # The ranges OpenAI-compatible providers accept for the two sampling parameters. Checked here so
@@ -63,7 +63,7 @@ class ProjectOut(CamelModel):
     password_protected: bool
     require_visitor_name: bool
     # Route to the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
-    # see api/projects.py's start-audio routes. Read-only: generated via its own endpoint, never
+    # see features/projects/start_audio.py. Read-only: generated via its own endpoint, never
     # written directly through ProjectUpdate.
     start_audio_url: str | None
     created_at: datetime
@@ -97,8 +97,8 @@ class ProjectUpdate(CamelModel):
     chat_default_open: bool | None = None
     require_visitor_name: bool | None = None
     # None = no change (field omitted); "" or explicit null clears/disables the password; a
-    # non-empty string sets/changes it — handled separately in api/projects.py, never written
-    # straight to the DB (see services/project_service.py::set_or_clear_chat_password).
+    # non-empty string sets/changes it — handled separately in features/projects/service.py, never written
+    # straight to the DB (see features/projects/service.py::set_or_clear_chat_password).
     chat_password: str | None = None
 
     @field_validator("temperature")
@@ -147,7 +147,7 @@ class PreviewMessageResponse(CamelModel):
 
 class ProjectExportData(BaseModel):
     """One project's portable configuration — the same fields ProjectUpdate accepts, minus the
-    API key references and chat_password (see project_export_service.py for why)."""
+    API key references and chat_password (see features/projects/export.py for why)."""
 
     title: str = Field(min_length=1)
     description: str | None = None

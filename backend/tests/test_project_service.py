@@ -1,6 +1,6 @@
-"""Tests for delete_project's file cleanup (app/services/project_service.py). Deleting a project
+"""Tests for delete_project's file cleanup (app/features/projects/service.py). Deleting a project
 used to leave its generated start-prompt audio file (start_audio_path) behind on disk forever —
-unlike account deletion, which does unlink every file it owns (see services/account_service.py).
+unlike account deletion, which does unlink every file it owns (see features/users/account.py).
 avatar_model_url/avatar_background_url are deliberately NOT covered here: those point at reusable
 library assets other projects may still reference, so only their own library-delete endpoints
 remove those files."""

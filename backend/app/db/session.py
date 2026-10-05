@@ -53,7 +53,7 @@ from app.core.config import settings
 # connect_args={"check_same_thread": False} allows SQLite to work with multiple threads
 # (needed for FastAPI's async nature, even though we're using sync database operations)
 # pool_size/max_overflow raised above SQLAlchemy's defaults (5/10 = 15 total): every public chat
-# request holds a connection for its whole duration (see api/public_chat.py), so the default 15
+# request holds a connection for its whole duration (see features/chat/public_router.py), so the default 15
 # becomes the ceiling on simultaneous requests — a class of ~30 needs more headroom than that.
 engine = create_engine(
     settings.database_url,

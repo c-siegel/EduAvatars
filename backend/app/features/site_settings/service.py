@@ -1,7 +1,7 @@
 """
 Site Settings Helpers
 
-Reads and updates the single SiteSettings row (see models/site_settings.py) — the admin-editable,
+Reads and updates the single SiteSettings row (see features/site_settings/models.py) — the admin-editable,
 DB-backed instance settings like the public contact email and whether self-registration is open.
 
 How to use:

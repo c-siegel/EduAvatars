@@ -27,12 +27,12 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     password_hash: str
     enabled: bool = True
-    # Grants access to the admin dashboard (see api/admin.py, core/deps.py::get_current_admin).
+    # Grants access to the admin dashboard (see features/users/admin_users_router.py, core/deps.py::get_current_admin).
     # A plain flag, not a role enum — only two states exist today.
     is_admin: bool = False
     # Set when an admin sets this account's password for them (creation or reset) instead of the
     # user choosing it themselves — cleared the next time they successfully change their own
-    # password (see api/profile.py::change_password). Checked by the frontend to force a change
+    # password (see features/users/profile_router.py::change_password). Checked by the frontend to force a change
     # screen before the rest of the dashboard is reachable.
     must_change_password: bool = False
     # Incremented on password change/reset, and on the explicit "sign out everywhere else".
@@ -42,7 +42,7 @@ class User(SQLModel, table=True):
     token_version: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # Profile picture (Screen 1h). avatar_content_type is determined on upload from the actual
-    # magic bytes (see api/profile.py), not the file extension — this avoids re-sniffing on every
+    # magic bytes (see features/users/profile_router.py), not the file extension — this avoids re-sniffing on every
     # GET. avatar_updated_at is only used for cache-busting the served image URL.
     avatar_path: str | None = None
     avatar_content_type: str | None = None

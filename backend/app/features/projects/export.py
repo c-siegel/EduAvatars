@@ -6,7 +6,7 @@ project, move it to another eduavatars account, or share a configuration with a 
 without also handing over their own API keys.
 
 What is YAML? A human-readable text format for structured data (like JSON, but easier to
-hand-edit) — see app/api/projects.py's export/import routes for where this is used.
+hand-edit) — see app/features/projects/transfer_router.py for where this is used.
 
 How to use:
     from app.features.projects.export import export_project_yaml, import_project
