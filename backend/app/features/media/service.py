@@ -17,14 +17,14 @@ from app.features.projects.models import Project
 from app.storage.files import save_file, unlink_quietly
 
 
-def is_used_by_published_project(session: Session, column, item_id: str) -> bool:
-    """Whether any published project references `item_id` in `column` (Project.avatar_model_id or
-    Project.avatar_background_id) — the condition for serving a library file anonymously, since
+def is_used_by_published_project(session: Session, column, item_id: str, owner_id: str) -> bool:
+    """Whether a published project of `owner_id` references `item_id` in `column` (Project.avatar_model_id
+    or Project.avatar_background_id) — the condition for serving a library file anonymously, since
     the public chat needs the avatar/background visible to students."""
-    return (
-        session.exec(select(Project).where(column == item_id, Project.published == True)).first()  # noqa: E712
-        is not None
-    )
+    # Only the asset owner's own projects count: otherwise anyone could publish a project pointing
+    # at a guessed or leaked ID and so make someone else's private upload public.
+    query = select(Project).where(column == item_id, Project.published == True, Project.user_id == owner_id)  # noqa: E712
+    return session.exec(query).first() is not None
 
 
 # ==================== AVATARS ====================

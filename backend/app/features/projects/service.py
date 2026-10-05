@@ -2,8 +2,8 @@
 Project CRUD
 
 The logic behind the project routes (features/projects/router.py): creating, listing, updating
-and deleting a user's projects, checking that a project only references the user's own API keys,
-and deriving the denormalized litellm model string from the chosen LLM key.
+and deleting a user's projects, checking that a project only references the user's own API keys
+and library assets, and deriving the denormalized litellm model string from the chosen LLM key.
 
 How to use:
     from app.features.projects.service import list_projects, update_project
@@ -21,6 +21,7 @@ from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_owned_key_of_type
 from app.features.chat.models import Conversation, ProjectAccess
+from app.features.media.service import get_owned_avatar, get_owned_background
 from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectUpdate
 from app.storage.files import unlink_quietly
@@ -33,6 +34,16 @@ _NO_CHAT_PASSWORD_SENT = object()
 class UnknownApiKey(DomainError):
     status_code = 400
     detail = ErrorCode.UNKNOWN_API_KEY
+
+
+class UnknownAvatar(DomainError):
+    status_code = 400
+    detail = ErrorCode.AVATAR_NOT_FOUND
+
+
+class UnknownBackground(DomainError):
+    status_code = 400
+    detail = ErrorCode.BACKGROUND_NOT_FOUND
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -128,7 +139,7 @@ def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_
         raise UnknownApiKey()
 
 
-def _check_key_references(session: Session, user_id: str, data: ProjectUpdate) -> None:
+def _check_references(session: Session, user_id: str, data: ProjectUpdate) -> None:
     # A project may only point at one of the user's own keys — otherwise a user could enter
     # someone else's key ID (it could never actually be used, see resolve_llm_key, but the
     # reference wouldn't belong in the DB either way).
@@ -136,6 +147,12 @@ def _check_key_references(session: Session, user_id: str, data: ProjectUpdate) -
         _require_owned_key_of_type(session, user_id, data.llm_api_key_id, KEY_TYPE_LLM)
     if data.tts_api_key_id:
         _require_owned_key_of_type(session, user_id, data.tts_api_key_id, KEY_TYPE_TTS)
+    # Same for library assets — a foreign avatar/background would also be served to the
+    # project's public chat visitors (see media/service.py::is_used_by_published_project).
+    if data.avatar_model_id and get_owned_avatar(session, user_id, data.avatar_model_id) is None:
+        raise UnknownAvatar()
+    if data.avatar_background_id and get_owned_background(session, user_id, data.avatar_background_id) is None:
+        raise UnknownBackground()
 
 
 def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Project:
@@ -143,7 +160,7 @@ def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Proje
     # Uses ProjectUpdate instead of a separate ProjectCreate schema: every field is optional
     # anyway and the DB model has a default for everything except title/user_id (see
     # features/projects/models.py) — the frontend always sends a title on creation ("+ New project") anyway.
-    _check_key_references(session, user_id, data)
+    _check_references(session, user_id, data)
     create_data = data.model_dump(exclude_unset=True)
     chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
     project = Project(user_id=user_id, **create_data)
@@ -158,7 +175,7 @@ def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Proje
 
 def apply_update(session: Session, project: Project, data: ProjectUpdate) -> Project:
     """Validate and apply a ProjectUpdate (only the fields actually sent), including the chat password."""
-    _check_key_references(session, project.user_id, data)
+    _check_references(session, project.user_id, data)
     update_data = data.model_dump(exclude_unset=True)
     chat_password = update_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
     if chat_password is not _NO_CHAT_PASSWORD_SENT:

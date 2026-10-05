@@ -81,7 +81,7 @@ def get_background_file(
 
     is_owner = current_user is not None and background.user_id == current_user.id
     if not is_owner and not media.is_used_by_published_project(
-        session, Project.avatar_background_id, background_id
+        session, Project.avatar_background_id, background_id, background.user_id
     ):
         raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 

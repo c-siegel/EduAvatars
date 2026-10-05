@@ -84,7 +84,7 @@ def get_avatar_file(
 
     is_owner = current_user is not None and avatar.user_id == current_user.id
     if not is_owner and not media.is_used_by_published_project(
-        session, Project.avatar_model_id, avatar_id
+        session, Project.avatar_model_id, avatar_id, avatar.user_id
     ):
         raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 

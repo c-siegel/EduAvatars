@@ -1,7 +1,13 @@
 """Regression tests for the bugs found during the backend restructuring — one section per bug,
 each failing before its fix."""
 
-from conftest import PASSWORD, login_as, make_user, new_client, parse_sse
+from sqlmodel import Session
+
+from app.features.projects.models import Project
+from conftest import PASSWORD, browser_url, create_project, login_as, make_user, new_client, parse_sse, publish
+
+GLB = b"glTF" + b"\x00" * 16
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
 
 # ==================== Disabled accounts can't log in ====================
 
@@ -94,3 +100,40 @@ def test_streamed_message_sets_visitor_cookie_so_the_conversation_stays_together
     sessions = client.get("/conversations").json()
     assert sessions["total"] == 1
     assert sessions["items"][0]["messageCount"] == 4
+
+
+# ==================== Projects can only use their owner's avatars/backgrounds ====================
+
+
+def test_project_cannot_reference_another_users_avatar_or_background(client, engine, teacher):
+    avatar = client.post("/avatars", files={"file": ("Julia.glb", GLB, "model/gltf-binary")}).json()
+    background = client.post("/backgrounds", files={"file": ("Klasse.png", PNG, "image/png")}).json()
+    other = login_as(new_client(), make_user(engine, email="other@example.com"))
+
+    created = other.post("/projects", json={"title": "X", "avatarModelId": avatar["id"]})
+    assert created.status_code == 400
+    assert created.json() == {"detail": "AVATAR_NOT_FOUND"}
+    project = create_project(other)
+    updated = other.put(f"/projects/{project['id']}", json={"avatarBackgroundId": background["id"]})
+    assert updated.status_code == 400
+    assert updated.json() == {"detail": "BACKGROUND_NOT_FOUND"}
+    # Clearing stays possible.
+    assert other.put(f"/projects/{project['id']}", json={"avatarModelId": None}).status_code == 200
+
+
+def test_foreign_published_project_does_not_expose_a_users_avatar_or_background(client, engine, teacher):
+    avatar = client.post("/avatars", files={"file": ("Julia.glb", GLB, "model/gltf-binary")}).json()
+    background = client.post("/backgrounds", files={"file": ("Klasse.png", PNG, "image/png")}).json()
+    other = login_as(new_client(), make_user(engine, email="other@example.com"))
+    project = create_project(other)
+    publish(other, project["id"])
+    # A reference stored before the ownership check existed.
+    with Session(engine) as session:
+        row = session.get(Project, project["id"])
+        row.avatar_model_id = avatar["id"]
+        row.avatar_background_id = background["id"]
+        session.add(row)
+        session.commit()
+
+    assert new_client().get(browser_url(avatar["fileUrl"])).status_code == 404
+    assert new_client().get(browser_url(background["fileUrl"])).status_code == 404
