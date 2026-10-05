@@ -3,6 +3,8 @@
 // each recorded segment to the backend's /transcribe route — see backend
 // services/api_key_service.py::browser_stt_model_for for when this is even offered to a visitor.
 
+import { FALLBACK_SILENCE_RMS_THRESHOLD, rms } from "./audioLevel";
+
 export type BrowserSttStatus = "idle" | "loading" | "ready" | "unsupported" | "error";
 
 // navigator.gpu has no ambient TypeScript type in this project (no @webgpu/types dependency) —
@@ -41,21 +43,18 @@ interface PendingTranscription {
 // set to the target rate does the resampling for free while rendering).
 const WHISPER_SAMPLE_RATE = 16000;
 
-// Same threshold/rationale as pages/PublicChat/index.tsx's SILENCE_RMS_THRESHOLD (root mean
-// square of normalized samples), applied here to the whole decoded segment instead of a live
-// rolling window. Without this gate, a segment that's mostly/entirely silence (typically the
-// last, short segment of a recording — whatever's left after the final pause before the mic
-// button is released) reliably makes Whisper hallucinate a repeated stock training-data phrase
-// ("Vielen Dank", "Thank you", "Untertitel von...", ...) instead of returning nothing — a
-// well-known artifact of feeding it near-silent audio. The server path never hits this because
+// Threshold is passed in per call (see transcribe's silenceThreshold param), calibrated per
+// recording session from real mic/room data by pages/PublicChat/index.tsx's watchForSpeechPauses
+// — see lib/audioLevel.ts. Applied here to the whole decoded segment instead of a live rolling
+// window. Without this gate, a segment that's mostly/entirely silence (typically the last, short
+// segment of a recording — whatever's left after the final pause before the mic button is
+// released) reliably makes Whisper hallucinate a repeated stock training-data phrase ("Vielen
+// Dank", "Thank you", "Untertitel von...", ...) instead of returning nothing — a well-known
+// artifact of feeding it near-silent audio. The server path never hits this because
 // faster-whisper's vad_filter=True (see backend services/stt_service.py) already discards
 // silence before decoding; this is the browser path's equivalent guard.
-const SILENCE_RMS_THRESHOLD = 0.015;
-
-function isSilent(samples: Float32Array): boolean {
-  let sumSquares = 0;
-  for (const sample of samples) sumSquares += sample * sample;
-  return Math.sqrt(sumSquares / samples.length) < SILENCE_RMS_THRESHOLD;
+function isSilent(samples: Float32Array, threshold: number): boolean {
+  return rms(samples) < threshold;
 }
 
 async function decodeToMono16k(blob: Blob): Promise<Float32Array> {
@@ -150,13 +149,19 @@ export class BrowserSttEngine {
   }
 
   /** Transcribes one recorded segment. Throws if the engine isn't "ready" (caller should fall
-   * back to the backend's /transcribe route instead — see pages/PublicChat/index.tsx). */
-  async transcribe(blob: Blob, language: string): Promise<string> {
+   * back to the backend's /transcribe route instead — see pages/PublicChat/index.tsx).
+   * `silenceThreshold` should be the current recording session's calibrated value (see
+   * lib/audioLevel.ts); defaults to the fallback constant if the caller has none yet. */
+  async transcribe(
+    blob: Blob,
+    language: string,
+    silenceThreshold: number = FALLBACK_SILENCE_RMS_THRESHOLD,
+  ): Promise<string> {
     if (this.status !== "ready" || !this.worker) {
       throw new Error(`Browser STT engine is not ready (status: ${this.status}).`);
     }
     const audio = await decodeToMono16k(blob);
-    if (isSilent(audio)) return "";
+    if (isSilent(audio, silenceThreshold)) return "";
     const id = this.nextId++;
     return new Promise<string>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });

@@ -14,6 +14,7 @@ import { TalkingHeadAvatar, type TalkingHeadAvatarHandle, type FpsTrackingResult
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/api/publicChat";
 import { BrowserSttEngine } from "@/lib/browserStt";
+import { FALLBACK_SILENCE_RMS_THRESHOLD, calibrateSilenceThreshold, rms } from "@/lib/audioLevel";
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
@@ -91,9 +92,12 @@ function toApiHistory(history: ChatMessage[]): ChatMessage[] {
 // chunker's thresholds (services/text_chunk_service.py).
 const RECORDING_SEGMENT_MIN_MS = 2000; // shorter than this, a pause doesn't cut a segment yet
 const SILENCE_PAUSE_MS = 700; // how long a pause must last before it counts as a cut point
-// Empirical cutoff for "quiet" on normalized mic samples (RMS, root mean square) — not measured
-// against real hardware/rooms, may need tuning for a very noisy classroom.
-const SILENCE_RMS_THRESHOLD = 0.015;
+// How long watchForSpeechPauses spends measuring this recording's own ambient noise floor before
+// deriving a real silence threshold from it (see lib/audioLevel.ts) — long enough to average out
+// one stray sound (a cough, a chair scraping), short enough not to meaningfully delay pause
+// detection. Harmless that RECORDING_SEGMENT_MIN_MS-vs-real-cuts overlaps with this window: no
+// segment can be cut before RECORDING_SEGMENT_MIN_MS (2000ms) anyway, well past calibration.
+const CALIBRATION_MS = 400;
 // Mirrors the backend's own truncation (_MAX_INITIAL_PROMPT_CHARS in app/api/public_chat.py) —
 // trimming here too avoids uploading an ever-growing prompt on every segment of a long recording,
 // most of which the backend would immediately discard anyway.
@@ -111,26 +115,52 @@ const MAX_CHAT_MESSAGE_CHARS = 8000;
 // failed to load, with only a small, easy-to-miss play button as the way to find out otherwise.
 const GREETING_REVEAL_GRACE_MS = 2500;
 
-// Calls `onPause` every time the stream has been quiet (RMS below threshold) for SILENCE_PAUSE_MS.
-// Returns a cleanup function that stops watching and releases the AudioContext. Reuses the
-// MediaStream the caller already holds (from getUserMedia) instead of requesting a new one — an
-// AnalyserNode can tap the same stream any number of times.
-function watchForSpeechPauses(stream: MediaStream, onPause: () => void): () => void {
+// Calls `onPause` every time the stream has been quiet (RMS below the calibrated threshold) for
+// SILENCE_PAUSE_MS. Returns a cleanup function that stops watching and releases the AudioContext.
+// Reuses the MediaStream the caller already holds (from getUserMedia) instead of requesting a new
+// one — an AnalyserNode can tap the same stream any number of times.
+//
+// Spends its first CALIBRATION_MS measuring THIS recording's own ambient noise floor instead of
+// judging silence against one hardcoded RMS number — mic sensitivity and room noise vary too much
+// across real devices for a fixed constant to work everywhere (see lib/audioLevel.ts). Runs
+// concurrently with recording, not before it, so calibration adds no delay before the mic button
+// visibly starts recording and no audio is lost — pause detection just uses
+// FALLBACK_SILENCE_RMS_THRESHOLD for that first stretch, which is safe because no cut can happen
+// before RECORDING_SEGMENT_MIN_MS (2000ms) regardless, well past calibration finishing.
+// `onThresholdCalibrated` reports the derived value once, so the caller can reuse the same number
+// for the browser-STT segment-level silence gate (see lib/browserStt.ts's isSilent).
+function watchForSpeechPauses(
+  stream: MediaStream,
+  onPause: () => void,
+  onThresholdCalibrated: (threshold: number) => void,
+): () => void {
   const audioCtx = new AudioContext();
   const source = audioCtx.createMediaStreamSource(stream);
   const analyser = audioCtx.createAnalyser();
   source.connect(analyser);
   const samples = new Float32Array(analyser.fftSize);
+  const calibrationStartedAt = performance.now();
+  const calibrationSamples: number[] = [];
+  let threshold = FALLBACK_SILENCE_RMS_THRESHOLD;
+  let calibrated = false;
   let silenceSince: number | null = null;
   let frameId: number;
 
   function tick() {
     analyser.getFloatTimeDomainData(samples);
-    let sumSquares = 0;
-    for (const sample of samples) sumSquares += sample * sample;
-    const rms = Math.sqrt(sumSquares / samples.length);
+    const level = rms(samples);
     const now = performance.now();
-    if (rms < SILENCE_RMS_THRESHOLD) {
+
+    if (!calibrated) {
+      calibrationSamples.push(level);
+      if (now - calibrationStartedAt >= CALIBRATION_MS) {
+        calibrated = true;
+        threshold = calibrateSilenceThreshold(calibrationSamples);
+        onThresholdCalibrated(threshold);
+      }
+    }
+
+    if (level < threshold) {
       if (silenceSince === null) silenceSince = now;
       else if (now - silenceSince >= SILENCE_PAUSE_MS) {
         silenceSince = now; // avoid firing again every frame while the pause continues
@@ -282,6 +312,11 @@ export function PublicChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const stopWatchingPausesRef = useRef<(() => void) | null>(null);
+  // This recording's calibrated "count this as silence" RMS threshold (see watchForSpeechPauses
+  // and lib/audioLevel.ts) — reused by transcribeViaBrowserOrServer as the browser-STT segment-
+  // level silence gate, so both silence checks agree on the same room/device-specific number
+  // instead of one staying hardcoded while the other adapts.
+  const sttSilenceThresholdRef = useRef(FALLBACK_SILENCE_RMS_THRESHOLD);
   // The specific MediaRecorder instance toggleRecording's stop click targeted — read inside each
   // recorder's own onstop handler (see startSegmentRecorder) via identity comparison, not a plain
   // boolean flag. A pause-triggered cut (cutSegment) starts a new recorder immediately and lets
@@ -617,7 +652,7 @@ export function PublicChatPage() {
     if (engine?.status === "ready") {
       try {
         const sttStart = performance.now();
-        const text = await engine.transcribe(blob, tutor.spokenLanguage);
+        const text = await engine.transcribe(blob, tutor.spokenLanguage, sttSilenceThresholdRef.current);
         return { text, sttMs: performance.now() - sttStart };
       } catch (error) {
         // Falls back to the server for this one segment rather than failing it outright — same
@@ -736,8 +771,16 @@ export function PublicChatPage() {
     // the dedicated effect below, triggered as soon as the visitor passes any password/name gate
     // rather than waiting for a first recording — so there's nothing to kick off here anymore.
     try {
-      // Mikrofonanfrage mit warten auf Erlaubnis
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Mikrofonanfrage mit warten auf Erlaubnis. echoCancellation/noiseSuppression requested
+      // explicitly rather than left to the browser's own default — bare booleans (not wrapped in
+      // `exact`) are "ideal" constraints per the Media Capture spec, so a device that can't honor
+      // them still grants the stream instead of getUserMedia rejecting. Suppressing steady room
+      // noise up front also makes watchForSpeechPauses's calibrated threshold below meaningful:
+      // without it, a noisy classroom's noise floor could sit high enough that real speech and
+      // silence become hard to tell apart no matter how the threshold is calibrated.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
       recordingStreamRef.current = stream;
       avatarRef.current?.startListening(stream);
       transcriptSoFarRef.current = "";
@@ -745,12 +788,19 @@ export function PublicChatPage() {
       finalRecorderRef.current = null;
       transcriptionChainRef.current = Promise.resolve();
       recordingHadFailureRef.current = false;
+      sttSilenceThresholdRef.current = FALLBACK_SILENCE_RMS_THRESHOLD;
       startSegmentRecorder(stream);
-      stopWatchingPausesRef.current = watchForSpeechPauses(stream, () => {
-        if (performance.now() - segmentStartedAtRef.current >= RECORDING_SEGMENT_MIN_MS) {
-          cutSegment();
-        }
-      });
+      stopWatchingPausesRef.current = watchForSpeechPauses(
+        stream,
+        () => {
+          if (performance.now() - segmentStartedAtRef.current >= RECORDING_SEGMENT_MIN_MS) {
+            cutSegment();
+          }
+        },
+        (threshold) => {
+          sttSilenceThresholdRef.current = threshold;
+        },
+      );
       setIsRecording(true);
     } catch (error) {
       console.error("Mikrofonzugriff fehlgeschlagen.", error);

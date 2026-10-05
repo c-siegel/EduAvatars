@@ -78,6 +78,14 @@ self.onmessage = async (event: MessageEvent<InboundMessage>) => {
       // may repeat the same 3-token sequence, so a borderline-quiet (not fully silent) segment
       // that still tempts Whisper into a hallucinated stock phrase can't loop it indefinitely.
       no_repeat_ngram_size: 3,
+      // Without this, transformers.js feeds a segment's audio through Whisper's encoder as one
+      // window — WhisperFeatureExtractor silently truncates anything past 30s (only a
+      // console.warn, no error), so a student who speaks for longer than that in one pause-free
+      // stretch (easy in a noisy room where watchForSpeechPauses never sees real silence, see
+      // PublicChat/index.tsx) would lose the rest of what they said with no visible failure.
+      // 30/5 mirrors transformers.js's own documented example for long-form audio.
+      chunk_length_s: 30,
+      stride_length_s: 5,
     });
     const text = Array.isArray(output) ? output.map((o) => o.text).join(" ") : output.text;
     postMessage({ type: "result", id, text: text.trim() });
