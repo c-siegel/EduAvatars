@@ -1,0 +1,4801 @@
+{
+  "components": {
+    "schemas": {
+      "AdminPasswordReset": {
+        "properties": {
+          "newPassword": {
+            "title": "Newpassword",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newPassword"
+        ],
+        "title": "AdminPasswordReset",
+        "type": "object"
+      },
+      "AdminUserCreate": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "isAdmin": {
+            "default": false,
+            "title": "Isadmin",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "AdminUserCreate",
+        "type": "object"
+      },
+      "AdminUserOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "isAdmin": {
+            "title": "Isadmin",
+            "type": "boolean"
+          },
+          "mustChangePassword": {
+            "title": "Mustchangepassword",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "school": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "School"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "school",
+          "isAdmin",
+          "enabled",
+          "mustChangePassword",
+          "createdAt"
+        ],
+        "title": "AdminUserOut",
+        "type": "object"
+      },
+      "AdminUserUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "isAdmin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isadmin"
+          }
+        },
+        "title": "AdminUserUpdate",
+        "type": "object"
+      },
+      "AnalyticsStatsOut": {
+        "properties": {
+          "avgDurationDeltaPct": {
+            "title": "Avgdurationdeltapct",
+            "type": "number"
+          },
+          "avgDurationSeconds": {
+            "title": "Avgdurationseconds",
+            "type": "integer"
+          },
+          "messages": {
+            "title": "Messages",
+            "type": "integer"
+          },
+          "messagesDeltaPct": {
+            "title": "Messagesdeltapct",
+            "type": "number"
+          },
+          "sessions": {
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "sessionsDeltaPct": {
+            "title": "Sessionsdeltapct",
+            "type": "number"
+          },
+          "tokenCostDeltaPct": {
+            "title": "Tokencostdeltapct",
+            "type": "number"
+          },
+          "tokenCostEur": {
+            "title": "Tokencosteur",
+            "type": "number"
+          }
+        },
+        "required": [
+          "sessions",
+          "sessionsDeltaPct",
+          "messages",
+          "messagesDeltaPct",
+          "avgDurationSeconds",
+          "avgDurationDeltaPct",
+          "tokenCostEur",
+          "tokenCostDeltaPct"
+        ],
+        "title": "AnalyticsStatsOut",
+        "type": "object"
+      },
+      "ApiKeyCreate": {
+        "properties": {
+          "apiBase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apibase"
+          },
+          "apiKey": {
+            "default": "",
+            "title": "Apikey",
+            "type": "string"
+          },
+          "arcanaId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arcanaid"
+          },
+          "keyType": {
+            "default": "llm",
+            "title": "Keytype",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "title": "ApiKeyCreate",
+        "type": "object"
+      },
+      "ApiKeyOut": {
+        "properties": {
+          "addedAt": {
+            "format": "date-time",
+            "title": "Addedat",
+            "type": "string"
+          },
+          "apiBase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apibase"
+          },
+          "arcanaId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arcanaid"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "keyType": {
+            "title": "Keytype",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "maskedKey": {
+            "title": "Maskedkey",
+            "type": "string"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "usedByProjects": {
+            "default": 0,
+            "title": "Usedbyprojects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "keyType",
+          "maskedKey",
+          "status",
+          "addedAt"
+        ],
+        "title": "ApiKeyOut",
+        "type": "object"
+      },
+      "ApiKeyTestResult": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ApiKeyTestResult",
+        "type": "object"
+      },
+      "ApiKeyUpdate": {
+        "properties": {
+          "apiBase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apibase"
+          },
+          "apiKey": {
+            "default": "",
+            "title": "Apikey",
+            "type": "string"
+          },
+          "arcanaId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arcanaid"
+          },
+          "keyType": {
+            "default": "llm",
+            "title": "Keytype",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "title": "ApiKeyUpdate",
+        "type": "object"
+      },
+      "AvatarModelOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "fileUrl": {
+            "title": "Fileurl",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "fileUrl",
+          "createdAt"
+        ],
+        "title": "AvatarModelOut",
+        "type": "object"
+      },
+      "BackgroundImageOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "fileUrl": {
+            "title": "Fileurl",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "fileUrl",
+          "createdAt"
+        ],
+        "title": "BackgroundImageOut",
+        "type": "object"
+      },
+      "Body_import_project_route_projects_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_project_route_projects_import_post",
+        "type": "object"
+      },
+      "Body_set_avatar_thumbnail_avatar_models__avatar_id__thumbnail_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_set_avatar_thumbnail_avatar_models__avatar_id__thumbnail_post",
+        "type": "object"
+      },
+      "Body_transcribe_projects__project_id__transcribe_post": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "title": "Body_transcribe_projects__project_id__transcribe_post",
+        "type": "object"
+      },
+      "Body_transcribe_public__slug__transcribe_post": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio",
+            "type": "string"
+          },
+          "initial_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Prompt"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "title": "Body_transcribe_public__slug__transcribe_post",
+        "type": "object"
+      },
+      "Body_upload_avatar_model_avatar_models_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_avatar_model_avatar_models_post",
+        "type": "object"
+      },
+      "Body_upload_background_backgrounds_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_background_backgrounds_post",
+        "type": "object"
+      },
+      "Body_upload_profile_picture_profile_picture_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_profile_picture_profile_picture_post",
+        "type": "object"
+      },
+      "ChatHistoryEntry": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatHistoryEntry",
+        "type": "object"
+      },
+      "ChatMessageIn": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ChatMessageIn",
+        "type": "object"
+      },
+      "ChatMessageOut": {
+        "properties": {
+          "audioBase64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audiobase64"
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype"
+          },
+          "llmMs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmms"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "ttsMs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsms"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "ChatMessageOut",
+        "type": "object"
+      },
+      "ChatUnlockOut": {
+        "properties": {
+          "unlockToken": {
+            "title": "Unlocktoken",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unlockToken"
+        ],
+        "title": "ChatUnlockOut",
+        "type": "object"
+      },
+      "ChatUnlockRequest": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "ChatUnlockRequest",
+        "type": "object"
+      },
+      "ConversationDetailOut": {
+        "description": "Full message-by-message transcript of one saved conversation — what GET\n/analytics/sessions/{id} returns, as opposed to SessionRowOut's one-line summary.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryEntry"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "projectTitle": {
+            "title": "Projecttitle",
+            "type": "string"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          },
+          "visitorName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitorname"
+          }
+        },
+        "required": [
+          "id",
+          "projectTitle",
+          "visitorName",
+          "startedAt",
+          "messages"
+        ],
+        "title": "ConversationDetailOut",
+        "type": "object"
+      },
+      "ConversationIdsIn": {
+        "description": "Body shared by POST /analytics/export and POST /analytics/delete — which saved\nconversations (checked off in the analytics table, see\nfrontend/src/pages/Dashboard/Analytics) to bundle into a CSV/ZIP download or delete.",
+        "properties": {
+          "conversationIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conversationids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "conversationIds"
+        ],
+        "title": "ConversationIdsIn",
+        "type": "object"
+      },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "PasswordChange": {
+        "properties": {
+          "currentPassword": {
+            "title": "Currentpassword",
+            "type": "string"
+          },
+          "newPassword": {
+            "title": "Newpassword",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "title": "PasswordChange",
+        "type": "object"
+      },
+      "PreviewMessageRequest": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "PreviewMessageRequest",
+        "type": "object"
+      },
+      "PreviewMessageResponse": {
+        "properties": {
+          "audioBase64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audiobase64"
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
+        ],
+        "title": "PreviewMessageResponse",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "school": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "School"
+          }
+        },
+        "title": "ProfileUpdate",
+        "type": "object"
+      },
+      "ProjectOut": {
+        "properties": {
+          "avatarBackgroundUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarbackgroundurl"
+          },
+          "avatarModelUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarmodelurl"
+          },
+          "chatDefaultOpen": {
+            "title": "Chatdefaultopen",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "gradeLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gradelevel"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "llmApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmapikeyid"
+          },
+          "llmModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmmodel"
+          },
+          "passwordProtected": {
+            "title": "Passwordprotected",
+            "type": "boolean"
+          },
+          "preprompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preprompt"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "requireVisitorName": {
+            "title": "Requirevisitorname",
+            "type": "boolean"
+          },
+          "saveConversations": {
+            "title": "Saveconversations",
+            "type": "boolean"
+          },
+          "shareSlug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shareslug"
+          },
+          "spokenLanguage": {
+            "title": "Spokenlanguage",
+            "type": "string"
+          },
+          "startAudioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startaudiourl"
+          },
+          "startPrompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startprompt"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "streamingEnabled": {
+            "title": "Streamingenabled",
+            "type": "boolean"
+          },
+          "sttApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttapikeyid"
+          },
+          "sttEnabled": {
+            "title": "Sttenabled",
+            "type": "boolean"
+          },
+          "surveyAfterEnabled": {
+            "title": "Surveyafterenabled",
+            "type": "boolean"
+          },
+          "surveyAfterUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveyafterurl"
+          },
+          "surveyBeforeEnabled": {
+            "title": "Surveybeforeenabled",
+            "type": "boolean"
+          },
+          "surveyBeforeUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveybeforeurl"
+          },
+          "temperature": {
+            "title": "Temperature",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "topP": {
+            "title": "Topp",
+            "type": "number"
+          },
+          "ttsApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsapikeyid"
+          },
+          "ttsEnabled": {
+            "title": "Ttsenabled",
+            "type": "boolean"
+          },
+          "ttsVoice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsvoice"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "llmApiKeyId",
+          "llmModel",
+          "preprompt",
+          "startPrompt",
+          "avatarModelUrl",
+          "avatarBackgroundUrl",
+          "gradeLevel",
+          "temperature",
+          "topP",
+          "published",
+          "shareSlug",
+          "saveConversations",
+          "surveyBeforeUrl",
+          "surveyBeforeEnabled",
+          "surveyAfterUrl",
+          "surveyAfterEnabled",
+          "ttsEnabled",
+          "ttsApiKeyId",
+          "ttsVoice",
+          "spokenLanguage",
+          "sttApiKeyId",
+          "sttEnabled",
+          "streamingEnabled",
+          "chatDefaultOpen",
+          "passwordProtected",
+          "requireVisitorName",
+          "startAudioUrl",
+          "createdAt"
+        ],
+        "title": "ProjectOut",
+        "type": "object"
+      },
+      "ProjectStats": {
+        "properties": {
+          "messagesLast7Days": {
+            "title": "Messageslast7Days",
+            "type": "integer"
+          },
+          "publishedProjects": {
+            "title": "Publishedprojects",
+            "type": "integer"
+          },
+          "sessionsLast7Days": {
+            "title": "Sessionslast7Days",
+            "type": "integer"
+          },
+          "totalProjects": {
+            "title": "Totalprojects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalProjects",
+          "publishedProjects",
+          "sessionsLast7Days",
+          "messagesLast7Days"
+        ],
+        "title": "ProjectStats",
+        "type": "object"
+      },
+      "ProjectUpdate": {
+        "properties": {
+          "avatarBackgroundUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarbackgroundurl"
+          },
+          "avatarModelUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarmodelurl"
+          },
+          "chatDefaultOpen": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chatdefaultopen"
+          },
+          "chatPassword": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chatpassword"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "gradeLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gradelevel"
+          },
+          "llmApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmapikeyid"
+          },
+          "preprompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preprompt"
+          },
+          "requireVisitorName": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requirevisitorname"
+          },
+          "saveConversations": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saveconversations"
+          },
+          "spokenLanguage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spokenlanguage"
+          },
+          "startPrompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startprompt"
+          },
+          "streamingEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Streamingenabled"
+          },
+          "sttApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttapikeyid"
+          },
+          "sttEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttenabled"
+          },
+          "surveyAfterEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveyafterenabled"
+          },
+          "surveyAfterUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveyafterurl"
+          },
+          "surveyBeforeEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveybeforeenabled"
+          },
+          "surveyBeforeUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveybeforeurl"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "topP": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topp"
+          },
+          "ttsApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsapikeyid"
+          },
+          "ttsEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsenabled"
+          },
+          "ttsVoice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsvoice"
+          }
+        },
+        "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "ProviderModelOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "ProviderModelOut",
+        "type": "object"
+      },
+      "ProviderSpecOut": {
+        "properties": {
+          "apiBaseRequired": {
+            "title": "Apibaserequired",
+            "type": "boolean"
+          },
+          "defaultApiBase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultapibase"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "keyPlaceholder": {
+            "title": "Keyplaceholder",
+            "type": "string"
+          },
+          "keyRequired": {
+            "title": "Keyrequired",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderModelOut"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "requiresArcanaId": {
+            "default": false,
+            "title": "Requiresarcanaid",
+            "type": "boolean"
+          },
+          "sttModelFixed": {
+            "default": false,
+            "title": "Sttmodelfixed",
+            "type": "boolean"
+          },
+          "supportedTypes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supportedtypes",
+            "type": "array"
+          },
+          "ttsModelFixed": {
+            "default": false,
+            "title": "Ttsmodelfixed",
+            "type": "boolean"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label",
+          "keyPlaceholder",
+          "defaultApiBase",
+          "apiBaseRequired",
+          "keyRequired",
+          "supportedTypes",
+          "models"
+        ],
+        "title": "ProviderSpecOut",
+        "type": "object"
+      },
+      "PublicProjectOut": {
+        "properties": {
+          "avatarBackgroundUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarbackgroundurl"
+          },
+          "avatarModelUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarmodelurl"
+          },
+          "chatDefaultOpen": {
+            "default": true,
+            "title": "Chatdefaultopen",
+            "type": "boolean"
+          },
+          "llmModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmmodel"
+          },
+          "passwordProtected": {
+            "default": false,
+            "title": "Passwordprotected",
+            "type": "boolean"
+          },
+          "requireVisitorName": {
+            "default": false,
+            "title": "Requirevisitorname",
+            "type": "boolean"
+          },
+          "saveConversations": {
+            "default": false,
+            "title": "Saveconversations",
+            "type": "boolean"
+          },
+          "spokenLanguage": {
+            "default": "de",
+            "title": "Spokenlanguage",
+            "type": "string"
+          },
+          "startAudioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startaudiourl"
+          },
+          "startPrompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startprompt"
+          },
+          "streamingEnabled": {
+            "default": false,
+            "title": "Streamingenabled",
+            "type": "boolean"
+          },
+          "sttEnabled": {
+            "default": false,
+            "title": "Sttenabled",
+            "type": "boolean"
+          },
+          "surveyAfterUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveyafterurl"
+          },
+          "surveyBeforeUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surveybeforeurl"
+          },
+          "teacherName": {
+            "title": "Teachername",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "ttsEnabled": {
+            "default": false,
+            "title": "Ttsenabled",
+            "type": "boolean"
+          },
+          "unlocked": {
+            "default": true,
+            "title": "Unlocked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title",
+          "teacherName"
+        ],
+        "title": "PublicProjectOut",
+        "type": "object"
+      },
+      "PublicSiteSettingsOut": {
+        "description": "The parts of the site settings that public pages (Impressum, Register) may read.",
+        "properties": {
+          "contactEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactemail"
+          },
+          "contactPhone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactphone"
+          },
+          "providerCity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercity"
+          },
+          "providerCountry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercountry"
+          },
+          "providerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providername"
+          },
+          "providerStreet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerstreet"
+          },
+          "registrationEnabled": {
+            "title": "Registrationenabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contactEmail",
+          "contactPhone",
+          "providerName",
+          "providerStreet",
+          "providerCity",
+          "providerCountry",
+          "registrationEnabled"
+        ],
+        "title": "PublicSiteSettingsOut",
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "RegisterRequest",
+        "type": "object"
+      },
+      "RegistrationStatusOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "RegistrationStatusOut",
+        "type": "object"
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "newPassword": {
+            "title": "Newpassword",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "newPassword"
+        ],
+        "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "SessionRowOut": {
+        "properties": {
+          "durationSeconds": {
+            "title": "Durationseconds",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lastQuestion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastquestion"
+          },
+          "messageCount": {
+            "title": "Messagecount",
+            "type": "integer"
+          },
+          "projectTitle": {
+            "title": "Projecttitle",
+            "type": "string"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          },
+          "visitorName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitorname"
+          }
+        },
+        "required": [
+          "id",
+          "projectTitle",
+          "startedAt",
+          "messageCount",
+          "durationSeconds",
+          "lastQuestion",
+          "visitorName"
+        ],
+        "title": "SessionRowOut",
+        "type": "object"
+      },
+      "SessionsPageOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SessionsPageOut",
+        "type": "object"
+      },
+      "SiteSettingsOut": {
+        "description": "Everything an admin sees — the public fields plus operational settings.",
+        "properties": {
+          "contactEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactemail"
+          },
+          "contactPhone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactphone"
+          },
+          "conversationRetentionDays": {
+            "title": "Conversationretentiondays",
+            "type": "integer"
+          },
+          "providerCity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercity"
+          },
+          "providerCountry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercountry"
+          },
+          "providerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providername"
+          },
+          "providerStreet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerstreet"
+          },
+          "registrationEnabled": {
+            "title": "Registrationenabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contactEmail",
+          "contactPhone",
+          "providerName",
+          "providerStreet",
+          "providerCity",
+          "providerCountry",
+          "registrationEnabled",
+          "conversationRetentionDays"
+        ],
+        "title": "SiteSettingsOut",
+        "type": "object"
+      },
+      "SiteSettingsUpdate": {
+        "properties": {
+          "contactEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactemail"
+          },
+          "contactPhone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contactphone"
+          },
+          "conversationRetentionDays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversationretentiondays"
+          },
+          "providerCity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercity"
+          },
+          "providerCountry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providercountry"
+          },
+          "providerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providername"
+          },
+          "providerStreet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerstreet"
+          },
+          "registrationEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registrationenabled"
+          }
+        },
+        "title": "SiteSettingsUpdate",
+        "type": "object"
+      },
+      "TimeseriesPointOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "TimeseriesPointOut",
+        "type": "object"
+      },
+      "TranscriptionOut": {
+        "properties": {
+          "sttMs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttms"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TranscriptionOut",
+        "type": "object"
+      },
+      "UserOut": {
+        "properties": {
+          "avatarUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatarurl"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "isAdmin": {
+            "default": false,
+            "title": "Isadmin",
+            "type": "boolean"
+          },
+          "mustChangePassword": {
+            "default": false,
+            "title": "Mustchangepassword",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "school": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "School"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "school",
+          "email"
+        ],
+        "title": "UserOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "paths": {
+    "/admin/settings": {
+      "get": {
+        "description": "The instance-wide site settings (contact email, self-registration toggle).",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      },
+      "put": {
+        "description": "Update the instance-wide site settings.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Settings"
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "description": "List every account on this instance.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminUserOut"
+                  },
+                  "title": "Response List Users Admin Users Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Users"
+      },
+      "post": {
+        "description": "Create a new account with a temporary password the new user must change on first login.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create User"
+      }
+    },
+    "/admin/users/{user_id}": {
+      "put": {
+        "description": "Promote/demote or enable/disable an account.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update User"
+      }
+    },
+    "/admin/users/{user_id}/reset-password": {
+      "post": {
+        "description": "Set a user's password on their behalf; they must change it on next login.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasswordReset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password"
+      }
+    },
+    "/analytics/delete": {
+      "post": {
+        "description": "Permanently delete the saved conversations checked off in the analytics table. Unlike\nexport_conversations, an empty or already-gone selection is not an error (deleting something\nthat's no longer there is a no-op, not a failure) — ids that don't belong to current_user's\nown projects are silently skipped, same as export.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationIdsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Conversations Route"
+      }
+    },
+    "/analytics/export": {
+      "post": {
+        "description": "Export one or more saved conversations, checked off in the analytics table, as CSV.\n\nA single conversation comes back as a plain .csv; more than one is bundled into a .zip (one\n.csv per conversation) — browsers don't let a page trigger several file downloads at once\nwithout extra prompts, so a bulk export has to be one file. Ids that don't exist or don't\nbelong to current_user's own projects are silently skipped, same as read_session_detail.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationIdsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Conversations"
+      }
+    },
+    "/analytics/sessions": {
+      "get": {
+        "description": "Paginated list of individual chat sessions, optionally filtered by project/period/model.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsPageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sessions"
+      }
+    },
+    "/analytics/sessions/ids": {
+      "get": {
+        "description": "Every conversation id matching the given filters, ignoring pagination — what the \"select\nall\" button in the analytics table calls before a bulk export, since the table itself only\never has the current page's ids loaded. Registered before /sessions/{conversation_id} so\n\"ids\" isn't swallowed as a conversation id.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Read Session Ids Analytics Sessions Ids Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Session Ids"
+      }
+    },
+    "/analytics/sessions/{conversation_id}": {
+      "get": {
+        "description": "Full message-by-message transcript of one saved conversation — what the \"view\" action on\na session row (frontend Analytics page) opens, since the table/CSV only ever show a\ntruncated last question.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Session Detail"
+      }
+    },
+    "/analytics/stats": {
+      "get": {
+        "description": "Aggregate stats (session/message counts, ...) for the current user's projects.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_days",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "title": "Period Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsStatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Stats"
+      }
+    },
+    "/analytics/timeseries": {
+      "get": {
+        "description": "Session/message counts over time, bucketed by day/week/month, for charting.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "title": "Period Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          },
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "day",
+              "title": "Granularity",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TimeseriesPointOut"
+                  },
+                  "title": "Response Read Timeseries Analytics Timeseries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Timeseries"
+      }
+    },
+    "/api-keys": {
+      "get": {
+        "description": "List the current user's stored API keys, including how many projects use each one.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyOut"
+                  },
+                  "title": "Response List Keys Api Keys Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Keys"
+      },
+      "post": {
+        "description": "Store a new API key for the current user.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Key"
+      }
+    },
+    "/api-keys/providers": {
+      "get": {
+        "description": "List all supported providers and their config, for building the API-key form.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderSpecOut"
+                  },
+                  "title": "Response List Providers Api Keys Providers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Providers"
+      }
+    },
+    "/api-keys/{key_id}": {
+      "delete": {
+        "description": "Delete a stored API key; projects using it fall back to \"no key configured\".",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Key"
+      },
+      "put": {
+        "description": "Update a stored API key; re-syncs any projects that use it as their LLM source.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Key"
+      }
+    },
+    "/api-keys/{key_id}/test": {
+      "post": {
+        "description": "Try the stored key against its provider and record whether it works.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyTestResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Key"
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "description": "Start a password reset for the given email, if an account with it exists.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password"
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "description": "Authenticate with email + password and set the auth cookie.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "description": "Clear the auth cookie.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout"
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "description": "The currently authenticated user.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me"
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "description": "Create a new account and log the user in, unless registration is disabled.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register"
+      }
+    },
+    "/auth/registration-status": {
+      "get": {
+        "description": "Whether self-registration is currently enabled.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Registration Status"
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "description": "Complete a password reset using the token from the reset email.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password Route"
+      }
+    },
+    "/avatar-models": {
+      "get": {
+        "description": "List the current user's uploaded avatar models.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AvatarModelOut"
+                  },
+                  "title": "Response List Avatar Models Avatar Models Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Avatar Models"
+      },
+      "post": {
+        "description": "Upload a new .glb avatar model file.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_avatar_model_avatar_models_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarModelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Avatar Model"
+      }
+    },
+    "/avatar-models/{avatar_id}": {
+      "delete": {
+        "description": "Delete an avatar model and its thumbnail file.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "avatar_id",
+            "required": true,
+            "schema": {
+              "title": "Avatar Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Avatar Model"
+      }
+    },
+    "/avatar-models/{avatar_id}/file": {
+      "get": {
+        "description": "Serve an avatar's .glb file — to its owner, or anonymously if used in a published project.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "avatar_id",
+            "required": true,
+            "schema": {
+              "title": "Avatar Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Avatar File"
+      }
+    },
+    "/avatar-models/{avatar_id}/thumbnail": {
+      "get": {
+        "description": "Serve an avatar's thumbnail image.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "avatar_id",
+            "required": true,
+            "schema": {
+              "title": "Avatar Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Avatar Thumbnail"
+      },
+      "post": {
+        "description": "Attach a thumbnail image to an avatar model.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "avatar_id",
+            "required": true,
+            "schema": {
+              "title": "Avatar Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_set_avatar_thumbnail_avatar_models__avatar_id__thumbnail_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarModelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Avatar Thumbnail"
+      }
+    },
+    "/backgrounds": {
+      "get": {
+        "description": "List the current user's uploaded background images.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BackgroundImageOut"
+                  },
+                  "title": "Response List Backgrounds Backgrounds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Backgrounds"
+      },
+      "post": {
+        "description": "Upload a new background image.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_background_backgrounds_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundImageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Background"
+      }
+    },
+    "/backgrounds/{background_id}": {
+      "delete": {
+        "description": "Delete a background image.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "background_id",
+            "required": true,
+            "schema": {
+              "title": "Background Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Background"
+      }
+    },
+    "/backgrounds/{background_id}/file": {
+      "get": {
+        "description": "Serve a background image — to its owner, or anonymously if used in a published project.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "background_id",
+            "required": true,
+            "schema": {
+              "title": "Background Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Background File"
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Health check endpoint.\n\nThis endpoint is used to check if the server is running and responding.\nIt's commonly used by:\n- Load balancers to check server health\n- Monitoring systems to detect outages\n- Deployment scripts to verify the server started successfully",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/profile": {
+      "delete": {
+        "description": "Permanently delete the current user's account and everything belonging to it.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete Account"
+      },
+      "get": {
+        "description": "The current user's profile.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Profile"
+      },
+      "put": {
+        "description": "Update profile fields (only the ones actually provided).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Profile"
+      }
+    },
+    "/profile/logout-everywhere": {
+      "post": {
+        "description": "Sign out of every session (e.g. after a suspected compromise), while keeping this one signed in.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout Everywhere"
+      }
+    },
+    "/profile/password": {
+      "put": {
+        "description": "Change the current user's password; other sessions are signed out, this one stays signed in.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password"
+      }
+    },
+    "/profile/picture": {
+      "delete": {
+        "description": "Remove the current user's profile picture.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete Profile Picture"
+      },
+      "get": {
+        "description": "Serve the current user's own profile picture.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Profile Picture"
+      },
+      "post": {
+        "description": "Upload or replace the current user's profile picture.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_profile_picture_profile_picture_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Profile Picture"
+      }
+    },
+    "/projects": {
+      "get": {
+        "description": "List the current user's projects.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectOut"
+                  },
+                  "title": "Response Get Projects Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Projects"
+      },
+      "post": {
+        "description": "Create a new project for the current user.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project"
+      }
+    },
+    "/projects/import": {
+      "post": {
+        "description": "Create a new (draft) project from a previously exported YAML file.\n\nRegistered before GET /{project_id} so \"import\" is never swallowed as a project id.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_project_route_projects_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Project Route"
+      }
+    },
+    "/projects/stats": {
+      "get": {
+        "description": "Summary stats (project count, published count, sessions/messages this week) for the current user.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Stats"
+      }
+    },
+    "/projects/{project_id}": {
+      "delete": {
+        "description": "Permanently delete a project, including every saved conversation and access log for it.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Project"
+      },
+      "get": {
+        "description": "A single project owned by the current user.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project"
+      },
+      "put": {
+        "description": "Update a project owned by the current user.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Project"
+      }
+    },
+    "/projects/{project_id}/export": {
+      "get": {
+        "description": "Download a project's configuration as a YAML file, for backup or moving it to another\neduavatars account. Never includes API keys, the publish state, or the chat password.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Project"
+      }
+    },
+    "/projects/{project_id}/preview-message": {
+      "post": {
+        "description": "Send a message to the project's configured LLM and return the reply, for the in-app preview chat.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewMessageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Message"
+      }
+    },
+    "/projects/{project_id}/publish": {
+      "post": {
+        "description": "Publish a project, making it reachable via its public share link.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish"
+      }
+    },
+    "/projects/{project_id}/start-audio": {
+      "get": {
+        "description": "Serve a project's pre-generated start-prompt audio — to its owner, or anonymously if published.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Start Audio"
+      },
+      "post": {
+        "description": "Synthesize the project's start_prompt once and store it, so it doesn't need to be\nre-synthesized on every visitor's chat load (see public_chat.py::load_tutor).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Start Audio"
+      }
+    },
+    "/projects/{project_id}/transcribe": {
+      "post": {
+        "description": "Transcribe a voice message for the in-app preview chat.\n\nPlain `def`, not `async def` — see the matching public_chat.py::transcribe for why: this\nruns the same synchronous, CPU-bound transcription and must not block the event loop.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribe_projects__project_id__transcribe_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transcribe"
+      }
+    },
+    "/projects/{project_id}/unpublish": {
+      "post": {
+        "description": "Unpublish a project, removing public access.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unpublish"
+      }
+    },
+    "/public/{slug}": {
+      "get": {
+        "description": "Load a published project's public info (for the public chat page) and record the visit.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-chat-unlock-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Chat-Unlock-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Load Tutor"
+      }
+    },
+    "/public/{slug}/message": {
+      "post": {
+        "description": "Send a visitor's chat message to the project's LLM and return the reply, saving history if enabled.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-chat-unlock-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Chat-Unlock-Token"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-visitor-name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Visitor-Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Message"
+      }
+    },
+    "/public/{slug}/message/stream": {
+      "post": {
+        "description": "Streamed variant of send_message: the LLM reply is split into sentence-sized chunks (see\nservices/text_chunk_service.py), each synthesized and sent to the client as soon as it's\nready — so the avatar can start speaking well before the full reply exists. Falls back to\nthe plain /message endpoint on the frontend if this fails; see pages/PublicChat/index.tsx.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-chat-unlock-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Chat-Unlock-Token"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-visitor-name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Visitor-Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Message Stream"
+      }
+    },
+    "/public/{slug}/transcribe": {
+      "post": {
+        "description": "Transcribe a visitor's voice message for the public chat.\n\nDeliberately a plain `def`, not `async def`: transcription is synchronous and CPU-bound\n(see services/stt_service.py), and FastAPI runs a sync `def` route in its worker thread\npool instead of on the event loop. An `async def` here would block every other request in\nthe process — page loads, other visitors' chats, SSE streams — for the whole transcription.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-chat-unlock-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Chat-Unlock-Token"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-visitor-name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Visitor-Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribe_public__slug__transcribe_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transcribe"
+      }
+    },
+    "/public/{slug}/unlock": {
+      "post": {
+        "description": "Verify a visitor-entered chat password and issue an unlock token for this project+visitor.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatUnlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatUnlockOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlock"
+      }
+    },
+    "/settings/public": {
+      "get": {
+        "description": "The public-facing site settings: imprint details and whether self-registration is open.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicSiteSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Public Settings"
+      }
+    }
+  }
+}
