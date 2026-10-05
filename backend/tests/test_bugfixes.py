@@ -1,7 +1,7 @@
 """Regression tests for the bugs found during the backend restructuring — one section per bug,
 each failing before its fix."""
 
-from conftest import PASSWORD, login_as, make_user, new_client
+from conftest import PASSWORD, login_as, make_user, new_client, parse_sse
 
 # ==================== Disabled accounts can't log in ====================
 
@@ -75,3 +75,22 @@ def test_rate_limiter_counts_exactly_under_concurrency_and_sweeps_safely(monkeyp
         allowed = sum(pool.map(hit, range(400)))
     assert allowed == 25
     rate_limit._hits.clear()
+
+
+# ==================== Streaming chat sets the visitor cookie ====================
+
+
+def test_streamed_message_sets_visitor_cookie_so_the_conversation_stays_together(client, chat_project):
+    slug = chat_project["shareSlug"]
+    # A visitor whose cookie expired mid-lesson: no page load, straight to the streamed chat.
+    visitor = new_client()
+
+    first = visitor.post(f"/public/{slug}/messages/stream", json={"message": "Hi"})
+    assert parse_sse(first.text)[-1][0] == "done"
+    assert "ah_visitor_id" in first.headers.get("set-cookie", "")
+
+    # The second message reuses the cookie, so both land in one conversation.
+    visitor.post(f"/public/{slug}/messages/stream", json={"message": "Und weiter?"})
+    sessions = client.get("/conversations").json()
+    assert sessions["total"] == 1
+    assert sessions["items"][0]["messageCount"] == 4

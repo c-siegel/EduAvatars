@@ -207,11 +207,15 @@ def send_message_stream(
     # Everything the stream needs was read into `context` up front, and saving opens its own
     # session — the request-scoped `session` above must not be touched once we return the
     # streaming response, since its teardown relative to a streamed body is fragile.
-    return StreamingResponse(
+    streaming = StreamingResponse(
         (sse_event(event, payload) for event, payload in stream_turn(context, turn)),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+    # FastAPI only merges the injected `response`'s headers into responses it builds itself, so
+    # the visitor cookie _start_turn may have set there would be dropped — copy it over.
+    streaming.raw_headers.extend((name, value) for name, value in response.raw_headers if name == b"set-cookie")
+    return streaming
 
 
 @router.post("/{slug}/transcriptions", response_model=TranscriptionOut)
