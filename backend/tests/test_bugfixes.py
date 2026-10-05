@@ -155,3 +155,20 @@ def test_project_only_accepts_the_users_own_stt_key(client, engine, teacher):
     project = create_project(client)
     assert client.put(f"/projects/{project['id']}", json={"sttApiKeyId": llm_key["id"]}).status_code == 400
     assert client.put(f"/projects/{project['id']}", json={"sttApiKeyId": stt_key["id"]}).json()["sttApiKeyId"] == stt_key["id"]
+
+
+# ==================== An empty LLM reply is a clean chat failure ====================
+
+
+def test_llm_reply_without_content_is_reported_as_unavailable_not_a_crash(client, chat_project, fake_ai):
+    # E.g. a content filter or a tool call: the provider answers, but with content=None.
+    fake_ai.llm_reply = None
+
+    public = new_client().post(f"/public/{chat_project['shareSlug']}/messages", json={"message": "Hi"})
+    assert public.status_code == 503
+    assert public.json() == {"detail": "CHAT_UNAVAILABLE"}
+
+    preview = client.post(f"/projects/{chat_project['id']}/chat/messages", json={"message": "Hi"})
+    assert preview.status_code == 502
+    assert preview.json()["detail"]["code"] == "LLM_REQUEST_FAILED"
+    assert client.get("/conversations").json()["total"] == 0

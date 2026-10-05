@@ -100,7 +100,12 @@ class LiteLLMClient:
                 **extra,
             )
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        # None (not "") when e.g. a content filter blocked the reply or the model answered with a
+        # tool call — raised so callers treat it as the failed LLM call it is.
+        if content is None:
+            raise ValueError("LLM returned an empty reply")
+        return content
 
     def stream(self, request: ChatRequest) -> Iterator[str]:
         """Streamed chat, retrying transient provider failures.
