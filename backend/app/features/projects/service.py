@@ -1,9 +1,9 @@
 """
-Project CRUD Helpers
+Project CRUD
 
-Shared logic behind the project routes (app/api/projects.py): listing a user's projects,
-deriving the denormalized litellm model string from a project's chosen API key, and applying
-partial updates.
+The logic behind the project routes (features/projects/router.py): creating, listing, updating
+and deleting a user's projects, checking that a project only references the user's own API keys,
+and deriving the denormalized litellm model string from the chosen LLM key.
 
 How to use:
     from app.features.projects.service import list_projects, update_project
@@ -14,12 +14,25 @@ How to use:
 from sqlalchemy import delete
 from sqlmodel import Session, select
 
-from app.core.providers import build_model_string
+from app.core.error_codes import ErrorCode
+from app.core.errors import DomainError
+from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_TTS, build_model_string
 from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
+from app.features.api_keys.resolve import get_owned_key_of_type
 from app.features.chat.models import Conversation, ProjectAccess
 from app.features.projects.models import Project
+from app.features.projects.schemas import ProjectUpdate
 from app.storage.files import unlink_quietly
+
+# Distinguishes "chat_password wasn't in the request at all" (no change) from "it was sent as
+# null" (clear/disable) in create_project/apply_update below — both look like a missing key otherwise.
+_NO_CHAT_PASSWORD_SENT = object()
+
+
+class UnknownApiKey(DomainError):
+    status_code = 400
+    detail = ErrorCode.UNKNOWN_API_KEY
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -31,7 +44,7 @@ def sync_llm_model(session: Session, project: Project) -> None:
     """Derive llm_model from the project's referenced API key.
 
     The project stores its model choice as a key reference; the litellm model string is
-    additionally kept denormalized because analytics (analytics_service.py) and the project
+    additionally kept denormalized because analytics (features/analytics/service.py) and the project
     cards can then avoid a join. Done centrally here so the two never drift apart.
     """
     key = session.get(UserApiKey, project.llm_api_key_id) if project.llm_api_key_id else None
@@ -55,8 +68,8 @@ _CLEARABLE_FIELDS = {
     "stt_api_key_id",
 }
 
-# Changing any of these makes a previously generated start-prompt audio file (see api/projects.py's
-# start-audio routes) no longer match what it should say/sound like — see update_project below.
+# Changing any of these makes a previously generated start-prompt audio file (see
+# features/projects/start_audio.py) no longer match what it should say/sound like — see update_project below.
 _START_AUDIO_INVALIDATING_FIELDS = {"start_prompt", "tts_voice", "tts_api_key_id"}
 
 
@@ -65,7 +78,7 @@ def delete_project(session: Session, project: Project) -> None:
     generated start-prompt audio file.
 
     The dependent rows have to go explicitly: SQLite runs with foreign-key enforcement off (see
-    services/account_service.py), so deleting only the project row would silently orphan every
+    features/users/account.py), so deleting only the project row would silently orphan every
     student conversation and page view belonging to it. avatar_model_url/avatar_background_url
     aren't touched here — unlike start_audio_path, those point at reusable library assets
     (AvatarModel/BackgroundImage) other projects may still reference, so only their own
@@ -103,3 +116,50 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
     session.commit()
     session.refresh(project)
     return project
+
+
+def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_type: str) -> None:
+    """Raise UnknownApiKey (HTTP 400) unless `key_id` is one of `user_id`'s own API keys of the given type."""
+    # Shared check for llm_api_key_id/tts_api_key_id: the key must exist, belong to the calling
+    # user, AND be of the matching type — otherwise a TTS key could e.g. be entered as
+    # llm_api_key_id (both fields point at the same table).
+    if get_owned_key_of_type(session, user_id, key_id, key_type) is None:
+        raise UnknownApiKey()
+
+
+def _check_key_references(session: Session, user_id: str, data: ProjectUpdate) -> None:
+    # A project may only point at one of the user's own keys — otherwise a user could enter
+    # someone else's key ID (it could never actually be used, see resolve_llm_key, but the
+    # reference wouldn't belong in the DB either way).
+    if data.llm_api_key_id:
+        _require_owned_key_of_type(session, user_id, data.llm_api_key_id, KEY_TYPE_LLM)
+    if data.tts_api_key_id:
+        _require_owned_key_of_type(session, user_id, data.tts_api_key_id, KEY_TYPE_TTS)
+
+
+def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Project:
+    """Create a new project for `user_id` from the fields actually sent."""
+    # Uses ProjectUpdate instead of a separate ProjectCreate schema: every field is optional
+    # anyway and the DB model has a default for everything except title/user_id (see
+    # features/projects/models.py) — the frontend always sends a title on creation ("+ New project") anyway.
+    _check_key_references(session, user_id, data)
+    create_data = data.model_dump(exclude_unset=True)
+    chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    project = Project(user_id=user_id, **create_data)
+    if chat_password is not _NO_CHAT_PASSWORD_SENT:
+        set_or_clear_chat_password(project, chat_password)
+    sync_llm_model(session, project)
+    session.add(project)
+    session.commit()
+    session.refresh(project)
+    return project
+
+
+def apply_update(session: Session, project: Project, data: ProjectUpdate) -> Project:
+    """Validate and apply a ProjectUpdate (only the fields actually sent), including the chat password."""
+    _check_key_references(session, project.user_id, data)
+    update_data = data.model_dump(exclude_unset=True)
+    chat_password = update_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    if chat_password is not _NO_CHAT_PASSWORD_SENT:
+        set_or_clear_chat_password(project, chat_password)
+    return update_project(session, project, update_data)

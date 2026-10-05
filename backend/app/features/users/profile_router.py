@@ -2,33 +2,24 @@
 User Profile Routes
 
 Lets the logged-in user view and edit their own profile: basic fields, a profile picture,
-password changes, signing out of all sessions, and deleting the account.
-
-How to use:
-    from app.api import profile
-
-    app.include_router(profile.router)
+password changes, signing out of all sessions, and deleting the account. The logic lives in
+service.py and account.py; these routes handle uploads and the auth cookie.
 """
-
-from datetime import datetime, timezone
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
-from app.core.config import settings
 from app.core.cookies import clear_auth_cookie, set_auth_cookie
 from app.core.deps import get_current_user, get_session
 from app.core.error_codes import ErrorCode
-from app.core.security import hash_password, verify_password
 from app.features.auth.schemas import UserOut
 from app.features.auth.service import user_to_out
+from app.features.users import service
 from app.features.users.account import delete_user_account
 from app.features.users.models import User
 from app.features.users.schemas import PasswordChange, ProfileUpdate
-from app.storage.files import save_file, sniff_image, unlink_quietly
+from app.storage.files import sniff_image
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -48,16 +39,7 @@ def update_profile(
     session: Session = Depends(get_session),
 ):
     """Update profile fields (only the ones actually provided)."""
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(current_user, field, value)
-    session.add(current_user)
-    try:
-        session.commit()
-    except IntegrityError as exc:
-        session.rollback()
-        raise HTTPException(status_code=409, detail=ErrorCode.EMAIL_ALREADY_REGISTERED) from exc
-    session.refresh(current_user)
-    return user_to_out(current_user)
+    return user_to_out(service.update_profile(session, current_user, data.model_dump(exclude_unset=True)))
 
 
 @router.post("/picture", response_model=UserOut)
@@ -75,19 +57,7 @@ async def upload_profile_picture(
     if sniffed is None:
         raise HTTPException(status_code=400, detail=ErrorCode.PROFILE_PICTURE_INVALID_TYPE)
     media_type, ext = sniffed
-
-    unlink_quietly(current_user.avatar_path)
-    # Filename = user ID instead of a UUID (unlike the avatar library) — there's deliberately only
-    # ever one profile picture per user, no directory of several named files.
-    file_path = save_file(Path(settings.profile_picture_upload_dir), f"{current_user.id}{ext}", content)
-
-    current_user.avatar_path = str(file_path)
-    current_user.avatar_content_type = media_type
-    current_user.avatar_updated_at = datetime.now(timezone.utc)
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-    return user_to_out(current_user)
+    return user_to_out(service.set_profile_picture(session, current_user, content, media_type, ext))
 
 
 @router.delete("/picture", response_model=UserOut)
@@ -96,22 +66,15 @@ def delete_profile_picture(
     session: Session = Depends(get_session),
 ):
     """Remove the current user's profile picture."""
-    unlink_quietly(current_user.avatar_path)
-    current_user.avatar_path = None
-    current_user.avatar_content_type = None
-    current_user.avatar_updated_at = None
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-    return user_to_out(current_user)
+    return user_to_out(service.clear_profile_picture(session, current_user))
 
 
 @router.get("/picture")
 def get_profile_picture(current_user: User = Depends(get_current_user)):
     """Serve the current user's own profile picture."""
-    # Unlike the avatar models (features/media/avatars_router.py), no ID/IDOR (Insecure Direct Object Reference)
-    # check is needed here: this route always serves only the cookie-authenticated user's own
-    # picture, there's no ID parameter to spoof.
+    # Unlike the avatar models (features/media/avatars_router.py), no ID/IDOR (Insecure Direct
+    # Object Reference) check is needed here: this route always serves only the
+    # cookie-authenticated user's own picture, there's no ID parameter to spoof.
     if not current_user.avatar_path:
         raise HTTPException(status_code=404, detail=ErrorCode.PROFILE_PICTURE_NOT_FOUND)
     return FileResponse(current_user.avatar_path, media_type=current_user.avatar_content_type or "application/octet-stream")
@@ -125,18 +88,7 @@ def change_password(
     session: Session = Depends(get_session),
 ):
     """Change the current user's password; other sessions are signed out, this one stays signed in."""
-    if not verify_password(data.current_password, current_user.password_hash):
-        raise HTTPException(status_code=400, detail=ErrorCode.CURRENT_PASSWORD_INCORRECT)
-    current_user.password_hash = hash_password(data.new_password)
-    # A successful self-chosen password change clears any pending forced-change requirement
-    # (see User.must_change_password) — the whole point of that flag was to get here.
-    current_user.must_change_password = False
-    # Invalidates all previously issued tokens (e.g. a stolen session cookie on another device) —
-    # see User.token_version. The current session immediately gets a fresh cookie with the new
-    # version below, so it stays seamlessly logged in; only *other* sessions get kicked out.
-    current_user.token_version += 1
-    session.add(current_user)
-    session.commit()
+    service.change_password(session, current_user, data.current_password, data.new_password)
     set_auth_cookie(response, current_user)
     return None
 
@@ -150,9 +102,7 @@ def logout_everywhere(
     """Sign out of every session (e.g. after a suspected compromise), while keeping this one signed in."""
     # A self-service emergency exit when an account may be compromised, independent of a password
     # change: invalidates all tokens, but immediately issues the current session a fresh one.
-    current_user.token_version += 1
-    session.add(current_user)
-    session.commit()
+    service.invalidate_sessions(session, current_user)
     set_auth_cookie(response, current_user)
     return None
 
@@ -164,7 +114,7 @@ def delete_account(
     session: Session = Depends(get_session),
 ):
     """Permanently delete the current user's account and everything belonging to it."""
-    # The cascade lives in account_service because it has to reach far past the user row —
+    # The cascade lives in account.py because it has to reach far past the user row —
     # projects (including their published public chats), stored provider keys, saved
     # conversations, and uploaded files. Deleting only the user row leaves all of that behind
     # and working, since SQLite doesn't enforce the foreign keys.

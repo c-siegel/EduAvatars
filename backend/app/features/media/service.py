@@ -46,9 +46,13 @@ def list_avatars(session: Session, user_id: str) -> list[AvatarModel]:
     return list(session.exec(select(AvatarModel).where(AvatarModel.user_id == user_id)).all())
 
 
+def get_avatar(session: Session, avatar_id: str) -> AvatarModel | None:
+    return session.get(AvatarModel, avatar_id)
+
+
 def get_owned_avatar(session: Session, user_id: str, avatar_id: str) -> AvatarModel | None:
     """The avatar if it exists and belongs to `user_id`, else None."""
-    avatar = session.get(AvatarModel, avatar_id)
+    avatar = get_avatar(session, avatar_id)
     if avatar is None or avatar.user_id != user_id:
         return None
     return avatar
@@ -97,9 +101,13 @@ def list_backgrounds(session: Session, user_id: str) -> list[BackgroundImage]:
     return list(session.exec(select(BackgroundImage).where(BackgroundImage.user_id == user_id)).all())
 
 
+def get_background(session: Session, background_id: str) -> BackgroundImage | None:
+    return session.get(BackgroundImage, background_id)
+
+
 def get_owned_background(session: Session, user_id: str, background_id: str) -> BackgroundImage | None:
     """The background if it exists and belongs to `user_id`, else None."""
-    background = session.get(BackgroundImage, background_id)
+    background = get_background(session, background_id)
     if background is None or background.user_id != user_id:
         return None
     return background

@@ -12,7 +12,6 @@ can't read it. There's no bearer token in request headers to manage on the front
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.core.cookies import clear_auth_cookie, set_auth_cookie
@@ -56,11 +55,7 @@ def register(data: RegisterRequest, request: Request, response: Response, sessio
         # switched off entirely anyway (at launch: internal use only).
         raise HTTPException(status_code=403, detail=ErrorCode.REGISTRATION_DISABLED)
     enforce_register_rate_limit(request)
-    try:
-        user = register_user(session, data.name, data.email, data.password)
-    except IntegrityError as exc:
-        session.rollback()
-        raise HTTPException(status_code=409, detail=ErrorCode.EMAIL_ALREADY_REGISTERED) from exc
+    user = register_user(session, data.name, data.email, data.password)
     set_auth_cookie(response, user)
     return user_to_out(user)
 

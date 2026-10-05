@@ -74,7 +74,7 @@ def get_background_file(
     # Same access pattern as avatars_router.py::get_avatar_file: the owning user (library /
     # preview in the configurator), or anonymous access if the image is actually used as a
     # background in a published project (the public chat needs it visible).
-    background = session.get(BackgroundImage, background_id)
+    background = media.get_background(session, background_id)
     if background is None:
         raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 

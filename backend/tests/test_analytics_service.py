@@ -8,7 +8,7 @@ import csv
 import io
 import json
 
-from app.features.analytics.service import build_conversation_csv
+from app.features.analytics.csv_export import build_conversation_csv
 from app.features.chat.models import Conversation
 from app.features.projects.models import Project
 

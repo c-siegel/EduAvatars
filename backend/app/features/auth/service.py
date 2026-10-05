@@ -12,18 +12,24 @@ How to use:
     user = authenticate_user(session, email, password)
 """
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.security import hash_password, verify_password
 from app.features.auth.schemas import UserOut
 from app.features.users.models import User
+from app.features.users.service import EmailAlreadyRegistered
 
 
 def register_user(session: Session, name: str, email: str, password: str) -> User:
-    """Create a new user with a hashed password."""
+    """Create a new user with a hashed password; raises EmailAlreadyRegistered (HTTP 409) for a taken email."""
     user = User(name=name, email=email, password_hash=hash_password(password))
     session.add(user)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise EmailAlreadyRegistered() from exc
     session.refresh(user)
     return user
 

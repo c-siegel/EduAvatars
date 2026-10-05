@@ -1,0 +1,28 @@
+"""
+Project Publishing Routes
+
+Publishing gives a project a fresh public share link (see publish.py); unpublishing takes it
+out of circulation.
+"""
+
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
+
+from app.core.deps import get_owned_project, get_session
+from app.features.projects.models import Project
+from app.features.projects.publish import publish_project, unpublish_project
+from app.features.projects.schemas import ProjectOut
+
+router = APIRouter(prefix="/projects", tags=["projects"])
+
+
+@router.post("/{project_id}/publish", response_model=ProjectOut)
+def publish(project: Project = Depends(get_owned_project), session: Session = Depends(get_session)):
+    """Publish a project, making it reachable via its public share link."""
+    return publish_project(session, project)
+
+
+@router.post("/{project_id}/unpublish", response_model=ProjectOut)
+def unpublish(project: Project = Depends(get_owned_project), session: Session = Depends(get_session)):
+    """Unpublish a project, removing public access."""
+    return unpublish_project(session, project)

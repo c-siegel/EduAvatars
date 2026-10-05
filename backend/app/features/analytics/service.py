@@ -1,9 +1,11 @@
 """
 Analytics Queries
 
-The actual database queries behind the analytics routes (app/api/analytics.py): aggregate
-stats, a paginated session list, a timeseries for charts, and the per-conversation CSV export —
-each scoped to a user's own projects and optionally filtered by project/model/time period.
+The actual database queries behind the analytics routes (features/analytics/stats_router.py
+and conversations_router.py): aggregate stats, a paginated session list, a timeseries for
+charts, and the conversations selected for export/deletion — each scoped to a user's own
+projects and optionally filtered by project/model/time period. The CSV/ZIP rendering lives in
+csv_export.py.
 
 How to use:
     from app.features.analytics.service import get_stats
@@ -11,10 +13,7 @@ How to use:
     stats = get_stats(session, user_id, days=7)
 """
 
-import csv
-import io
 import json
-import re
 from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, func, select
@@ -23,6 +22,8 @@ from app.features.analytics.schemas import AnalyticsStatsOut, ConversationDetail
 from app.features.chat.models import Conversation, ProjectAccess
 from app.features.chat.schemas import ChatHistoryEntry
 from app.features.projects.models import Project
+from app.features.projects.schemas import ProjectStats
+from app.features.projects.service import list_projects
 
 MAX_STATS_DAYS = 90
 MAX_TIMESERIES_DAYS = 365
@@ -91,72 +92,6 @@ def delete_conversations(session: Session, user_id: str, conversation_ids: list[
         session.delete(conversation)
     session.commit()
     return len(rows)
-
-
-def _slugify(value: str) -> str:
-    """ASCII-only filename fragment — German umlauts spelled out instead of stripped, everything
-    else collapsed to hyphens so the result is always safe as a filename and an HTTP header."""
-    for umlaut, replacement in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
-        value = value.replace(umlaut, replacement).replace(umlaut.upper(), replacement.capitalize())
-    value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
-    return value or "gespraech"
-
-
-def conversation_export_filename(conversation: Conversation, project: Project) -> str:
-    """Filename for one conversation's exported CSV, used both for a standalone download and as
-    a ZIP entry name when several conversations are exported at once."""
-    date_part = conversation.started_at.strftime("%Y%m%d-%H%M")
-    who = conversation.visitor_name or conversation.id[:8]
-    return f"{_slugify(project.title)}_{date_part}_{_slugify(who)}.csv"
-
-
-# Cell-leading characters a spreadsheet app (Excel, Google Sheets) reads as "this cell is a
-# formula" rather than plain text — the classic CSV/formula-injection set (OWASP), plus a
-# leading tab/CR which some parsers treat the same way.
-_CSV_FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
-
-
-def _csv_safe(value: str) -> str:
-    """Neutralize CSV/formula injection in an exported cell.
-
-    visitor_name and message content in build_conversation_csv below come straight from an
-    anonymous chat visitor with no format restriction — a name or message starting with e.g.
-    '=HYPERLINK("http://evil","x")' becomes a live, clickable formula the moment a teacher opens
-    the exported CSV/ZIP in Excel or Sheets. Prefixing with a single quote is the standard fix:
-    spreadsheet apps then show the cell as plain text and drop the leading quote themselves.
-    """
-    if value and value[0] in _CSV_FORMULA_TRIGGERS:
-        return "'" + value
-    return value
-
-
-def build_conversation_csv(conversation: Conversation, project: Project) -> str:
-    """Render one saved conversation as a CSV: a short metadata header (project, LLM model,
-    visitor, start time), then one row per message with a timestamp column plus one column per
-    speaker (Avatar/Schüler:in) — each row fills only the column of whichever side sent that
-    message, so the two columns read top-to-bottom as each side's messages in order.
-
-    Messages saved before per-message timestamps existed (see
-    app/models/schemas/chat.py::ChatHistoryEntry) leave the "Zeitpunkt" cell blank for that row.
-    """
-    messages = json.loads(conversation.messages_json)
-
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(["Projekt", _csv_safe(project.title)])
-    writer.writerow(["LLM-Modell", _csv_safe(project.llm_model or "")])
-    writer.writerow(["Name/ID", _csv_safe(conversation.visitor_name or "")])
-    writer.writerow(["Gestartet", conversation.started_at.isoformat()])
-    writer.writerow([])
-    writer.writerow(["Zeitpunkt", "Avatar", "Schüler:in"])
-    for message in messages:
-        timestamp = message.get("timestamp") or ""
-        content = _csv_safe(message.get("content", ""))
-        if message.get("role") == "assistant":
-            writer.writerow([timestamp, content, ""])
-        else:
-            writer.writerow([timestamp, "", content])
-    return buffer.getvalue()
 
 
 def _apply_common_filters(query, user_id: str, project_id: str | None, model: str | None):
@@ -340,3 +275,16 @@ def get_timeseries_data(
         timeseries[key] = timeseries.get(key, 0) + 1
 
     return [{"label": k, "value": v} for k, v in sorted(timeseries.items())]
+
+
+def get_project_overview(session: Session, user_id: str) -> ProjectStats:
+    """Summary stats for the dashboard overview: project count, published count, and
+    sessions/messages this week."""
+    projects = list_projects(session, user_id)
+    weekly = get_stats(session, user_id, days=7)
+    return ProjectStats(
+        total_projects=len(projects),
+        published_projects=sum(1 for p in projects if p.published),
+        sessions_last_7_days=weekly.sessions,
+        messages_last_7_days=weekly.messages,
+    )

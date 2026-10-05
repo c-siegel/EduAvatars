@@ -77,7 +77,7 @@ def get_avatar_file(
     # or anonymous access, if the avatar is actually used in a published project (public chat,
     # Screen 1i, needs the avatar visible to students, see PublicChat/index.tsx). Unpublished or
     # someone else's avatars stay inaccessible to everyone else.
-    avatar = session.get(AvatarModel, avatar_id)
+    avatar = media.get_avatar(session, avatar_id)
     if avatar is None:
         raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 
