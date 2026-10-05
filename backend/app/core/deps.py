@@ -32,8 +32,8 @@ from app.core.cookies import ACCESS_TOKEN_COOKIE
 from app.core.error_codes import ErrorCode
 from app.core.security import decode_access_token
 from app.db.session import get_session
-from app.models.project import Project
-from app.models.user import User
+from app.features.projects.models import Project
+from app.features.users.models import User
 
 
 def get_current_user(

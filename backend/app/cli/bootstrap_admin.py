@@ -28,9 +28,9 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.db.session import engine
-from app.models.schemas.auth import _validate_password_strength
-from app.models.user import User
-from app.services.auth_service import register_user
+from app.features.auth.schemas import _validate_password_strength
+from app.features.auth.service import register_user
+from app.features.users.models import User
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

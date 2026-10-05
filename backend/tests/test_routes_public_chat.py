@@ -3,8 +3,9 @@ messages (plain and streamed), and voice transcription — the anonymous visitor
 
 import base64
 
-from app.core.config import settings
 from conftest import LLM_REPLY, TTS_BYTES, create_project, parse_sse, publish
+
+from app.core.config import settings
 
 
 def _audio(content_type: str = "audio/webm"):

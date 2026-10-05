@@ -11,7 +11,7 @@ truncating — without it, a single oversized guess would 500 this fully unauthe
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas.chat import ChatHistoryEntry, ChatMessageIn, ChatUnlockRequest
+from app.features.chat.schemas import ChatHistoryEntry, ChatMessageIn, ChatUnlockRequest
 
 
 @pytest.mark.parametrize("message", ["", "   ", "\n\t"])

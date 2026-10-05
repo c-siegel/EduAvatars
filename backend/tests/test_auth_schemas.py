@@ -5,7 +5,7 @@ single oversized login attempt from 500ing the request."""
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas.auth import LoginRequest
+from app.features.auth.schemas import LoginRequest
 
 
 def test_rejects_oversized_password() -> None:

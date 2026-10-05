@@ -18,7 +18,7 @@ from fastapi import Request, Response
 
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.models.user import User
+from app.features.users.models import User
 
 # Cookie names used for authentication and visitor tracking
 ACCESS_TOKEN_COOKIE = "access_token"

@@ -6,14 +6,14 @@ references are dropped rather than carried over when they don't belong to the im
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.models.avatar_model import AvatarModel
-from app.models.project import Project
-from app.services.project_export_service import (
+from app.features.media.models import AvatarModel
+from app.features.projects.export import (
     ProjectImportError,
     export_project_yaml,
     import_project,
     parse_project_yaml,
 )
+from app.features.projects.models import Project
 
 
 def _make_session() -> Session:

@@ -16,10 +16,10 @@ from sqlmodel import Session
 from app.core.deps import get_current_user, get_current_user_optional, get_session
 from app.core.error_codes import ErrorCode
 from app.features.media import service as media
-from app.models.avatar_model import AvatarModel
-from app.models.project import Project
-from app.models.schemas.avatar import AvatarModelOut
-from app.models.user import User
+from app.features.media.models import AvatarModel
+from app.features.media.schemas import AvatarModelOut
+from app.features.projects.models import Project
+from app.features.users.models import User
 from app.storage.files import immutable_file_response, is_glb, sniff_image
 
 router = APIRouter(prefix="/avatar-models", tags=["avatar-library"])

@@ -30,20 +30,20 @@ from app.features.ai.stt import transcribe_audio
 from app.features.api_keys.resolve import resolve_stt_key
 from app.features.chat.audio_upload import read_audio_upload
 from app.features.chat.pipeline import ChatTurn, LLMFailed, prepare_chat, reply_turn, stream_turn
-from app.features.chat.streaming import sse_event
-from app.features.chat.unlock import assert_unlocked, is_unlocked, issue_unlock_token, verify_chat_password
-from app.features.chat.visitor_log import log_access
-from app.features.chat.visitor_name import assert_visitor_name_provided, clean_visitor_name
-from app.models.project import Project
-from app.models.schemas.chat import (
+from app.features.chat.schemas import (
     ChatMessageIn,
     ChatMessageOut,
     ChatUnlockOut,
     ChatUnlockRequest,
     PublicProjectOut,
+    TranscriptionOut,
 )
-from app.models.schemas.speech import TranscriptionOut
-from app.models.user import User
+from app.features.chat.streaming import sse_event
+from app.features.chat.unlock import assert_unlocked, is_unlocked, issue_unlock_token, verify_chat_password
+from app.features.chat.visitor_log import log_access
+from app.features.chat.visitor_name import assert_visitor_name_provided, clean_visitor_name
+from app.features.projects.models import Project
+from app.features.users.models import User
 
 router = APIRouter(prefix="/public", tags=["public-chat"])
 

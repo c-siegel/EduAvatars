@@ -16,7 +16,7 @@ from app.core.providers import GWDG_SAIA_PROVIDER
 from app.features.ai.stt.base import STTClient
 from app.features.ai.stt.saia import SaiaClient
 from app.features.ai.stt.whisper_local import LocalWhisperClient
-from app.models.api_key import UserApiKey
+from app.features.api_keys.models import UserApiKey
 
 __all__ = ["STTClient", "get_stt_client", "transcribe_audio"]
 

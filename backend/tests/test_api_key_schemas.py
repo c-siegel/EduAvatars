@@ -6,7 +6,7 @@ endpoints, while still allowing the arbitrary self-hosted/LAN addresses that Oll
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas.api_key import ApiKeyCreate
+from app.features.api_keys.schemas import ApiKeyCreate
 
 
 def _openai_compatible(api_base: str | None) -> ApiKeyCreate:

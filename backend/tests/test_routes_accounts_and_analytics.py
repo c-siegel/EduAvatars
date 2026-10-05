@@ -4,10 +4,10 @@ app-level bits (health check, security headers)."""
 import io
 import zipfile
 
+from conftest import PASSWORD, login_as, make_user
 from fastapi.testclient import TestClient
 
 from app.main import app
-from conftest import PASSWORD, login_as, make_user
 
 NEW_PASSWORD = "another-pass-2"
 

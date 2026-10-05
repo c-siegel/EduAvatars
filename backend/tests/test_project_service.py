@@ -10,8 +10,8 @@ from pathlib import Path
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.models.project import Project
-from app.services.project_service import delete_project
+from app.features.projects.models import Project
+from app.features.projects.service import delete_project
 
 
 def _make_session() -> Session:

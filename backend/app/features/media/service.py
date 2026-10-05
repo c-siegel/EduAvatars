@@ -12,9 +12,8 @@ from pathlib import Path
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.models.avatar_model import AvatarModel
-from app.models.background_image import BackgroundImage
-from app.models.project import Project
+from app.features.media.models import AvatarModel, BackgroundImage
+from app.features.projects.models import Project
 from app.storage.files import save_file, unlink_quietly
 
 

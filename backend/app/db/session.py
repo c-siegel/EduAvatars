@@ -32,7 +32,7 @@ How to use in FastAPI routes:
     from fastapi import Depends
     from sqlmodel import Session, select
     from app.db.session import get_session
-    from app.models.user import User
+    from app.features.users.models import User
     
     @router.get("/users/{user_id}")
     def get_user(user_id: str, session: Session = Depends(get_session)):

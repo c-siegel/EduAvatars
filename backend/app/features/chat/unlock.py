@@ -16,7 +16,7 @@ import jwt
 from app.core.error_codes import ErrorCode
 from app.core.errors import DomainError
 from app.core.security import create_chat_unlock_token, decode_chat_unlock_token, verify_password
-from app.models.project import Project
+from app.features.projects.models import Project
 
 
 class ChatUnlockRequired(DomainError):

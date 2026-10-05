@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from sqlmodel import Session, select
 
 from app.db.session import engine
-from app.models.conversation import Conversation
+from app.features.chat.models import Conversation
 
 
 def save_turn(

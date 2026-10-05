@@ -10,7 +10,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
 from app.cli import bootstrap_admin as bootstrap_admin_module
 from app.cli.bootstrap_admin import bootstrap_admin
-from app.models.user import User
+from app.features.users.models import User
 
 
 def _use_temp_engine(monkeypatch):

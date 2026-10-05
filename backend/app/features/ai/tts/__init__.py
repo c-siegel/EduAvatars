@@ -17,7 +17,7 @@ from app.features.ai.tts.cartesia import CartesiaClient
 from app.features.ai.tts.google import GoogleCloudTTSClient
 from app.features.ai.tts.litellm_provider import LiteLLMSpeechClient
 from app.features.ai.tts.normalizer import normalize_for_speech
-from app.models.api_key import UserApiKey
+from app.features.api_keys.models import UserApiKey
 
 __all__ = ["TTSClient", "VoiceRequiredError", "get_tts_client", "synthesize_speech"]
 

@@ -12,7 +12,7 @@ How to use:
 
 from sqlmodel import Session
 
-from app.models.project_access import ProjectAccess
+from app.features.chat.models import ProjectAccess
 
 # Deliberately independent of core/security.py: the public chat page has no user login, only an
 # anonymous visitor_id (see app.core.cookies.get_or_set_visitor_id).

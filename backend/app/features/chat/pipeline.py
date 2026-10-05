@@ -28,11 +28,11 @@ from app.core.config import settings
 from app.core.error_codes import ErrorCode
 from app.features.ai import llm
 from app.features.ai.tts import synthesize_speech
+from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import resolve_llm_key, resolve_tts_key
 from app.features.chat.conversation_store import save_turn
 from app.features.chat.streaming import SentenceChunker
-from app.models.api_key import UserApiKey
-from app.models.project import Project
+from app.features.projects.models import Project
 
 # Visitors deliberately only get generic error messages (no technical detail) — so the actual
 # error is still visible *somewhere* instead of being swallowed entirely, it goes into the

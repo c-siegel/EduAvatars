@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.models.conversation import Conversation
-from app.models.project import Project
-from app.services.analytics_service import get_sessions_paginated
+from app.features.analytics.service import get_sessions_paginated
+from app.features.chat.models import Conversation
+from app.features.projects.models import Project
 
 
 def _make_session() -> Session:

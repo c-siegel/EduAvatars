@@ -14,8 +14,8 @@ How to use:
 from sqlmodel import Session, select
 
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_STT, KEY_TYPE_TTS, get_provider
-from app.models.api_key import UserApiKey
-from app.models.project import Project
+from app.features.api_keys.models import UserApiKey
+from app.features.projects.models import Project
 
 
 def get_user_api_key(

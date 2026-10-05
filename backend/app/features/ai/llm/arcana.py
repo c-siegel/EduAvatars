@@ -21,8 +21,8 @@ from app.core.providers import GWDG_ARCANA_PROVIDER, get_provider
 from app.features.ai.http import make_ipv4_client
 from app.features.ai.llm.base import ChatRequest
 from app.features.ai.llm.history import build_messages, sampling_params
-from app.models.api_key import UserApiKey
-from app.services.crypto_service import reveal_api_key
+from app.features.api_keys.crypto import reveal_api_key
+from app.features.api_keys.models import UserApiKey
 
 logger = logging.getLogger(__name__)
 

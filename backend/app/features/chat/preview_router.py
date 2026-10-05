@@ -12,13 +12,13 @@ from sqlmodel import Session
 from app.core.deps import get_owned_project, get_session
 from app.core.error_codes import ErrorCode
 from app.features.ai.stt import transcribe_audio
+from app.features.api_keys.crypto import scrub_key_from_text
 from app.features.api_keys.resolve import resolve_stt_key
 from app.features.chat.audio_upload import read_audio_upload
 from app.features.chat.pipeline import ChatTurn, LLMFailed, prepare_chat, reply_turn
-from app.models.project import Project
-from app.models.schemas.project import PreviewMessageRequest, PreviewMessageResponse
-from app.models.schemas.speech import TranscriptionOut
-from app.services.crypto_service import scrub_key_from_text
+from app.features.chat.schemas import TranscriptionOut
+from app.features.projects.models import Project
+from app.features.projects.schemas import PreviewMessageRequest, PreviewMessageResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

@@ -10,8 +10,8 @@ from app.core.error_codes import ErrorCode
 from app.core.providers import CARTESIA_PROVIDER, get_provider
 from app.features.ai.http import make_ipv4_client
 from app.features.ai.tts.base import VoiceRequiredError
-from app.models.api_key import UserApiKey
-from app.services.crypto_service import reveal_api_key
+from app.features.api_keys.crypto import reveal_api_key
+from app.features.api_keys.models import UserApiKey
 
 _CARTESIA_TTS_TIMEOUT = 30.0
 

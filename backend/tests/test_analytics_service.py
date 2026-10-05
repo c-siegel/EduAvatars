@@ -8,9 +8,9 @@ import csv
 import io
 import json
 
-from app.models.conversation import Conversation
-from app.models.project import Project
-from app.services.analytics_service import build_conversation_csv
+from app.features.analytics.service import build_conversation_csv
+from app.features.chat.models import Conversation
+from app.features.projects.models import Project
 
 
 def _project() -> Project:

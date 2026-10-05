@@ -3,10 +3,10 @@ previously had no `secure` flag (unlike the auth cookie's matching cookie_secure
 max_age (a bare session cookie) — unlike everything else it's supposed to persist through for the
 length of one visit (rate-limit continuity, an already-unlocked password-protected chat)."""
 
-import app.core.cookies as cookies_module
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
+import app.core.cookies as cookies_module
 from app.core.cookies import VISITOR_ID_COOKIE, get_or_set_visitor_id
 
 

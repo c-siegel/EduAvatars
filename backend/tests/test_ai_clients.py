@@ -11,7 +11,7 @@ from app.features.ai.tts import get_tts_client
 from app.features.ai.tts.cartesia import CartesiaClient
 from app.features.ai.tts.google import GoogleCloudTTSClient
 from app.features.ai.tts.litellm_provider import LiteLLMSpeechClient
-from app.models.api_key import UserApiKey
+from app.features.api_keys.models import UserApiKey
 
 
 def _key(provider: str) -> UserApiKey:
@@ -44,7 +44,7 @@ def test_arcana_request_shape_and_reference_stripping(monkeypatch) -> None:
 
     from app.features.ai.llm import arcana, stream
     from app.features.ai.llm.base import ChatRequest
-    from app.services.crypto_service import store_api_key
+    from app.features.api_keys.crypto import store_api_key
 
     seen: list[httpx.Request] = []
     reply = "Antwort.\n---\nReferences:\n[RREF1] skript.pdf"

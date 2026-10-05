@@ -4,7 +4,7 @@ body. Some providers (e.g. Google Gemini) put the API key directly in the reques
 HTTP client error messages include that full URL, so an unscrubbed exception can otherwise echo
 the key back to its own owner."""
 
-from app.services.crypto_service import scrub_key_from_text, store_api_key
+from app.features.api_keys.crypto import scrub_key_from_text, store_api_key
 
 
 def test_redacts_the_key_when_present_in_the_text() -> None:

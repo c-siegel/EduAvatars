@@ -8,9 +8,9 @@ from fastapi import HTTPException
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.api.profile import update_profile
-from app.models.schemas.profile import ProfileUpdate
-from app.models.user import User
+from app.features.users.models import User
+from app.features.users.profile_router import update_profile
+from app.features.users.schemas import ProfileUpdate
 
 
 def _make_session() -> Session:

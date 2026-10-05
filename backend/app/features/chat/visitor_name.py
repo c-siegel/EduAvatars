@@ -18,7 +18,7 @@ from urllib.parse import unquote
 
 from app.core.error_codes import ErrorCode
 from app.core.errors import DomainError
-from app.models.project import Project
+from app.features.projects.models import Project
 
 # Generous enough for a real name or a classroom ID, short enough that nothing absurd ends up in
 # the exported CSV/protocol.

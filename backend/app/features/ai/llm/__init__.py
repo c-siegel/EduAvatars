@@ -21,7 +21,7 @@ from app.core.providers import GWDG_ARCANA_PROVIDER
 from app.features.ai.llm.arcana import ArcanaClient, strip_arcana_references
 from app.features.ai.llm.base import ChatRequest, LLMClient
 from app.features.ai.llm.litellm_provider import LiteLLMClient
-from app.models.api_key import UserApiKey
+from app.features.api_keys.models import UserApiKey
 
 __all__ = ["ChatRequest", "LLMClient", "complete", "get_llm_client", "strip_arcana_references", "stream"]
 

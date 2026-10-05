@@ -14,10 +14,10 @@ from sqlmodel import Session
 from app.core.deps import get_current_user, get_current_user_optional, get_session
 from app.core.error_codes import ErrorCode
 from app.features.media import service as media
-from app.models.background_image import BackgroundImage
-from app.models.project import Project
-from app.models.schemas.background import BackgroundImageOut
-from app.models.user import User
+from app.features.media.models import BackgroundImage
+from app.features.media.schemas import BackgroundImageOut
+from app.features.projects.models import Project
+from app.features.users.models import User
 from app.storage.files import immutable_file_response, sniff_image
 
 router = APIRouter(prefix="/backgrounds", tags=["background-library"])

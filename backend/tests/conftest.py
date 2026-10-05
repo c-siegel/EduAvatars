@@ -29,8 +29,8 @@ from app.core import rate_limit  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.db.session import get_session  # noqa: E402
+from app.features.users.models import User  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models.user import User  # noqa: E402
 
 # Module attributes holding the process-wide `engine` that code opens its own Session(engine)
 # with (outside the request-scoped get_session dependency) — redirected to the test engine.
