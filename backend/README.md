@@ -139,7 +139,8 @@ library models) or `builtinAvatar` (a bundled default like `"julia"`), its backg
 The unauthenticated endpoints a published project's visitors actually use. See
 [Latency monitoring](#latency-monitoring) below for the timing fields `/messages`,
 `/messages/stream`, and `/transcriptions` ride along in their responses. `GET /public/{slug}`
-also returns `browserSttModel` when the project transcribes in the visitor's browser instead.
+also returns `browserSttModelUrl` (where the on-device speech recognition model lives) unless the
+project or deployment opted out of transcribing in the visitor's browser.
 
 | Method & path | Auth | Description |
 |---|---|---|
@@ -209,7 +210,7 @@ duplicating that data. Keys are encrypted at rest.
 |---|---|---|---|
 | `GET /providers` | `providers_router.py` | Login required | List all supported providers and their config. |
 | `GET /providers/local-tts-status` | `providers_router.py` | Login required | Whether this deployment's local-TTS sidecar is enabled. |
-| `GET /providers/browser-stt-status` | `providers_router.py` | Login required | Whether browser-side (WebGPU) transcription is enabled for this deployment. |
+| `GET /providers/browser-stt-status` | `providers_router.py` | Login required | Whether on-device (WebGPU) transcription is enabled for this deployment. |
 | `GET /api-keys` | `router.py` | Login required | List the current user's stored keys, with how many projects use each one. |
 | `POST /api-keys` | `router.py` | Login required | Store a new API key. |
 | `PUT /api-keys/{key_id}` | `router.py` | Login required, own resource | Update a stored key; re-syncs any projects using it as their LLM source. |
@@ -252,7 +253,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language)` — routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
 | `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — via faster-whisper locally, or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`. |
 | `features/chat/pipeline.py` | One chat turn for the public and preview chat | `prepare_chat(session, project)` — resolve keys and snapshot the project.<br>`reply_turn(context, turn)` — LLM → save → TTS.<br>`stream_turn(context, turn)` — `(event, data)` pairs for the SSE stream. |
-| `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_for(project)`, `effective_api_base(key)`. |
+| `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_url_for(project)`, `effective_api_base(key)`. |
 | `features/api_keys/service.py` | Managing stored keys | `list_keys_with_usage(session, user_id)`, `create_key(...)`, `update_key(...)`, `delete_key(...)`, `run_key_test(session, key)`. |
 | `features/api_keys/crypto.py` | Encrypting and masking stored API keys | `store_api_key(plaintext)` / `reveal_api_key(ciphertext)`.<br>`mask_key(plaintext)` — e.g. `"••••••••1234"`.<br>`scrub_key_from_text(text, encrypted_api_key)` — redact a key out of error text before it's shown or logged. |
 | `features/auth/service.py` | Authentication helpers | `register_user(session, name, email, password)`, `authenticate_user(session, email, password)`, `user_to_out(user)`. The auth cookie itself is set by `core/cookies.py::set_auth_cookie`. |

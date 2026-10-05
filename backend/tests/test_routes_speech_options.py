@@ -39,6 +39,8 @@ def keyless_tts_project(client, teacher, fake_ai):
 
 
 def test_status_endpoints(client, teacher, monkeypatch):
+    monkeypatch.setattr(settings, "local_tts_enabled", False)
+    monkeypatch.setattr(settings, "browser_stt_enabled", False)
     assert client.get("/providers/local-tts-status").json() == {"available": False}
     assert client.get("/providers/browser-stt-status").json() == {"available": False}
     monkeypatch.setattr(settings, "local_tts_enabled", True)
@@ -79,12 +81,15 @@ def test_start_audio_via_sidecar_is_stored_and_served_as_wav(client, keyless_tts
     assert served.headers["content-type"] == "audio/wav"
 
 
-def test_browser_stt_model_needs_both_opt_ins(client, anon, keyless_tts_project, monkeypatch):
+def test_browser_stt_is_on_by_default_and_each_side_can_opt_out(client, anon, keyless_tts_project, monkeypatch):
     slug = keyless_tts_project["shareSlug"]
-    assert anon.get(f"/public/{slug}").json()["browserSttModel"] is None
+    monkeypatch.setattr(settings, "browser_stt_enabled", True)
+    assert client.get(f"/projects/{keyless_tts_project['id']}").json()["sttBrowserEnabled"] is True
+    assert anon.get(f"/public/{slug}").json()["browserSttModelUrl"] == settings.browser_stt_model_url
+
+    client.put(f"/projects/{keyless_tts_project['id']}", json={"sttBrowserEnabled": False})
+    assert anon.get(f"/public/{slug}").json()["browserSttModelUrl"] is None
 
     client.put(f"/projects/{keyless_tts_project['id']}", json={"sttBrowserEnabled": True})
-    assert anon.get(f"/public/{slug}").json()["browserSttModel"] is None
-
-    monkeypatch.setattr(settings, "browser_stt_enabled", True)
-    assert anon.get(f"/public/{slug}").json()["browserSttModel"] == settings.browser_stt_model_de
+    monkeypatch.setattr(settings, "browser_stt_enabled", False)
+    assert anon.get(f"/public/{slug}").json()["browserSttModelUrl"] is None

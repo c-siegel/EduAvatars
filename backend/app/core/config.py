@@ -333,44 +333,30 @@ class Settings(BaseSettings):
 
     # ==================== BROWSER SPEECH-TO-TEXT (WEBGPU) SETTINGS ====================
 
-    # An alternative to both local STT (faster-whisper, above) and a cloud STT key: transcription
-    # runs entirely in the visitor's own browser via WebGPU (a browser API for using the GPU for
-    # general-purpose computation, not just graphics), through the transformers.js JavaScript
-    # library — see frontend/src/lib/browserStt.ts. Unlike local TTS, this needs no backend
-    # compute or sidecar container at all; the backend's only role is handing out this
-    # deployment-wide opt-in (and which model id to load) via PublicProjectOut, per project (see
-    # features/chat/public_router.py::load_tutor and features/api_keys/resolve.py::browser_stt_model_for).
+    # The default way voice input is transcribed: the Parakeet Redux model runs in the visitor's
+    # own browser via WebGPU (a browser API for using the GPU for general-purpose computation, not
+    # just graphics) and streams live text while the student speaks — see
+    # frontend/src/lib/parakeetStt.ts. Local server Whisper (above) and a cloud STT key remain as
+    # the fallback for a browser without WebGPU or a failed model load. The backend computes
+    # nothing here; it only tells the public chat where the model files live (see
+    # features/api_keys/resolve.py::browser_stt_model_url_for).
 
-    browser_stt_enabled: bool = False
+    browser_stt_enabled: bool = True
     """
-    Whether browser-side (WebGPU) transcription may be offered to visitors at all, for projects
-    that also opt in via their own "stt_browser_enabled" checkbox (see features/projects/models.py).
+    Whether on-device transcription is offered to visitors at all. Each project can still opt
+    out with its own "stt_browser_enabled" checkbox (see features/projects/models.py).
 
-    False by default: this only makes sense once the deployment has verified real classroom
-    devices actually support WebGPU well enough — with it off, every project keeps transcribing
-    exactly as it does today (cloud key, else local server Whisper).
-    """
-
-    browser_stt_model_de: str = "onnx-community/whisper-small"
-    """
-    transformers.js-compatible ONNX model repository to load in the browser for a project whose
-    spoken_language is "de".
-
-    Was a German fine-tune of Whisper's "turbo" architecture (more accurate on German), but
-    "turbo" only prunes the *decoder* — its encoder is still full large-v3 size (~635M
-    parameters) regardless of quantization, which reliably ran iPadOS Safari's WASM memory out
-    partway through loading (a silent OS-level tab reload, not something a try/catch can recover
-    from). Generic "small" has a ~7x smaller encoder (~88M parameters) and reliably fits — accept
-    the German-specific accuracy loss over risking that crash. A self-hosted, properly quantized
-    ONNX conversion of a small/base-sized German fine-tune would be worth revisiting if one
-    becomes available.
+    Needs the model files to be present at browser_stt_model_url (run
+    scripts/fetch-stt-model.sh once per deployment). If they're missing, every visitor's browser
+    falls back to server transcription after a failed load — set this to false instead to skip
+    that wasted attempt.
     """
 
-    browser_stt_model_en: str = "onnx-community/whisper-base.en"
+    browser_stt_model_url: str = "/models/parakeet-redux/v1/"
     """
-    Same as browser_stt_model_de, for a project whose spoken_language is "en". English-only
-    models drop multilingual-token overhead and stay accurate even at a small size, since
-    English is Whisper's best-supported language.
+    Base URL of the model files (manifest.json plus the ONNX files it lists), as written by
+    scripts/fetch-stt-model.sh. Same-origin by default: Caddy serves it in production (see
+    docker/Caddyfile) and Vite in development (see frontend/vite.config.ts).
     """
 
     # ==================== PUBLIC CHAT & VOICE INPUT RATE LIMITS ====================

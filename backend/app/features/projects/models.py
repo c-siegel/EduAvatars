@@ -98,12 +98,11 @@ class Project(SQLModel, table=True):
     # Only unlocks the microphone button in the public chat — stt_api_key_id (above) decides which
     # engine actually transcribes.
     stt_enabled: bool = True
-    # Whether this project prefers browser-side (WebGPU) transcription over stt_api_key_id/local
-    # server Whisper — only takes effect when the deployment also has it enabled (see
-    # Settings.browser_stt_enabled) and the visitor's own browser supports it, see
-    # features/api_keys/resolve.py::browser_stt_model_for. False (the default) keeps every existing
-    # project transcribing exactly as before this field existed.
-    stt_browser_enabled: bool = False
+    # Whether this project transcribes on the visitor's device (WebGPU) before falling back to
+    # stt_api_key_id/local server Whisper — only takes effect when the deployment also has it
+    # enabled (see Settings.browser_stt_enabled), see
+    # features/api_keys/resolve.py::browser_stt_model_url_for. On by default; False opts out.
+    stt_browser_enabled: bool = True
     # Whether the public chat should start open (True) or collapsed-but-expandable (False). The
     # value is configurable and persisted from the Configurator, but features/chat/public_router.py/PublicChat
     # frontend don't yet render a collapsed state — that's still to be implemented.

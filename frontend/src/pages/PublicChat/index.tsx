@@ -13,7 +13,7 @@ import { SurveyEmbed } from "@/components/SurveyEmbed";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle, type FpsTrackingResult } from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/api/publicChat";
-import { BrowserSttEngine } from "@/lib/browserStt";
+import { ParakeetSttEngine, type LoadProgress, type StreamingSession } from "@/lib/parakeetStt";
 import { FALLBACK_SILENCE_RMS_THRESHOLD, calibrateSilenceThreshold, rms } from "@/lib/audioLevel";
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
@@ -25,7 +25,8 @@ import styles from "./PublicChat.module.css";
 type Stage = "locked" | "name-gate" | "before-survey" | "chat" | "after-survey" | "done";
 
 // micStopAt: client timestamp (performance.now()) when the mic-stop button was clicked.
-// sttMs: backend-only whisper duration, from the /transcriptions response.
+// sttMs: speech-to-text time — the backend's own Whisper duration (server fallback), or how long
+// the on-device model took to finish after the mic stopped (see lib/parakeetStt.ts).
 interface SendLatency {
   micStopAt: number;
   sttMs: number | null;
@@ -86,9 +87,10 @@ function toApiHistory(history: ChatMessage[]): ChatMessage[] {
   return history.filter((message) => message.role !== "system");
 }
 
-// Pause-triggered incremental transcription while recording a voice message (see backend
-// features/ai/stt). Hardcoded constants, not project settings — same posture as the TTS
-// chunker's thresholds (features/chat/streaming.py).
+// Pause-triggered incremental transcription for the server fallback (see backend
+// features/ai/stt) — used when on-device recognition (lib/parakeetStt.ts) isn't available.
+// Hardcoded constants, not project settings — same posture as the TTS chunker's thresholds
+// (features/chat/streaming.py).
 const RECORDING_SEGMENT_MIN_MS = 2000; // shorter than this, a pause doesn't cut a segment yet
 const SILENCE_PAUSE_MS = 700; // how long a pause must last before it counts as a cut point
 // How long watchForSpeechPauses spends measuring this recording's own ambient noise floor before
@@ -126,13 +128,7 @@ const GREETING_REVEAL_GRACE_MS = 2500;
 // visibly starts recording and no audio is lost — pause detection just uses
 // FALLBACK_SILENCE_RMS_THRESHOLD for that first stretch, which is safe because no cut can happen
 // before RECORDING_SEGMENT_MIN_MS (2000ms) regardless, well past calibration finishing.
-// `onThresholdCalibrated` reports the derived value once, so the caller can reuse the same number
-// for the browser-STT segment-level silence gate (see lib/browserStt.ts's isSilent).
-function watchForSpeechPauses(
-  stream: MediaStream,
-  onPause: () => void,
-  onThresholdCalibrated: (threshold: number) => void,
-): () => void {
+function watchForSpeechPauses(stream: MediaStream, onPause: () => void): () => void {
   const audioCtx = new AudioContext();
   const source = audioCtx.createMediaStreamSource(stream);
   const analyser = audioCtx.createAnalyser();
@@ -155,7 +151,6 @@ function watchForSpeechPauses(
       if (now - calibrationStartedAt >= CALIBRATION_MS) {
         calibrated = true;
         threshold = calibrateSilenceThreshold(calibrationSamples);
-        onThresholdCalibrated(threshold);
       }
     }
 
@@ -206,6 +201,39 @@ function logLatency(
     droppedFrames: speaking.fpsResult?.droppedFrames ?? null,
     fpsSampleCount: speaking.fpsResult?.sampleCount ?? null,
   });
+}
+
+/** Full-page loading screen shown instead of the chat while the on-device speech recognition
+ * model loads. */
+function SttLoadingScreen({ progress }: { progress: LoadProgress }) {
+  const { t } = useTranslation();
+  const percent = progress.totalBytes > 0 ? Math.floor((progress.loadedBytes / progress.totalBytes) * 100) : 0;
+  // Once every byte is in, the model is still being set up on the GPU — that takes a few seconds,
+  // and a bar stuck at 100% would look frozen.
+  const preparing = progress.totalBytes > 0 && progress.loadedBytes >= progress.totalBytes;
+  return (
+    <div className={styles.centered}>
+      <div className={styles.sttLoadingScreen}>
+        <Loader2 size={32} className={styles.spinIcon} />
+        <h2>{t("publicChat.sttLoading.title")}</h2>
+        <p className={styles.sttLoadingText}>{t("publicChat.sttLoading.description")}</p>
+        <div
+          className={styles.sttLoadingBar}
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <span className={styles.sttLoadingLabel}>
+            {preparing ? t("publicChat.sttLoading.preparing") : t("publicChat.sttLoading.progress", { percent })}
+          </span>
+          <div className={styles.sttLoadingTrack}>
+            <div className={styles.sttLoadingFill} style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Screen 1i — Öffentliche Schüler-Chat-Seite (mobile-first, kein Login). Gesprochene Nachrichten
@@ -303,19 +331,13 @@ export function PublicChatPage() {
   // the resulting sendMessage) has been kicked off — drives the mic button's spinner/disabled state,
   // the same role transcribeMutation.isPending used to play before segmentation replaced it.
   const [isFinalizingRecording, setIsFinalizingRecording] = useState(false);
-  // Drives the loading bar below the composer while the browser-side Whisper model downloads
-  // (see toggleRecording, which kicks this off) — null once it's not relevant at all (no
-  // browser engine for this project) or the download has finished/failed, a number 0-100 while
-  // it's actually in progress.
-  const [browserSttLoadPercent, setBrowserSttLoadPercent] = useState<number | null>(null);
+  // Non-null while the on-device speech recognition model is still loading — the chat stays
+  // behind a full-page loading screen until then (see the warm-up effect below). null once it's
+  // not relevant (project transcribes on the server) or loading has finished or failed.
+  const [sttLoadProgress, setSttLoadProgress] = useState<LoadProgress | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const stopWatchingPausesRef = useRef<(() => void) | null>(null);
-  // This recording's calibrated "count this as silence" RMS threshold (see watchForSpeechPauses
-  // and lib/audioLevel.ts) — reused by transcribeViaBrowserOrServer as the browser-STT segment-
-  // level silence gate, so both silence checks agree on the same room/device-specific number
-  // instead of one staying hardcoded while the other adapts.
-  const sttSilenceThresholdRef = useRef(FALLBACK_SILENCE_RMS_THRESHOLD);
   // The specific MediaRecorder instance toggleRecording's stop click targeted — read inside each
   // recorder's own onstop handler (see startSegmentRecorder) via identity comparison, not a plain
   // boolean flag. A pause-triggered cut (cutSegment) starts a new recorder immediately and lets
@@ -346,11 +368,14 @@ export function PublicChatPage() {
   // null = no segment has reported an sttMs yet this recording, as opposed to a legitimate sum of
   // exactly 0 — distinguishing the two matters so the final latency log reports null, not 0.
   const segmentSttMsSumRef = useRef<number | null>(null);
-  // Lazily created on the first recording of the page visit (see toggleRecording) — not on page
-  // load, so a visitor who never uses voice input never triggers the model download. Persists
-  // across every recording in the session once built, so the (possibly large, one-time) model
-  // load only ever happens once per visit.
-  const browserSttEngineRef = useRef<BrowserSttEngine | null>(null);
+  // Built once per page visit by the warm-up effect below and kept across recordings — loading
+  // the model is the expensive part.
+  const sttEngineRef = useRef<ParakeetSttEngine | null>(null);
+  // The on-device recording in progress, if any (the server fallback uses mediaRecorderRef).
+  const streamingSessionRef = useRef<StreamingSession | null>(null);
+  // Whatever the student had already typed when the recording started — the live transcript is
+  // shown after it in the composer.
+  const inputBeforeRecordingRef = useRef("");
   const threadRef = useRef<HTMLDivElement>(null);
   // Überlebt die Kette toggleRecording -> recorder.onstop -> transcribeSegment, die über mehrere
   // async Hops läuft — nur so lässt sich der ursprüngliche "Sprechende"-Zeitpunkt bis zum
@@ -635,38 +660,16 @@ export function PublicChatPage() {
     },
   });
 
-  // Transcribes one segment (see watchForSpeechPauses) and appends the result to the visible
-  // input box; on the final segment (mic button released), sends the full accumulated text
-  // instead — same "no manual send click needed" behavior the single-shot flow had before.
-  // Always called chained onto transcriptionChainRef (see startSegmentRecorder) so segments never
-  // read/reset transcriptSoFarRef out of order relative to each other.
-  // Transcribes via the in-browser WebGPU engine when it's actually ready; otherwise (not built
-  // for this project, still loading its model, unsupported browser, or a prior call errored) via
-  // the backend's /transcriptions route — exactly as before browser transcription existed.
-  async function transcribeViaBrowserOrServer(
-    blob: Blob,
-    initialPrompt: string | undefined,
-  ): Promise<{ text: string; sttMs: number | null }> {
-    const engine = browserSttEngineRef.current;
-    if (engine?.status === "ready") {
-      try {
-        const sttStart = performance.now();
-        const text = await engine.transcribe(blob, tutor.spokenLanguage, sttSilenceThresholdRef.current);
-        return { text, sttMs: performance.now() - sttStart };
-      } catch (error) {
-        // Falls back to the server for this one segment rather than failing it outright — same
-        // posture as sendMutation's streamed-to-plain fallback below.
-        console.error("Browser-Transkription fehlgeschlagen, falle auf Server zurück.", error);
-      }
-    }
-    return publicChatApi.transcribe(slug, blob, initialPrompt);
-  }
-
+  // Server fallback: transcribes one segment (see watchForSpeechPauses) via the backend and
+  // appends the result to the visible input box; on the final segment (mic button released),
+  // sends the full accumulated text instead — no manual send click needed. Always called chained
+  // onto transcriptionChainRef (see startSegmentRecorder) so segments never read/reset
+  // transcriptSoFarRef out of order relative to each other.
   async function transcribeSegment(blob: Blob, isFinal: boolean) {
     if (blob.size > 0) {
       try {
         const initialPrompt = transcriptSoFarRef.current.slice(-MAX_INITIAL_PROMPT_CHARS) || undefined;
-        const res = await transcribeViaBrowserOrServer(blob, initialPrompt);
+        const res = await publicChatApi.transcribe(slug, blob, initialPrompt);
         if (res.sttMs != null) {
           segmentSttMsSumRef.current = (segmentSttMsSumRef.current ?? 0) + res.sttMs;
         }
@@ -741,6 +744,70 @@ export function PublicChatPage() {
     startSegmentRecorder(stream); // continue recording the next one right away
   }
 
+  // Shows the live transcript after whatever was already typed before the recording started.
+  function showLiveTranscript(text: string) {
+    setInput(`${inputBeforeRecordingRef.current} ${text}`.trim());
+  }
+
+  // On-device path of toggleRecording: the transcript grows in the composer while the student
+  // speaks, and the final text is sent as soon as the model has decoded the last bit of audio.
+  // Returns false if audio capture couldn't be set up, so the caller can use the server instead;
+  // a microphone error (permission denied, ...) is thrown like in the server path.
+  async function startStreamingRecording(engine: ParakeetSttEngine): Promise<boolean> {
+    // Created before awaiting the mic permission, while still inside the click — Safari starts an
+    // AudioContext created later in the async chain as "suspended", so it would capture nothing.
+    const audioContext = new AudioContext();
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+    } catch (error) {
+      void audioContext.close();
+      throw error;
+    }
+    try {
+      inputBeforeRecordingRef.current = input.trim();
+      streamingSessionRef.current = await engine.startStreaming(stream, audioContext, showLiveTranscript);
+    } catch (error) {
+      console.error("On-device audio capture failed, using server transcription instead.", error);
+      engine.status = "error";
+      stream.getTracks().forEach((track) => track.stop());
+      void audioContext.close();
+      return false;
+    }
+    recordingStreamRef.current = stream;
+    avatarRef.current?.startListening(stream);
+    setIsRecording(true);
+    return true;
+  }
+
+  async function stopStreamingRecording(session: StreamingSession) {
+    streamingSessionRef.current = null;
+    setIsFinalizingRecording(true);
+    avatarRef.current?.stopListening();
+    setIsRecording(false);
+    const micStopAt = latencyRef.current?.micStopAt;
+    try {
+      const { text, finalizeMs } = await session.stop();
+      if (text.trim()) {
+        sendMessage(text, micStopAt != null ? { micStopAt, sttMs: finalizeMs } : undefined);
+      } else {
+        setInput(inputBeforeRecordingRef.current);
+      }
+    } catch (error) {
+      // The model failed mid-recording; the engine has switched itself off, so the next
+      // recording goes through the server instead.
+      console.error("On-device transcription failed.", error);
+      setInput(inputBeforeRecordingRef.current);
+      setMessages((prev) => [...prev, { role: "system", content: t("publicChat.onDeviceSttFailed") }]);
+    } finally {
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+      setIsFinalizingRecording(false);
+    }
+  }
+
   // Funktion für Sprachaufnahme im Browser
   async function toggleRecording() {
     // Wird bereits aufgenommen -> Aufnahme stoppen
@@ -748,6 +815,10 @@ export function PublicChatPage() {
       // Frühestmöglicher, eindeutiger "Sprechende"-Zeitpunkt (Klick-Handler) fürs Latenz-Log —
       // Erfassen ist praktisch kostenlos, daher immer, nicht nur wenn latencyTestEnabled.
       latencyRef.current = { micStopAt: performance.now() };
+      if (streamingSessionRef.current) {
+        void stopStreamingRecording(streamingSessionRef.current);
+        return;
+      }
       // Captures the exact recorder instance being stopped — see finalRecorderRef's own comment
       // for why this can't be a plain boolean shared across every segment's onstop handler.
       finalRecorderRef.current = mediaRecorderRef.current;
@@ -766,10 +837,9 @@ export function PublicChatPage() {
     if (sendMutation.isPending) return;
     // Wird nicht aufgenommen, Erlaubnis fürs Gerät einholen, aufnehmen und transkribieren
     setMicErrorKey(null);
-    // The browser-side Whisper model (if any) is already warming up well before this point — see
-    // the dedicated effect below, triggered as soon as the visitor passes any password/name gate
-    // rather than waiting for a first recording — so there's nothing to kick off here anymore.
     try {
+      const engine = sttEngineRef.current;
+      if (engine?.status === "ready" && (await startStreamingRecording(engine))) return;
       // Mikrofonanfrage mit warten auf Erlaubnis. echoCancellation/noiseSuppression requested
       // explicitly rather than left to the browser's own default — bare booleans (not wrapped in
       // `exact`) are "ideal" constraints per the Media Capture spec, so a device that can't honor
@@ -787,19 +857,12 @@ export function PublicChatPage() {
       finalRecorderRef.current = null;
       transcriptionChainRef.current = Promise.resolve();
       recordingHadFailureRef.current = false;
-      sttSilenceThresholdRef.current = FALLBACK_SILENCE_RMS_THRESHOLD;
       startSegmentRecorder(stream);
-      stopWatchingPausesRef.current = watchForSpeechPauses(
-        stream,
-        () => {
-          if (performance.now() - segmentStartedAtRef.current >= RECORDING_SEGMENT_MIN_MS) {
-            cutSegment();
-          }
-        },
-        (threshold) => {
-          sttSilenceThresholdRef.current = threshold;
-        },
-      );
+      stopWatchingPausesRef.current = watchForSpeechPauses(stream, () => {
+        if (performance.now() - segmentStartedAtRef.current >= RECORDING_SEGMENT_MIN_MS) {
+          cutSegment();
+        }
+      });
       setIsRecording(true);
     } catch (error) {
       console.error("Mikrofonzugriff fehlgeschlagen.", error);
@@ -923,34 +986,36 @@ export function PublicChatPage() {
     };
   }, []);
 
-  // Warms up the browser-side Whisper model as soon as the visitor has passed any password/name
-  // gate — not on the very first paint of a locked/name-gated page (a visitor who never actually
-  // unlocks it, or leaves at the name prompt, would otherwise have started a multi-hundred-MB
-  // download for nothing), but well before the chat itself, not deferred until a first recording
-  // either. With a pre-chat survey configured, this gives the whole time the visitor spends
-  // filling it out for the download to finish in the background, so voice input is already fast
-  // by the time they reach the chat.
+  // Starts loading the on-device speech recognition model as soon as the visitor has passed any
+  // password/name gate — not before (a visitor who never unlocks the page or leaves at the name
+  // prompt would otherwise have started a ~170 MB download for nothing), but before the chat
+  // itself: with a pre-chat survey configured, the download runs while the visitor fills it out.
+  // The chat waits behind a loading screen until this settles (see the "chat" stage below).
   useEffect(() => {
     const tutor = tutorQuery.data;
-    if (!tutor?.browserSttModel) return;
+    if (!tutor?.sttEnabled || !tutor.browserSttModelUrl) return;
     if (tutor.passwordProtected && !tutor.unlocked) return;
     if (tutor.requireVisitorName && !visitorNameProvided) return;
-    if (browserSttEngineRef.current?.model === tutor.browserSttModel) return;
-    browserSttEngineRef.current?.dispose();
-    browserSttEngineRef.current = new BrowserSttEngine(tutor.browserSttModel);
-    setBrowserSttLoadPercent(0);
-    void browserSttEngineRef.current
-      .ensureReady((percent) => setBrowserSttLoadPercent(percent))
-      // Resolves on "unsupported"/"error" too (see BrowserSttEngine.ensureReady's own doc
-      // comment) — nothing left to show a download bar for either way once this settles.
-      .then(() => setBrowserSttLoadPercent(null));
-  }, [tutorQuery.data, visitorNameProvided]);
+    if (sttEngineRef.current?.modelUrl === tutor.browserSttModelUrl) return;
+    sttEngineRef.current?.dispose();
+    const engine = new ParakeetSttEngine(tutor.browserSttModelUrl);
+    sttEngineRef.current = engine;
+    setSttLoadProgress({ loadedBytes: 0, totalBytes: 0 });
+    void engine
+      .ensureReady((progress) => setSttLoadProgress(progress))
+      .then(() => {
+        setSttLoadProgress(null);
+        // No WebGPU, or the model failed to load: voice input still works, through the server.
+        if (engine.status !== "ready") {
+          setMessages((prev) => [...prev, { role: "system", content: t("publicChat.sttFallbackNotice") }]);
+        }
+      });
+  }, [tutorQuery.data, visitorNameProvided, t]);
 
-  // Terminates the Whisper worker (if one was ever built, see the warm-up effect above) on
-  // unmount — leaving it running would keep its loaded model in memory for a tab that's no longer
-  // showing this chat at all.
+  // Terminates the speech recognition worker on unmount — leaving it running would keep the
+  // loaded model in memory for a tab that's no longer showing this chat at all.
   useEffect(() => {
-    return () => browserSttEngineRef.current?.dispose();
+    return () => sttEngineRef.current?.dispose();
   }, []);
 
   if (tutorQuery.isLoading) {
@@ -1135,7 +1200,9 @@ export function PublicChatPage() {
         />
       )}
 
-      {stage === "chat" && (
+      {stage === "chat" && sttLoadProgress && <SttLoadingScreen progress={sttLoadProgress} />}
+
+      {stage === "chat" && !sttLoadProgress && (
         <div className={styles.body}>
           <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
             <TalkingHeadAvatar
@@ -1282,28 +1349,6 @@ export function PublicChatPage() {
               {micErrorKey && (
                 <div className={styles.notice}>
                   <Callout variant="warning">{t(micErrorKey)}</Callout>
-                </div>
-              )}
-
-              {/* Shown for as long as the browser-side Whisper model is still downloading (see
-                  toggleRecording) — independent of isRecording, since the download keeps running
-                  in the background across recordings until it either finishes or gives up. */}
-              {browserSttLoadPercent != null && (
-                <div className={styles.notice}>
-                  <div
-                    className={styles.sttLoadingBar}
-                    role="progressbar"
-                    aria-valuenow={Math.round(browserSttLoadPercent)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  >
-                    <span className={styles.sttLoadingLabel}>
-                      {t("publicChat.loadingLocalStt", { percent: Math.round(browserSttLoadPercent) })}
-                    </span>
-                    <div className={styles.sttLoadingTrack}>
-                      <div className={styles.sttLoadingFill} style={{ width: `${browserSttLoadPercent}%` }} />
-                    </div>
-                  </div>
                 </div>
               )}
 

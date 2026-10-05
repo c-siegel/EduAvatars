@@ -178,6 +178,14 @@ npm run dev
 ```
 The app is now available at `http://localhost:5173` and proxies `/api/*` requests to the backend.
 
+**3. Speech recognition model** (optional, ~380 MB on disk): voice input is transcribed on the
+visitor's own device by default, from model files the app hosts itself. Download them once with
+```bash
+scripts/fetch-stt-model.sh   # writes ./models, which the Vite dev server serves at /models/
+```
+Without them, voice input still works — the browser fails to load the model and falls back to
+transcribing on the server.
+
 ### Local text-to-speech (optional)
 
 By default, projects that leave the TTS key unset simply get no speech output (unlike voice
@@ -225,8 +233,9 @@ The example `docker-compose.yml` pulls prebuilt images (`chsiegel/eduavatars:fro
 
 Every project picks its own LLM (large language model, for generating replies) and, optionally,
 its own TTS (text-to-speech) voice — each user connects these with their own API key under
-"API Keys" in the dashboard. STT (speech-to-text, for voice input) is handled instance-wide by a
-bundled offline model, so it needs no key from anyone; TTS can optionally work the same way if
+"API Keys" in the dashboard. STT (speech-to-text, for voice input) needs no key from anyone: it
+runs on the visitor's own device (Parakeet Redux via WebGPU, with live text while speaking), and
+on a device that can't run it, falls back to a bundled offline model on the server; TTS can optionally work the same way if
 the deployment runs the [local-TTS sidecar](#local-text-to-speech-optional) — leave a project's
 TTS key unset and it falls back to that instead of producing no audio.
 
@@ -259,7 +268,7 @@ a "bring your own endpoint" field.
 | Database | SQLite via SQLModel/SQLAlchemy, migrations with Alembic |
 | Auth | JWT (JSON Web Tokens) + bcrypt password hashing |
 | LLM / TTS providers | [litellm](https://github.com/BerriAI/litellm) (provider-agnostic client) |
-| Speech-to-text | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), runs in the backend process |
+| Speech-to-text | [Parakeet Redux](https://huggingface.co/moondream/parakeet-redux) on the visitor's device via [onnxruntime-web](https://onnxruntime.ai/) + WebGPU (default, live text while speaking); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) in the backend process as the fallback |
 | Local text-to-speech (optional) | [sopro](https://github.com/samuel-vitorino/sopro), runs in its own sidecar process (see `local-tts/`) |
 | Frontend framework | React 18 + TypeScript, built with Vite |
 | 3D avatar rendering | three.js + [@met4citizen/talkinghead](https://github.com/met4citizen/TalkingHead) |
@@ -288,9 +297,10 @@ EduAvatars itself does not phone home or share data with its developers. User ac
 project settings, and conversation records stay on whichever server you (or your institution)
 deploy the app to — see [Deploy B](#deploy-b-docker-production) for running your own instance.
 
-This does **not** mean conversations stay fully private: every chat message (and, for voice
-input, the audio) is sent to whichever third-party AI provider that project is configured to
-use — see [Supported AI providers](#supported-ai-providers) — since that's what generates the
+This does **not** mean conversations stay fully private: every chat message is sent to whichever
+third-party AI provider that project is configured to use (voice input is transcribed on the
+visitor's device by default, so the audio itself only leaves it on the server fallback, or with
+a project-configured cloud STT key) — see [Supported AI providers](#supported-ai-providers) — since that's what generates the
 avatar's replies. That provider's own data-handling terms apply to that traffic, independent of
 where you host EduAvatars itself. Password-reset emails (only if you configure SMTP) are the
 only other outbound traffic the backend generates on its own.

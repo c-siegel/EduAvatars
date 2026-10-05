@@ -1,5 +1,5 @@
-// Shared microphone-level math for the voice-input pipeline (pages/PublicChat/index.tsx,
-// lib/browserStt.ts): computing RMS (root mean square, the standard measure of a signal's
+// Microphone-level math for the server-transcription fallback's pause detection
+// (pages/PublicChat/index.tsx): computing RMS (root mean square, the standard measure of a signal's
 // average loudness) from raw samples, and turning a short ambient-noise measurement into a
 // "count this as silence" threshold — instead of one hardcoded number. A fixed threshold can't
 // work across real devices: mic sensitivity alone can differ by 10-20dB between a cheap

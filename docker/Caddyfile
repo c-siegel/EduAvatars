@@ -41,6 +41,22 @@ http://{$SITE_ADDRESS} {
 			header Content-Type application/javascript*
 			header Content-Type application/json*
 			header Content-Type image/svg+xml*
+			# onnxruntime-web's ~27 MB WebAssembly runtime for on-device speech recognition
+			# (frontend/src/workers/parakeetWorker.ts) shrinks to ~6 MB.
+			header Content-Type application/wasm*
+		}
+	}
+
+	# On-device speech recognition model (see scripts/fetch-stt-model.sh), mounted read-only from
+	# the data directory by docker-compose.yml. Every file sits next to a .gz copy the script made
+	# once, and `precompressed` sends that copy to any browser that accepts gzip: ~170 MB instead of
+	# ~380 MB per device, without compressing anything per request. The version is part of the
+	# path, so a file never changes under its URL and may be cached forever.
+	handle /models/* {
+		root * /
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server {
+			precompressed gzip
 		}
 	}
 

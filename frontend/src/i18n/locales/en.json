@@ -85,7 +85,14 @@
     "recordingFailed": "Part of your voice message could not be transmitted — it may be incomplete.",
     "micPermissionDenied": "Microphone access was denied. Allow it in your browser's site settings to use voice input.",
     "micUnavailable": "Voice input isn't available — no microphone was found, or it's already in use.",
-    "loadingLocalStt": "Preparing on-device speech recognition ({{percent}}%)…",
+    "sttLoading": {
+      "title": "Preparing speech recognition",
+      "description": "Your voice messages are recognized directly on this device, so your recordings stay here. The model is downloaded once and then stored for your next visit.",
+      "progress": "Downloading… {{percent}}%",
+      "preparing": "Almost ready…"
+    },
+    "sttFallbackNotice": "Speech recognition can't run on this device, so your voice messages are processed on the server instead.",
+    "onDeviceSttFailed": "Speech recognition stopped working on this device, so this voice message was lost. Please record it again — it will now be processed on the server.",
     "messageFailed": "Your message could not be sent. Please try again.",
     "editMessage": "Edit message",
     "regenerateMessage": "Regenerate response",
@@ -297,8 +304,8 @@
       "sttKey": "STT key",
       "sttKeyDefault": "Built-in (local Whisper)",
       "sttKeyHint": "Optional — without a key, voice messages are transcribed locally on this server. Add a key of type STT under API keys to use GWDG SAIA instead.",
-      "sttBrowserTitle": "On-device transcription (WebGPU)",
-      "sttBrowserText": "Voice messages are processed directly on the visitor's own device instead of the server — faster, and takes priority over a configured STT key. Needs a modern browser with WebGPU and a one-time model download per device; without that, it automatically falls back to the key or local Whisper as usual.",
+      "sttBrowserTitle": "On-device speech recognition (recommended)",
+      "sttBrowserText": "Voice messages are recognized on the visitor's own device with live text while they speak, so recordings never leave it. Each device downloads the model once (about 170 MB) before the chat opens. Devices without WebGPU automatically use the STT key or the server's Whisper instead.",
       "streamingTitle": "Streamed replies",
       "streamingText": "The avatar starts speaking after the first sentence instead of waiting for the full reply. Off by default."
     },
@@ -528,6 +535,23 @@
       "credits": "Credits"
     }
   },
+  "sttTest": {
+    "title": "Speech recognition device test",
+    "intro": "Loads the on-device speech recognition model and measures how fast it runs on this device. Nothing is sent to the server.",
+    "status": "Status: {{status}}",
+    "loadTime": "Model ready after {{seconds}} s",
+    "error": "Error: {{message}}",
+    "startMic": "Record from microphone",
+    "stop": "Stop",
+    "playFile": "Play an audio file through the recognizer",
+    "partial": "Live text",
+    "final": "Final text",
+    "firstPartial": "First text after",
+    "decode": "Re-decode time (last / average / max)",
+    "decodedAudio": "Audio length of last re-decode",
+    "finalize": "Time from stop to final text",
+    "copy": "Copy results"
+  },
   "credits": {
     "title": "Credits & Licenses",
     "subtitle": "Thanks to all the projects and libraries that make EduAvatars possible",
@@ -542,6 +566,14 @@
         "description": "Real-time, audio-based viseme detection for precise lip-sync",
         "note": "The model was trained on English voices. Recognition quality for German-language audio is unverified."
       }
+    },
+    "speech": {
+      "title": "Speech Recognition",
+      "parakeet": {
+        "description": "Multilingual speech recognition model that runs on the visitor's device (ternary version of NVIDIA's Parakeet TDT 0.6B v3)",
+        "note": "Original model by NVIDIA, ternary version by Moondream, ONNX export by eschmidbauer and mrfakename. Used unchanged; the files are only re-compressed for delivery."
+      },
+      "onnxRuntime": { "description": "Runs the speech recognition model in the browser via WebGPU and WebAssembly" }
     },
     "fonts": {
       "title": "Fonts",

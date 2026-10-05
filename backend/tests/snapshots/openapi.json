@@ -1756,7 +1756,7 @@
             ],
             "title": "Avatarmodelurl"
           },
-          "browserSttModel": {
+          "browserSttModelUrl": {
             "anyOf": [
               {
                 "type": "string"
@@ -1765,7 +1765,7 @@
                 "type": "null"
               }
             ],
-            "title": "Browsersttmodel"
+            "title": "Browsersttmodelurl"
           },
           "chatDefaultOpen": {
             "default": true,

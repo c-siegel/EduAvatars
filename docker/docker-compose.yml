@@ -19,6 +19,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    volumes:
+      # On-device speech recognition model, served by Caddy at /models/ (see Caddyfile). Filled
+      # once by `scripts/fetch-stt-model.sh "$EDUAVATARS_DATA_DIR/models"` — see docker/README.md.
+      - ${EDUAVATARS_DATA_DIR}/models:/models:ro
 
   backend:
     image: chsiegel/eduavatars:backend

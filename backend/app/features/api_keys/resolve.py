@@ -2,9 +2,9 @@
 Resolving a Project's API Keys
 
 Looks up which of a user's stored API keys a project should actually use for its LLM/TTS calls,
-and works out the endpoint override (if any) to pass to litellm. Also decides which (if any)
-browser-side transcription model a project should use — the STT counterpart to a resolved key,
-just picked from Settings instead of the database. Kept central so the chat pipeline
+and works out the endpoint override (if any) to pass to litellm. Also decides whether a project
+transcribes on the visitor's device — the STT counterpart to a resolved key, just picked from
+Settings instead of the database. Kept central so the chat pipeline
 (app/features/chat/pipeline.py), the transcribe routes, and start-audio generation never
 duplicate this logic.
 
@@ -102,20 +102,17 @@ def resolve_stt_key(session: Session, project: Project) -> UserApiKey | None:
     return None
 
 
-def browser_stt_model_for(project: Project) -> str | None:
-    """The transformers.js model id the visitor's browser should load for on-device (WebGPU)
-    transcription, or None if browser transcription isn't available for this project at all.
+def browser_stt_model_url_for(project: Project) -> str | None:
+    """Base URL of the on-device (WebGPU) transcription model the visitor's browser should load,
+    or None if this project transcribes on the server only.
 
-    None unless BOTH the deployment (Settings.browser_stt_enabled) and the project itself
-    (project.stt_browser_enabled, a per-project Configurator checkbox) opt in — the deployment
-    flag alone changes nothing for a project that hasn't turned this on, and vice versa. When
-    both are on, the model choice still depends on project.spoken_language (see
-    Settings.browser_stt_model_de/_en): the frontend never needs to know either setting exists,
-    it just loads whatever id comes back here.
+    None if the deployment turned it off (Settings.browser_stt_enabled), the project opted out
+    (project.stt_browser_enabled, on by default), or voice input is off for the project. The
+    model is multilingual, so unlike server Whisper it doesn't depend on spoken_language.
     """
     if not (settings.browser_stt_enabled and project.stt_enabled and project.stt_browser_enabled):
         return None
-    return settings.browser_stt_model_de if project.spoken_language == "de" else settings.browser_stt_model_en
+    return settings.browser_stt_model_url
 
 
 def effective_api_base(key: UserApiKey) -> str | None:
