@@ -21,6 +21,10 @@ fi
 mkdir -p "${AVATAR_UPLOAD_DIR:-uploads/avatars}" "${PROFILE_PICTURE_UPLOAD_DIR:-uploads/profile-pictures}" \
   "${AVATAR_THUMBNAIL_UPLOAD_DIR:-uploads/avatar-thumbnails}" "${BACKGROUND_UPLOAD_DIR:-uploads/backgrounds}" \
   "${STT_MODEL_CACHE_DIR:-whisper-cache}"
+# The on-device speech recognition model's folder, bind-mounted by the web and stt-model services
+# (see docker-compose.yml). Created here so the chown below covers it: if Docker created it first,
+# while starting one of those services, it would belong to root and stt-model couldn't write to it.
+mkdir -p /data/models
 
 # Re-applied on every start, not just once at image build time — /data is a bind mount, so its
 # actual on-disk ownership is independent of whatever the image expects, and changes if PUID/PGID

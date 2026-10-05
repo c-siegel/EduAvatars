@@ -100,7 +100,9 @@ already an admin), so the values are safe to leave in `.env` indefinitely.
 defaults to UID/GID 568 (TrueNAS's built-in "apps" user) and won't have write access to a data
 directory owned by anyone else. The backend's entrypoint adjusts its in-container user to match at
 every start (see `backend-entrypoint.sh`), so the image itself doesn't need rebuilding for a
-different host.
+different host. The `web` and `stt-model` containers run as the same UID/GID, so they can read and
+write the speech recognition model in `<EDUAVATARS_DATA_DIR>/models` even where only that
+user/group has access (as on a TrueNAS dataset).
 
 ## Deploying behind another reverse proxy
 

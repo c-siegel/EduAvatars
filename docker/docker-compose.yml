@@ -3,6 +3,10 @@ services:
     image: chsiegel/eduavatars:frontend
     pull_policy: always
     env_file: ../.env
+    # Same user as the backend's files (see PUID/PGID in .env.example), so Caddy can read the
+    # speech recognition model even on storage that only grants access to that user/group, like a
+    # TrueNAS dataset — any other user would get 403 for every model file.
+    user: "${PUID:-568}:${PGID:-568}"
     ports:
       - "30080:80"
     depends_on:
@@ -32,9 +36,12 @@ services:
     image: chsiegel/eduavatars:frontend
     pull_policy: always
     entrypoint: ["fetch-stt-model", "/models"]
-    # Root, so it can write into a models/ folder Docker created on the host as root. The files it
-    # writes are world-readable, which is all the web container needs.
-    user: root
+    user: "${PUID:-568}:${PGID:-568}"
+    depends_on:
+      # The backend's entrypoint creates models/ and hands it to PUID:PGID — before that, this
+      # user may not be allowed to write there.
+      backend:
+        condition: service_healthy
     volumes:
       - ${EDUAVATARS_DATA_DIR}/models:/models
     restart: "no"
