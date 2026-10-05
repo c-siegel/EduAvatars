@@ -203,10 +203,11 @@ def send_message_stream(
     context = prepare_chat(session, project)
     if context is None:
         raise HTTPException(status_code=503, detail=ErrorCode.CHAT_UNAVAILABLE)
+    # Same reason as in send_message, only more so: a streamed reply runs for the LLM call plus
+    # every sentence's TTS. Everything the stream needs was read into `context` up front, and
+    # saving opens its own session, so nothing touches `session` after this.
+    session.close()
 
-    # Everything the stream needs was read into `context` up front, and saving opens its own
-    # session — the request-scoped `session` above must not be touched once we return the
-    # streaming response, since its teardown relative to a streamed body is fragile.
     streaming = StreamingResponse(
         (sse_event(event, payload) for event, payload in stream_turn(context, turn)),
         media_type="text/event-stream",

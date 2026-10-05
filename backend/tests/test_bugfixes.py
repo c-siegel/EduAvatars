@@ -315,3 +315,56 @@ def test_migrations_produce_exactly_the_models_schema(tmp_path, monkeypatch):
 
     command.upgrade(config, "head")
     command.check(config)  # raises if autogenerate would still add anything, e.g. a missing foreign key
+
+
+# ==================== A streamed reply doesn't hold a DB connection ====================
+
+
+def test_streamed_reply_returns_its_db_connection_before_streaming(fake_ai, monkeypatch, tmp_path):
+    from sqlmodel import SQLModel, create_engine
+
+    from app.core import rate_limit
+    from app.core.config import settings
+    from app.db.session import get_session
+    from app.features.chat import public_router
+    from app.main import app
+    from conftest import ENGINE_TARGETS, UPLOAD_DIR_SETTINGS
+
+    # The in-memory test engine's StaticPool always reports one shared connection, so this test
+    # needs a real pool: a file-based SQLite engine wired up like the `client` fixture does.
+    file_engine = create_engine(f"sqlite:///{tmp_path / 'pool.db'}", connect_args={"check_same_thread": False})
+    SQLModel.metadata.create_all(file_engine)
+
+    def _get_session():
+        with Session(file_engine) as session:
+            yield session
+
+    for target in ENGINE_TARGETS:
+        monkeypatch.setattr(target, file_engine)
+    for name in UPLOAD_DIR_SETTINGS:
+        monkeypatch.setattr(settings, name, str(tmp_path / name))
+    rate_limit._hits.clear()
+    app.dependency_overrides[get_session] = _get_session
+    try:
+        teacher = login_as(new_client(), make_user(file_engine))
+        llm_key = create_key(teacher)
+        project = create_project(teacher, llmApiKeyId=llm_key["id"], saveConversations=True)
+        slug = publish(teacher, project["id"])
+
+        checked_out_while_streaming: list[int] = []
+        real_stream_turn = public_router.stream_turn
+
+        def recording_stream_turn(*args, **kwargs):
+            checked_out_while_streaming.append(file_engine.pool.checkedout())
+            yield from real_stream_turn(*args, **kwargs)
+
+        monkeypatch.setattr(public_router, "stream_turn", recording_stream_turn)
+        response = new_client().post(f"/public/{slug}/messages/stream", json={"message": "Hi"})
+
+        assert parse_sse(response.text)[-1][0] == "done"
+        assert checked_out_while_streaming == [0]
+        assert teacher.get("/conversations").json()["total"] == 1  # saving still works
+    finally:
+        app.dependency_overrides.clear()
+        rate_limit._hits.clear()
+        file_engine.dispose()
