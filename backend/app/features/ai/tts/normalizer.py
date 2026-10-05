@@ -11,7 +11,7 @@ em dash, and chemical formulas like CO2 all look right in the chat but are misre
 handed to the TTS engine; the reply stored and displayed in the chat keeps its original formatting.
 
 How to use:
-    from app.services.speech_text_normalizer import normalize_for_speech
+    from app.features.ai.tts.normalizer import normalize_for_speech
 
     spoken_text = normalize_for_speech(reply_text, language=project.spoken_language)
 """

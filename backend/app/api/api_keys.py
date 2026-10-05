@@ -30,12 +30,12 @@ from app.models.schemas.api_key import (
     ProviderSpecOut,
 )
 from app.models.user import User
-from app.services.api_key_service import get_key_by_id
+from app.features.api_keys.resolve import get_key_by_id
 from app.services.crypto_service import mask_key, scrub_key_from_text, store_api_key
 from app.services.project_service import sync_llm_model
-from app.services.llm_service import test_api_key
-from app.services.stt_service import test_stt_key
-from app.services.tts_service import VoiceRequiredError, synthesize_speech
+from app.features.ai.llm import get_llm_client
+from app.features.ai.stt import get_stt_client
+from app.features.ai.tts import VoiceRequiredError, synthesize_speech
 
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
@@ -243,9 +243,9 @@ def test_key(
         if key.key_type == KEY_TYPE_TTS:
             synthesize_speech("Test", None, key)
         elif key.key_type == KEY_TYPE_STT:
-            test_stt_key(key)
+            get_stt_client(key).test()
         else:
-            test_api_key(key)
+            get_llm_client(key).test()
         key.status = "active"
     except VoiceRequiredError:
         # Some providers (Cartesia; also "openai_compatible" via litellm) require a voice for

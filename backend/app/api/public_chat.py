@@ -46,12 +46,12 @@ from app.models.schemas.chat import (
 )
 from app.models.schemas.speech import TranscriptionOut
 from app.models.user import User
-from app.services.api_key_service import resolve_llm_key, resolve_stt_key, resolve_tts_key
+from app.features.api_keys.resolve import resolve_llm_key, resolve_stt_key, resolve_tts_key
 from app.services.chat_password_service import assert_unlocked, is_unlocked, issue_unlock_token, verify_chat_password
-from app.services.llm_service import _strip_arcana_references, send_chat_message, stream_chat_message
-from app.services.stt_service import transcribe_audio
+from app.features.ai import llm
+from app.features.ai.stt import transcribe_audio
+from app.features.ai.tts import synthesize_speech
 from app.services.text_chunk_service import SentenceChunker
-from app.services.tts_service import synthesize_speech
 from app.services.visitor_name_service import assert_visitor_name_provided, clean_visitor_name
 from app.services.visitor_service import log_access
 
@@ -262,7 +262,9 @@ def send_message(
     # the default UI, just extra fields riding along in the response.
     llm_start = time.perf_counter()
     try:
-        reply = send_chat_message(preprompt, data.message, api_key, temperature, top_p, start_prompt, history)
+        reply = llm.complete(
+            api_key, llm.ChatRequest(preprompt, data.message, temperature, top_p, start_prompt, history)
+        )
     except Exception as exc:
         logger.exception("LLM-Anfrage fehlgeschlagen (project_id=%s)", project_id)
         raise HTTPException(status_code=503, detail=ErrorCode.CHAT_UNAVAILABLE) from exc
@@ -400,8 +402,8 @@ def send_message_stream(
 
         llm_error: Exception | None = None
         try:
-            for delta in stream_chat_message(
-                preprompt, user_message, api_key, temperature, top_p, start_prompt, history
+            for delta in llm.stream(
+                api_key, llm.ChatRequest(preprompt, user_message, temperature, top_p, start_prompt, history)
             ):
                 full_text_parts.append(delta)
                 for chunk in chunker.feed(delta):
@@ -437,7 +439,7 @@ def send_message_stream(
 
         # Belt and braces: if ArcanaReferenceGuard ever leaked, the saved transcript and the
         # final text sent to the client still come out clean.
-        full_reply = _strip_arcana_references("".join(full_text_parts).strip())
+        full_reply = llm.strip_arcana_references("".join(full_text_parts).strip())
 
         if save_conversations:
             try:

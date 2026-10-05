@@ -6,7 +6,7 @@ and works out the endpoint override (if any) to pass to litellm. Kept central so
 app/api/projects.py and app/api/public_chat.py never duplicate this logic.
 
 How to use:
-    from app.services.api_key_service import resolve_llm_key
+    from app.features.api_keys.resolve import resolve_llm_key
 
     api_key = resolve_llm_key(session, project)
 """

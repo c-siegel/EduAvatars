@@ -38,13 +38,15 @@ from app.models.schemas.project import (
 from app.models.schemas.speech import TranscriptionOut
 from app.models.user import User
 from app.services.analytics_service import get_stats as get_analytics_stats
-from app.services.api_key_service import (
+from app.features.api_keys.resolve import (
     get_owned_key_of_type,
     resolve_llm_key,
     resolve_stt_key,
     resolve_tts_key,
 )
-from app.services.llm_service import send_chat_message
+from app.features.ai import llm
+from app.features.ai.stt import transcribe_audio
+from app.features.ai.tts import synthesize_speech
 from app.services.project_export_service import (
     MAX_IMPORT_UPLOAD_BYTES,
     ProjectImportError,
@@ -62,8 +64,6 @@ from app.services.project_service import (
 )
 from app.services.crypto_service import scrub_key_from_text
 from app.services.publish_service import publish_project, unpublish_project
-from app.services.stt_service import transcribe_audio
-from app.services.tts_service import synthesize_speech
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -238,14 +238,16 @@ def preview_message(
         raise HTTPException(status_code=400, detail=ErrorCode.NO_LLM_MODEL_SELECTED)
     try:
         history = [{"role": h.role, "content": h.content} for h in data.history]
-        reply = send_chat_message(
-            project.preprompt or "",
-            data.message,
+        reply = llm.complete(
             api_key,
-            project.temperature,
-            project.top_p,
-            project.start_prompt,
-            history,
+            llm.ChatRequest(
+                project.preprompt or "",
+                data.message,
+                project.temperature,
+                project.top_p,
+                project.start_prompt,
+                history,
+            ),
         )
     except Exception as exc:
         # This is the user's own context (the configurator) — the concrete error message helps

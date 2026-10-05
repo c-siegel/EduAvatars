@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.speech_text_normalizer import normalize_for_speech
+from app.features.ai.tts.normalizer import normalize_for_speech
 
 
 @pytest.mark.parametrize(

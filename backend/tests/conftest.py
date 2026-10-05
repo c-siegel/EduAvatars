@@ -36,7 +36,7 @@ from app.models.user import User  # noqa: E402
 # with (outside the request-scoped get_session dependency) — redirected to the test engine.
 ENGINE_TARGETS = ["app.api.public_chat.engine"]
 # Where the local Whisper model is loaded (patched so no model is ever downloaded).
-STT_MODEL_TARGET = "app.services.stt_service._model"
+STT_MODEL_TARGET = "app.features.ai.stt.whisper_local._model"
 
 UPLOAD_DIR_SETTINGS = [
     "avatar_upload_dir",
