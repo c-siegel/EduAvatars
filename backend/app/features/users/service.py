@@ -16,6 +16,7 @@ How to use:
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -87,8 +88,29 @@ def get_user(session: Session, user_id: str) -> User:
     return user
 
 
+def find_user_by_email(session: Session, email: str) -> User | None:
+    """The account with this email, ignoring case.
+
+    New emails are stored lowercased (see features/auth/schemas.py::Email), but accounts created
+    before that may still hold mixed case — comparing lowercased on both sides finds those too.
+    """
+    return session.exec(select(User).where(func.lower(User.email) == email.lower())).first()
+
+
+def ensure_email_available(session: Session, email: str, exclude_user_id: str | None = None) -> None:
+    """Raise EmailAlreadyRegistered (HTTP 409) if another account already uses `email` in any case.
+
+    The database's unique constraint is case-sensitive, so on its own it would let "anna@…" in
+    next to an older "Anna@…" — this check closes that gap before every write.
+    """
+    existing = find_user_by_email(session, email)
+    if existing is not None and existing.id != exclude_user_id:
+        raise EmailAlreadyRegistered()
+
+
 def create_user_as_admin(session: Session, name: str, email: str, password: str, is_admin: bool) -> User:
     """Create a new account with an admin-set password — the new user must change it on first login."""
+    ensure_email_available(session, email)
     user = User(
         name=name,
         email=email,
@@ -141,6 +163,8 @@ def admin_update_user(session: Session, admin: User, target: User, data: dict) -
 
 def update_profile(session: Session, user: User, data: dict) -> User:
     """Apply a partial profile update (only the fields present in `data`)."""
+    if data.get("email"):
+        ensure_email_available(session, data["email"], exclude_user_id=user.id)
     for field, value in data.items():
         setattr(user, field, value)
     session.add(user)

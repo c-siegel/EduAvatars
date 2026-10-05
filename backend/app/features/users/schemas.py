@@ -6,16 +6,16 @@ Profile updates, password changes, and the admin dashboard's account management.
 
 from datetime import datetime
 
-from pydantic import EmailStr, field_validator
+from pydantic import field_validator
 
 from app.core.schema import CamelModel
-from app.features.auth.schemas import _validate_password_strength
+from app.features.auth.schemas import Email, _validate_password_strength
 
 
 class ProfileUpdate(CamelModel):
     name: str | None = None
     school: str | None = None
-    email: EmailStr | None = None
+    email: Email | None = None
 
 
 class PasswordChange(CamelModel):
@@ -43,7 +43,7 @@ class AdminUserOut(CamelModel):
 
 class AdminUserCreate(CamelModel):
     name: str
-    email: EmailStr
+    email: Email
     password: str
     is_admin: bool = False
 

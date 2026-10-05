@@ -13,7 +13,7 @@ How to use:
 """
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.error_codes import ErrorCode
 from app.core.errors import DomainError
@@ -21,7 +21,7 @@ from app.core.security import hash_password, verify_password
 from app.core.urls import profile_picture_url
 from app.features.auth.schemas import UserOut
 from app.features.users.models import User
-from app.features.users.service import EmailAlreadyRegistered
+from app.features.users.service import EmailAlreadyRegistered, ensure_email_available, find_user_by_email
 
 
 class AccountDisabled(DomainError):
@@ -31,6 +31,7 @@ class AccountDisabled(DomainError):
 
 def register_user(session: Session, name: str, email: str, password: str) -> User:
     """Create a new user with a hashed password; raises EmailAlreadyRegistered (HTTP 409) for a taken email."""
+    ensure_email_available(session, email)
     user = User(name=name, email=email, password_hash=hash_password(password))
     session.add(user)
     try:
@@ -50,7 +51,7 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
     User.enabled), leaving the user stuck on a dashboard that keeps logging them out. Only
     reachable with the right password, so it doesn't reveal which accounts exist.
     """
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = find_user_by_email(session, email)
     if user is None or not verify_password(password, user.password_hash):
         return None
     if not user.enabled:

@@ -9,11 +9,17 @@ How to use:
 """
 
 import re
+from typing import Annotated
 
-from pydantic import EmailStr, field_validator
+from pydantic import AfterValidator, EmailStr, field_validator
 
 from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
+
+# Every email the API accepts is stored and compared lowercased, so "Anna@schule.de" and
+# "anna@schule.de" are one account (lookups also compare case-insensitively, for accounts created
+# before this normalization — see features/users/service.py::find_user_by_email).
+Email = Annotated[EmailStr, AfterValidator(str.lower)]
 
 MIN_PASSWORD_LENGTH = 10
 MAX_PASSWORD_BYTES = 72  # bcrypt's limit — above this, bcrypt raises an error instead of truncating
@@ -45,7 +51,7 @@ def _cap_password_bytes(password: str) -> str:
 
 
 class LoginRequest(CamelModel):
-    email: EmailStr
+    email: Email
     password: str
 
     @field_validator("password")
@@ -56,7 +62,7 @@ class LoginRequest(CamelModel):
 
 class RegisterRequest(CamelModel):
     name: str
-    email: EmailStr
+    email: Email
     password: str
 
     @field_validator("password")
@@ -82,7 +88,7 @@ class RegistrationStatusOut(CamelModel):
 
 
 class ForgotPasswordRequest(CamelModel):
-    email: EmailStr
+    email: Email
 
 
 class ResetPasswordRequest(CamelModel):

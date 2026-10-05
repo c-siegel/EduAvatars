@@ -21,6 +21,7 @@ from app.core.security import hash_password
 from app.features.auth.email import send_password_reset_email
 from app.features.auth.models import PasswordResetToken
 from app.features.users.models import User
+from app.features.users.service import find_user_by_email
 
 
 def _hash_token(raw_token: str) -> str:
@@ -31,7 +32,7 @@ def request_password_reset(session: Session, email: str) -> None:
     """Issue a password-reset token and email the reset link, if an account with `email` exists."""
     # Always responds the same way to the caller (see features/auth/router.py), whether or not the email
     # exists — this prevents using it to enumerate registered accounts.
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = find_user_by_email(session, email)
     if user is None or not user.enabled:
         return
 
