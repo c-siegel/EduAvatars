@@ -11,8 +11,6 @@ How to use:
     projects = list_projects(session, user_id)
 """
 
-from pathlib import Path
-
 from sqlalchemy import delete
 from sqlmodel import Session, select
 
@@ -22,6 +20,7 @@ from app.models.api_key import UserApiKey
 from app.models.conversation import Conversation
 from app.models.project import Project
 from app.models.project_access import ProjectAccess
+from app.storage.files import unlink_quietly
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -73,8 +72,7 @@ def delete_project(session: Session, project: Project) -> None:
     (AvatarModel/BackgroundImage) other projects may still reference, so only their own
     library-delete endpoints (with their own reference checks) may remove those files.
     """
-    if project.start_audio_path:
-        Path(project.start_audio_path).unlink(missing_ok=True)
+    unlink_quietly(project.start_audio_path)
     session.execute(delete(Conversation).where(Conversation.project_id == project.id))
     session.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
     session.delete(project)
@@ -95,7 +93,7 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
     if project.start_audio_path and any(
         field in data and data[field] != getattr(project, field) for field in _START_AUDIO_INVALIDATING_FIELDS
     ):
-        Path(project.start_audio_path).unlink(missing_ok=True)
+        unlink_quietly(project.start_audio_path)
         project.start_audio_path = None
     for field, value in data.items():
         if value is not None or field in _CLEARABLE_FIELDS:

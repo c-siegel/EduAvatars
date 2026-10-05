@@ -49,6 +49,7 @@ from app.services.project_service import (
 )
 from app.services.crypto_service import scrub_key_from_text
 from app.services.publish_service import publish_project, unpublish_project
+from app.storage.files import save_file
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -216,12 +217,9 @@ def generate_start_audio(
             },
         ) from exc
 
-    # Deterministic filename (not a fresh UUID per generation, unlike avatar_library.py) —
+    # Deterministic filename (not a fresh UUID per generation, unlike the avatar library) —
     # regenerating just overwrites the same file, so there's never a stale one left behind.
-    project_dir = Path(settings.start_audio_upload_dir) / project.user_id
-    project_dir.mkdir(parents=True, exist_ok=True)
-    file_path = project_dir / f"{project.id}.mp3"
-    file_path.write_bytes(audio_bytes)
+    file_path = save_file(Path(settings.start_audio_upload_dir) / project.user_id, f"{project.id}.mp3", audio_bytes)
 
     project.start_audio_path = str(file_path)
     session.add(project)
@@ -238,7 +236,7 @@ def get_start_audio(
 ):
     """Serve a project's pre-generated start-prompt audio — to its owner, or anonymously if published."""
     # 404 (not 403) for foreign/inaccessible projects, same IDOR (Insecure Direct Object
-    # Reference) posture as get_avatar_file in avatar_library.py.
+    # Reference) posture as get_avatar_file in features/media/avatars_router.py.
     project = session.get(Project, project_id)
     if project is None or not project.start_audio_path:
         raise HTTPException(status_code=404, detail=ErrorCode.START_AUDIO_NOT_FOUND)

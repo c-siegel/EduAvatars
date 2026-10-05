@@ -28,30 +28,11 @@ from app.models.schemas.profile import PasswordChange, ProfileUpdate
 from app.models.user import User
 from app.services.account_service import delete_user_account
 from app.services.auth_service import user_to_out
+from app.storage.files import save_file, sniff_image, unlink_quietly
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
-# Image signatures (first bytes) instead of file extension — same approach as avatar_library.py,
-# stops arbitrary files from being stored and later served back out under a false extension.
-_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
-_JPEG_MAGIC = b"\xff\xd8\xff"
 _MAX_PICTURE_BYTES = 5 * 1024 * 1024  # 5 MB — a profile photo, not a 3D model
-
-
-def _sniff_image(content: bytes) -> tuple[str, str] | None:
-    """Detect PNG/JPEG/WebP from the file's magic bytes, or None if none match."""
-    if content[:8] == _PNG_MAGIC:
-        return "image/png", ".png"
-    if content[:3] == _JPEG_MAGIC:
-        return "image/jpeg", ".jpg"
-    if content[:4] == b"RIFF" and content[8:12] == b"WEBP":
-        return "image/webp", ".webp"
-    return None
-
-
-def _delete_picture_file(user: User) -> None:
-    if user.avatar_path:
-        Path(user.avatar_path).unlink(missing_ok=True)
 
 
 @router.get("", response_model=UserOut)
@@ -89,18 +70,16 @@ async def upload_profile_picture(
     content = await file.read(_MAX_PICTURE_BYTES + 1)
     if len(content) > _MAX_PICTURE_BYTES:
         raise HTTPException(status_code=400, detail=ErrorCode.PROFILE_PICTURE_TOO_LARGE)
-    sniffed = _sniff_image(content)
+    # Image signature (first bytes) instead of file extension — see storage/files.py::sniff_image.
+    sniffed = sniff_image(content, {"png", "jpeg", "webp"})
     if sniffed is None:
         raise HTTPException(status_code=400, detail=ErrorCode.PROFILE_PICTURE_INVALID_TYPE)
     media_type, ext = sniffed
 
-    _delete_picture_file(current_user)
-    picture_dir = Path(settings.profile_picture_upload_dir)
-    picture_dir.mkdir(parents=True, exist_ok=True)
-    # Filename = user ID instead of a UUID (unlike avatar_library.py) — there's deliberately only
+    unlink_quietly(current_user.avatar_path)
+    # Filename = user ID instead of a UUID (unlike the avatar library) — there's deliberately only
     # ever one profile picture per user, no directory of several named files.
-    file_path = picture_dir / f"{current_user.id}{ext}"
-    file_path.write_bytes(content)
+    file_path = save_file(Path(settings.profile_picture_upload_dir), f"{current_user.id}{ext}", content)
 
     current_user.avatar_path = str(file_path)
     current_user.avatar_content_type = media_type
@@ -117,7 +96,7 @@ def delete_profile_picture(
     session: Session = Depends(get_session),
 ):
     """Remove the current user's profile picture."""
-    _delete_picture_file(current_user)
+    unlink_quietly(current_user.avatar_path)
     current_user.avatar_path = None
     current_user.avatar_content_type = None
     current_user.avatar_updated_at = None
@@ -130,7 +109,7 @@ def delete_profile_picture(
 @router.get("/picture")
 def get_profile_picture(current_user: User = Depends(get_current_user)):
     """Serve the current user's own profile picture."""
-    # Unlike the avatar models (avatar_library.py), no ID/IDOR (Insecure Direct Object Reference)
+    # Unlike the avatar models (features/media/avatars_router.py), no ID/IDOR (Insecure Direct Object Reference)
     # check is needed here: this route always serves only the cookie-authenticated user's own
     # picture, there's no ID parameter to spoof.
     if not current_user.avatar_path:

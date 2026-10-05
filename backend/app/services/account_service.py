@@ -20,8 +20,6 @@ How to use:
     delete_user_account(session, current_user)
 """
 
-from pathlib import Path
-
 from sqlalchemy import delete
 from sqlmodel import Session, select
 
@@ -33,14 +31,7 @@ from app.models.password_reset_token import PasswordResetToken
 from app.models.project import Project
 from app.models.project_access import ProjectAccess
 from app.models.user import User
-
-
-def _unlink(path: str | None) -> None:
-    """Delete an uploaded file if it's still there."""
-    # missing_ok: a file already gone (manually cleaned up, or a failed earlier delete) must not
-    # abort the account deletion half-way through.
-    if path:
-        Path(path).unlink(missing_ok=True)
+from app.storage.files import unlink_quietly
 
 
 def delete_user_account(session: Session, user: User) -> None:
@@ -57,11 +48,11 @@ def delete_user_account(session: Session, user: User) -> None:
     # The avatar and background rows own files on disk, so these two are looped rather than bulk
     # deleted — the row is only worth removing once its file is gone too.
     for avatar in session.exec(select(AvatarModel).where(AvatarModel.user_id == user.id)):
-        _unlink(avatar.file_path)
-        _unlink(avatar.thumbnail_path)
+        unlink_quietly(avatar.file_path)
+        unlink_quietly(avatar.thumbnail_path)
         session.delete(avatar)
     for background in session.exec(select(BackgroundImage).where(BackgroundImage.user_id == user.id)):
-        _unlink(background.file_path)
+        unlink_quietly(background.file_path)
         session.delete(background)
 
     # The stored provider secrets. Encrypted at rest, but leaving them behind would mean an
@@ -71,6 +62,6 @@ def delete_user_account(session: Session, user: User) -> None:
     # user id that no longer exists.
     session.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
 
-    _unlink(user.avatar_path)
+    unlink_quietly(user.avatar_path)
     session.delete(user)
     session.commit()

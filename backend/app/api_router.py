@@ -9,13 +9,12 @@ matters wherever two routes could match the same path (e.g. a literal segment li
 from fastapi import APIRouter
 
 from app.features.chat import preview_router, public_router
+from app.features.media import avatars_router, backgrounds_router
 from app.api import (
     admin,
     analytics,
     api_keys,
     auth,
-    avatar_library,
-    background_library,
     profile,
     projects,
     site_settings,
@@ -25,8 +24,8 @@ api_router = APIRouter()
 api_router.include_router(auth.router)  # Authentication endpoints (login, register, logout)
 api_router.include_router(projects.router)  # Project management endpoints
 api_router.include_router(preview_router.router)  # Configurator preview chat + transcription
-api_router.include_router(avatar_library.router)  # Avatar upload and management
-api_router.include_router(background_library.router)  # Background image management
+api_router.include_router(avatars_router.router)  # Avatar upload and management
+api_router.include_router(backgrounds_router.router)  # Background image management
 api_router.include_router(analytics.router)  # Analytics and usage statistics
 api_router.include_router(api_keys.router)  # API key management for external services
 api_router.include_router(profile.router)  # User profile management
