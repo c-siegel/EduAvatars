@@ -37,7 +37,12 @@ def delete_user_account(session: Session, user: User) -> None:
     # Rows that hang off a project go first, then the projects themselves, then everything that
     # references the user directly — the same order a real ON DELETE CASCADE would use, so the
     # data stays consistent even though SQLite isn't enforcing it (see the module docstring).
-    project_ids = [p.id for p in session.exec(select(Project).where(Project.user_id == user.id))]
+    projects = list(session.exec(select(Project).where(Project.user_id == user.id)))
+    project_ids = [p.id for p in projects]
+    # The bulk delete below skips per-row cleanup, so the generated start-prompt audio files
+    # (see features/projects/start_audio.py) have to go explicitly first.
+    for project in projects:
+        unlink_quietly(project.start_audio_path)
     if project_ids:
         session.execute(delete(Conversation).where(Conversation.project_id.in_(project_ids)))
         session.execute(delete(ProjectAccess).where(ProjectAccess.project_id.in_(project_ids)))

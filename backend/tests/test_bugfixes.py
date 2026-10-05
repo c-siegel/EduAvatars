@@ -194,3 +194,20 @@ def test_preview_transcription_error_scrubs_the_stt_key(client, chat_project, mo
     assert detail["code"] == "STT_REQUEST_FAILED"
     assert "401 for" in detail["message"]
     assert "sk-test-secret-1234" not in detail["message"]
+
+
+# ==================== Account deletion removes start-audio files ====================
+
+
+def test_account_deletion_removes_the_projects_start_audio_files(client, engine, teacher, fake_ai):
+    from pathlib import Path
+
+    tts_key = create_key(client, key_type="tts")
+    project = create_project(client, startPrompt="Willkommen", ttsEnabled=True, ttsApiKeyId=tts_key["id"])
+    assert client.post(f"/projects/{project['id']}/start-audio").status_code == 200
+    with Session(engine) as session:
+        audio_path = Path(session.get(Project, project["id"]).start_audio_path)
+    assert audio_path.is_file()
+
+    assert client.delete("/me").status_code == 200
+    assert not audio_path.exists()
