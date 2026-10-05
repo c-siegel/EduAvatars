@@ -1,4 +1,4 @@
-"""Tests for ApiKeyCreate's api_base validation (app/models/schemas/api_key.py) — guards
+"""Tests for ApiKeyCreate's api_base validation (app/features/api_keys/schemas.py) — guards
 against using this field for SSRF (server-side request forgery) against cloud-metadata
 endpoints, while still allowing the arbitrary self-hosted/LAN addresses that Ollama and
 "OpenAI-compatible" keys legitimately need (see app/core/providers.py)."""
@@ -6,7 +6,7 @@ endpoints, while still allowing the arbitrary self-hosted/LAN addresses that Oll
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas.api_key import ApiKeyCreate
+from app.features.api_keys.schemas import ApiKeyCreate
 
 
 def _openai_compatible(api_base: str | None) -> ApiKeyCreate:

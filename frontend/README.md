@@ -31,6 +31,7 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `src/pages/` | One folder per route — see [Pages](#pages) below |
 | `src/styles/` | Global styles |
 | `src/types/` | Shared TypeScript types |
+| `src/workers/` | Code that runs off the main thread: on-device speech recognition (`parakeetWorker.ts`, used through `src/lib/parakeetStt.ts`) and the microphone capture AudioWorklet |
 
 ## Pages
 
@@ -45,7 +46,8 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `/dashboard/profile` | `Dashboard/Profile` | Account settings: picture, password, logout-everywhere, account deletion |
 | `/dashboard/change-password-required` | `Dashboard/ForcePasswordChange` | Forced password reset (e.g. after an admin-issued reset) |
 | `/dashboard/admin`, `/dashboard/admin/settings` | `Dashboard/Admin` | Admin-only: manage other users, site-wide settings (e.g. registration on/off) |
-| `/c/:projectSlug` | `PublicChat` | The public chat page visitors use — no login required |
+| `/c/:projectSlug` | `PublicChat` | The public chat page visitors use — no login required. Shows a loading screen until the on-device speech recognition model is ready (or has failed, in which case voice input uses the server) |
+| `/stt-test` | `SttTest` | Unlinked device test for on-device speech recognition: load time, live-text latency, re-decode times (see [docs/stt-device-test.md](../docs/stt-device-test.md)) |
 | `/impressum`, `/datenschutz`, `/credits` | `Imprint`, `Privacy`, `Credits` | Legal/attribution pages (German URLs, matching German legal terminology) |
 
 ## Debugging
@@ -62,8 +64,9 @@ it the console stays silent.
   spoken reply becomes audible — how long it took from releasing the mic button to hearing the
   reply, broken into STT (speech-to-text) round trip, LLM (large language model) time, TTS
   (text-to-speech) time, audio decode time, and speaking/animation stats. See `logLatency` in
-  `src/pages/PublicChat/index.tsx` for what each field means (e.g. `sttBackendMs` is pure whisper
-  time on the server, `sttRoundTripMs` also includes network time).
+  `src/pages/PublicChat/index.tsx` for what each field means (e.g. `sttBackendMs` is the server's
+  Whisper time, or — with on-device recognition — the time from releasing the mic to the final
+  text; `sttRoundTripMs` also includes network time).
 
 The backend-side timings that feed these logs (`llmMs`, `ttsMs`, `sttMs`, ...) are documented in
 [backend/README.md](../backend/README.md#latency-monitoring).

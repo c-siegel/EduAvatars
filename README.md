@@ -113,10 +113,12 @@ The app is split into two independent apps plus a deployment folder:
 |---|---|---|
 | [`backend/`](backend/) | FastAPI (Python) API: auth, projects, LLM/TTS/STT calls, analytics | [backend/README.md](backend/README.md) |
 | [`frontend/`](frontend/) | React + TypeScript single-page app, 3D avatar rendering with three.js enabled by [TalkingHead](https://github.com/met4citizen/TalkingHead) by Mika Suominen | [frontend/README.md](frontend/README.md) |
+| [`local-tts/`](local-tts/) | Optional self-hosted text-to-speech sidecar, so no cloud key is needed for speech output | [local-tts/README.md](local-tts/README.md) |
 | [`docker/`](docker/) | Docker images, Compose file, and reverse-proxy config for deployment | [docker/README.md](docker/README.md) |
 
-The frontend talks to the backend over HTTP. In production, Caddy (in `docker/`) reverse-proxies
-both behind a single domain.
+The frontend talks to the backend over HTTP; the backend optionally calls the local-TTS sidecar
+over HTTP too, when a project has no cloud TTS key configured. In production, Caddy (in
+`docker/`) reverse-proxies the frontend and backend behind a single domain.
 
 <p align="center">
   <img src="docs/architecture.svg" alt="Diagram: browsers talk to Caddy, which routes /api/* to the FastAPI backend and serves the frontend elsewhere; the backend reads/writes SQLite + uploaded files and calls out to external AI providers" width="820">
@@ -176,6 +178,46 @@ npm run dev
 ```
 The app is now available at `http://localhost:5173` and proxies `/api/*` requests to the backend.
 
+**3. Speech recognition model** (optional, ~380 MB on disk): voice input is transcribed on the
+visitor's own device by default, from model files the app hosts itself. Download them once with
+```bash
+scripts/fetch-stt-model.sh   # writes ./models, which the Vite dev server serves at /models/
+```
+Without them, voice input still works — the browser fails to load the model and falls back to
+transcribing on the server.
+
+### Local text-to-speech (optional)
+
+By default, projects that leave the TTS key unset simply get no speech output (unlike voice
+*input*, which always falls back to a bundled offline model — see
+[Supported AI providers](#supported-ai-providers)). [`local-tts/`](local-tts/) adds that same kind
+of no-key-needed fallback for speech *output*: a small self-hosted TTS engine running as its own
+process, so nobody needs a cloud API key just to hear an avatar speak.
+
+It's opt-in and currently a Deploy A (local dev) addition only — not yet wired into
+`docker/docker-compose.yml` for Deploy B. To try it:
+
+```bash
+cd local-tts
+python3 -m venv .venv
+./.venv/bin/pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+./.venv/bin/pip install -e .
+TTS_MODEL_CACHE_DIR="$PWD/.cache" TTS_VOICES_DIR="$PWD/voices" \
+  ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080 --app-dir .
+```
+
+Then tell the backend to use it — set these two variables before starting it (e.g. add them to
+`.env`):
+
+```bash
+LOCAL_TTS_ENABLED=true
+LOCAL_TTS_URL=http://127.0.0.1:8080
+```
+
+You'll also need at least one reference voice clip — see
+[`local-tts/voices/README.md`](local-tts/voices/README.md) — the repo ships none by default.
+Full details, including the model's resource footprint and API: [local-tts/README.md](local-tts/README.md).
+
 ### Deploy B: Docker (production)
 
 Runs both apps as containers behind a Caddy reverse proxy — the setup used for real deployments
@@ -191,8 +233,11 @@ The example `docker-compose.yml` pulls prebuilt images (`chsiegel/eduavatars:fro
 
 Every project picks its own LLM (large language model, for generating replies) and, optionally,
 its own TTS (text-to-speech) voice — each user connects these with their own API key under
-"API Keys" in the dashboard. STT (speech-to-text, for voice input) is handled instance-wide by a
-bundled offline model, so it needs no key from anyone.
+"API Keys" in the dashboard. STT (speech-to-text, for voice input) needs no key from anyone: it
+runs on the visitor's own device (Parakeet Redux via WebGPU, with live text while speaking), and
+on a device that can't run it, falls back to a bundled offline model on the server; TTS can optionally work the same way if
+the deployment runs the [local-TTS sidecar](#local-text-to-speech-optional) — leave a project's
+TTS key unset and it falls back to that instead of producing no audio.
 
 | Provider | Used for | Notes |
 |---|---|---|
@@ -223,7 +268,8 @@ a "bring your own endpoint" field.
 | Database | SQLite via SQLModel/SQLAlchemy, migrations with Alembic |
 | Auth | JWT (JSON Web Tokens) + bcrypt password hashing |
 | LLM / TTS providers | [litellm](https://github.com/BerriAI/litellm) (provider-agnostic client) |
-| Speech-to-text | [faster-whisper](https://github.com/SYSTRAN/faster-whisper), runs in the backend process |
+| Speech-to-text | [Parakeet Redux](https://huggingface.co/moondream/parakeet-redux) on the visitor's device via [onnxruntime-web](https://onnxruntime.ai/) + WebGPU (default, live text while speaking); [faster-whisper](https://github.com/SYSTRAN/faster-whisper) in the backend process as the fallback |
+| Local text-to-speech (optional) | [sopro](https://github.com/samuel-vitorino/sopro), runs in its own sidecar process (see `local-tts/`) |
 | Frontend framework | React 18 + TypeScript, built with Vite |
 | 3D avatar rendering | three.js + [@met4citizen/talkinghead](https://github.com/met4citizen/TalkingHead) |
 | Frontend data fetching | TanStack Query |
@@ -251,9 +297,10 @@ EduAvatars itself does not phone home or share data with its developers. User ac
 project settings, and conversation records stay on whichever server you (or your institution)
 deploy the app to — see [Deploy B](#deploy-b-docker-production) for running your own instance.
 
-This does **not** mean conversations stay fully private: every chat message (and, for voice
-input, the audio) is sent to whichever third-party AI provider that project is configured to
-use — see [Supported AI providers](#supported-ai-providers) — since that's what generates the
+This does **not** mean conversations stay fully private: every chat message is sent to whichever
+third-party AI provider that project is configured to use (voice input is transcribed on the
+visitor's device by default, so the audio itself only leaves it on the server fallback, or with
+a project-configured cloud STT key) — see [Supported AI providers](#supported-ai-providers) — since that's what generates the
 avatar's replies. That provider's own data-handling terms apply to that traffic, independent of
 where you host EduAvatars itself. Password-reset emails (only if you configure SMTP) are the
 only other outbound traffic the backend generates on its own.

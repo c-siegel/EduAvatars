@@ -17,6 +17,7 @@ import { PublicChatPage } from "./pages/PublicChat";
 import { ImprintPage } from "./pages/Imprint";
 import { PrivacyPage } from "./pages/Privacy";
 import { CreditsPage } from "./pages/Credits";
+import { SttTestPage } from "./pages/SttTest";
 import { DashboardShell } from "./layouts/DashboardShell";
 import { RequireAdmin } from "./components/RequireAdmin";
 import { setNavigate } from "./lib/navigation";
@@ -54,6 +55,7 @@ export function App() {
         <Route path="/impressum" element={<ImprintPage />} />
         <Route path="/datenschutz" element={<PrivacyPage />} />
         <Route path="/credits" element={<CreditsPage />} />
+        <Route path="/stt-test" element={<SttTestPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="projects/:id" element={<ConfiguratorPage />} />

@@ -29,7 +29,7 @@ http://{$SITE_ADDRESS} {
 	}
 
 	# Explicit content-type allowlist instead of Caddy's own default: the streamed chat reply
-	# (backend/app/api/public_chat.py::send_message_stream, Content-Type: text/event-stream)
+	# (backend/app/features/chat/pipeline.py::stream_turn, Content-Type: text/event-stream)
 	# must NOT be gzip-encoded — it's already base64 audio (barely compressible) sent as a long-
 	# lived stream, and holding a compression buffer open across it just burns CPU per student
 	# for no space saved.
@@ -41,17 +41,32 @@ http://{$SITE_ADDRESS} {
 			header Content-Type application/javascript*
 			header Content-Type application/json*
 			header Content-Type image/svg+xml*
+			# onnxruntime-web's ~27 MB WebAssembly runtime for on-device speech recognition
+			# (frontend/src/workers/parakeetWorker.ts) shrinks to ~6 MB.
+			header Content-Type application/wasm*
 		}
 	}
 
-	# Backend routes are mounted without an /api prefix (e.g. /auth/login, not /api/auth/login, see
-	# backend/app/main.py) — same rewrite as locally in frontend/vite.config.ts.
+	# On-device speech recognition model (see scripts/fetch-stt-model.sh), mounted read-only from
+	# the data directory by docker-compose.yml. Every file sits next to a .gz copy the script made
+	# once, and `precompressed` sends that copy to any browser that accepts gzip: ~170 MB instead of
+	# ~380 MB per device, without compressing anything per request. The version is part of the
+	# path, so a file never changes under its URL and may be cached forever.
+	handle /models/* {
+		root * /
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server {
+			precompressed gzip
+		}
+	}
+
+	# The backend serves every route under /api/v1 itself (see backend/app/core/urls.py), so API
+	# requests are passed through unchanged — same as locally in frontend/vite.config.ts.
 	handle /api/* {
-		uri strip_prefix /api
 		reverse_proxy backend:8000
 	}
 
-	# Also reachable at the bare path, not just /api/health — the URL an external load balancer
+	# Also reachable at the bare path, not just /api/v1/health — the URL an external load balancer
 	# or monitoring/uptime check would naturally try first. Without this it falls through to the
 	# SPA handle below and gets a false "200 OK" from index.html instead of the backend's actual
 	# health status, even while the backend container is fully down.

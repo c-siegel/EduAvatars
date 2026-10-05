@@ -24,13 +24,13 @@ How to use:
 import logging
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.config import settings
 from app.db.session import engine
-from app.models.schemas.auth import _validate_password_strength
-from app.models.user import User
-from app.services.auth_service import register_user
+from app.features.auth.schemas import _validate_password_strength
+from app.features.auth.service import register_user
+from app.features.users.service import find_user_by_email
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,10 +62,12 @@ def bootstrap_admin() -> None:
         )
         return
 
+    # Same normalization as every email the API accepts (see features/auth/schemas.py::Email).
+    admin_email = settings.admin_email.lower()
     with Session(engine) as session:
-        user = session.exec(select(User).where(User.email == settings.admin_email)).first()
+        user = find_user_by_email(session, admin_email)
         if user is None:
-            user = register_user(session, name="Admin", email=settings.admin_email, password=settings.admin_password)
+            user = register_user(session, name="Admin", email=admin_email, password=settings.admin_password)
             user.is_admin = True
             user.must_change_password = True
             session.add(user)

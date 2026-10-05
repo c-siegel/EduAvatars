@@ -15,7 +15,7 @@ See the [root README](../README.md) for what the app does and for the shared `.e
 |---|---|
 | `backend.Dockerfile` / `frontend.Dockerfile` | Build the backend and frontend images. Both run as a non-root user; the backend's adapts its UID/GID at container start to match the bind-mounted data directory (see below), the frontend's is a fixed user since it has no data directory to adapt to |
 | `backend-entrypoint.sh` | Container startup: creates upload/cache folders, runs database migrations, then starts the API |
-| `Caddyfile` | Reverse-proxy config — routes `/api/*` to the backend, serves the frontend's static files otherwise (with SPA fallback so client-side routes work on page reload); also sets baseline security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) on every response |
+| `Caddyfile` | Reverse-proxy config — routes `/api/*` to the backend, serves the speech recognition model under `/models/*` (pre-gzipped, from the data directory) and the frontend's static files otherwise (with SPA fallback so client-side routes work on page reload); also sets baseline security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) on every response |
 | `docker-compose.yml` | The two-container stack (`web` = frontend+Caddy, `backend` = the API) |
 | `eduavatars.service` | systemd unit to start/stop the stack on boot |
 
@@ -43,8 +43,8 @@ Both containers have a Docker healthcheck (`docker-compose.yml`): `backend` poll
 orchestrator restart Caddy, which wouldn't fix it. `web`'s `depends_on` waits for `backend`'s
 healthcheck to pass, not just for its container to have started.
 
-The backend's `/health` is reachable two ways behind Caddy: `/api/health` (the general `/api/*`
-route) and the bare `/health` path (a dedicated route in `Caddyfile`, for whatever external load
+The backend's `/health` is reachable two ways behind Caddy: `/api/v1/health` (the general `/api/*`
+route; every backend route lives under `/api/v1`) and the bare `/health` path (a dedicated route in `Caddyfile`, for whatever external load
 balancer or uptime monitor tries the more obvious URL first). Both hit the same endpoint.
 
 ## Deploying
@@ -53,7 +53,27 @@ This assumes the repo is checked out on the host (e.g. at `/opt/eduavatars`) —
 [README](../README.md#deployment) for the shared `.env` setup (`cp .env.example .env` at the repo
 root, then fill in the required secrets).
 
-1. Start the stack from the repo root:
+1. Download the on-device speech recognition model into the data directory (once per deployment,
+   and again after a model version bump in the script):
+   ```bash
+   scripts/fetch-stt-model.sh /path/to/your/EDUAVATARS_DATA_DIR/models
+   ```
+   It fetches a pinned revision from Hugging Face, checks every file's SHA-256 hash, and stores a
+   gzipped copy next to each file, which Caddy serves to browsers (`/models/*` in `Caddyfile`):
+   ~170 MB per device instead of ~380 MB. Visitors' browsers then run speech recognition
+   themselves, with live text while they speak. Skipping this step doesn't break voice input:
+   the browser fails to load the model and falls back to the backend's Whisper — but every visitor
+   waits for that failed attempt first, so set `BROWSER_STT_ENABLED=false` instead if you don't
+   want on-device recognition at all.
+
+   After starting the stack (next step), check that compression actually reaches browsers — this
+   also catches a proxy in front that strips it:
+   ```bash
+   curl -sI -H 'Accept-Encoding: gzip' https://<your-site>/models/parakeet-redux/v1/encoder-model.onnx \
+     | grep -i -E 'content-encoding|content-length'
+   # expect: content-encoding: gzip, content-length around 151000000
+   ```
+2. Start the stack from the repo root:
    ```bash
    docker compose -f docker/docker-compose.yml --env-file .env up -d
    ```
@@ -64,7 +84,7 @@ root, then fill in the required secrets).
    doesn't exist, since the real one lives at the repo root. `EDUAVATARS_DATA_DIR` would silently
    resolve to an empty string, turning the volume mount into `- :/data` and breaking the container
    at startup. (`eduavatars.service` already passes the equivalent absolute-path flag.)
-2. Optional — run it as a systemd service so it survives reboots: install `eduavatars.service`
+3. Optional — run it as a systemd service so it survives reboots: install `eduavatars.service`
    (it expects the repo checked out at `/opt/eduavatars` — adjust `WorkingDirectory` and the
    paths in `ExecStart`/`ExecStop` if you use a different location) and enable it with
    `systemctl enable --now eduavatars`.
@@ -101,11 +121,14 @@ to:
   `Host` instead of forwarding the original one, which makes Caddy reject the request.
 - **Forward `X-Forwarded-For` and `X-Forwarded-Proto`** — otherwise the backend can't see the real
   visitor address (see `FORWARDED_ALLOW_IPS` below) or scheme.
-- **Not buffer the streamed chat reply** — `backend/app/api/public_chat.py`'s chat endpoint streams
+- **Pass compressed model files through unchanged** — `/models/*` responses are already gzipped
+  (see step 1 under [Deploying](#deploying)); a proxy that decompresses or re-encodes them sends
+  every student ~380 MB instead of ~170 MB.
+- **Not buffer the streamed chat reply** — `backend/app/features/chat/public_router.py`'s chat endpoint streams
   its reply as `text/event-stream` so a student hears the first words as soon as they're ready.
   A proxy that buffers the whole response before forwarding it defeats that.
 
-An nginx `location` block covering all three:
+An nginx `location` block covering all of these:
 
 ```nginx
 location / {

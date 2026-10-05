@@ -1,5 +1,5 @@
 """Tests for main.py's lifespan-managed retention loop. Data past the configured retention
-period (see services/retention_service.py's docstring) used to only ever get purged once, right
+period (see tasks/retention.py's docstring) used to only ever get purged once, right
 at process startup — on a long-running container it then never ran again. The fix re-runs the
 purge periodically for as long as the process is up; this test checks the background task
 actually starts on lifespan entry and, just as importantly, cancels cleanly on exit instead of

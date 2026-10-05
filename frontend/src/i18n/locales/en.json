@@ -85,6 +85,14 @@
     "recordingFailed": "Part of your voice message could not be transmitted — it may be incomplete.",
     "micPermissionDenied": "Microphone access was denied. Allow it in your browser's site settings to use voice input.",
     "micUnavailable": "Voice input isn't available — no microphone was found, or it's already in use.",
+    "sttLoading": {
+      "title": "Preparing speech recognition",
+      "description": "Your voice messages are recognized directly on this device, so your recordings stay here. The model is downloaded once and then stored for your next visit.",
+      "progress": "Downloading… {{percent}}%",
+      "preparing": "Almost ready…"
+    },
+    "sttFallbackNotice": "Speech recognition can't run on this device, so your voice messages are processed on the server instead.",
+    "onDeviceSttFailed": "Speech recognition stopped working on this device, so this voice message was lost. Please record it again — it will now be processed on the server.",
     "messageFailed": "Your message could not be sent. Please try again.",
     "editMessage": "Edit message",
     "regenerateMessage": "Regenerate response",
@@ -286,6 +294,8 @@
       "ttsKey": "TTS key",
       "noTtsPrefix": "No TTS set up yet. First add a key of type TTS under",
       "noTtsSuffix": " (e.g. OpenAI, Google Gemini, Cartesia, or a custom endpoint).",
+      "ttsKeyDefault": "Built-in (local voice)",
+      "ttsKeyHint": "Optional — without a key, replies are read aloud with the built-in local voice. Add a key of type TTS under API keys to use a cloud provider instead.",
       "voiceOptional": "Voice (optional)",
       "voicePlaceholder": "e.g. alloy — depends on the chosen provider",
       "voiceHint": "Cartesia and Google Cloud TTS require a voice (no default) — without one, speech output for this project won't work.",
@@ -294,6 +304,8 @@
       "sttKey": "STT key",
       "sttKeyDefault": "Built-in (local Whisper)",
       "sttKeyHint": "Optional — without a key, voice messages are transcribed locally on this server. Add a key of type STT under API keys to use GWDG SAIA instead.",
+      "sttBrowserTitle": "On-device speech recognition (recommended)",
+      "sttBrowserText": "Voice messages are recognized on the visitor's own device with live text while they speak, so recordings never leave it. Each device downloads the model once (about 170 MB) before the chat opens. Devices without WebGPU automatically use the STT key or the server's Whisper instead.",
       "streamingTitle": "Streamed replies",
       "streamingText": "The avatar starts speaking after the first sentence instead of waiting for the full reply. Off by default."
     },
@@ -523,6 +535,23 @@
       "credits": "Credits"
     }
   },
+  "sttTest": {
+    "title": "Speech recognition device test",
+    "intro": "Loads the on-device speech recognition model and measures how fast it runs on this device. Nothing is sent to the server.",
+    "status": "Status: {{status}}",
+    "loadTime": "Model ready after {{seconds}} s",
+    "error": "Error: {{message}}",
+    "startMic": "Record from microphone",
+    "stop": "Stop",
+    "playFile": "Play an audio file through the recognizer",
+    "partial": "Live text",
+    "final": "Final text",
+    "firstPartial": "First text after",
+    "decode": "Re-decode time (last / average / max)",
+    "decodedAudio": "Audio length of last re-decode",
+    "finalize": "Time from stop to final text",
+    "copy": "Copy results"
+  },
   "credits": {
     "title": "Credits & Licenses",
     "subtitle": "Thanks to all the projects and libraries that make EduAvatars possible",
@@ -537,6 +566,14 @@
         "description": "Real-time, audio-based viseme detection for precise lip-sync",
         "note": "The model was trained on English voices. Recognition quality for German-language audio is unverified."
       }
+    },
+    "speech": {
+      "title": "Speech Recognition",
+      "parakeet": {
+        "description": "Multilingual speech recognition model that runs on the visitor's device (ternary version of NVIDIA's Parakeet TDT 0.6B v3)",
+        "note": "Original model by NVIDIA, ternary version by Moondream, ONNX export by eschmidbauer and mrfakename. Used unchanged; the files are only re-compressed for delivery."
+      },
+      "onnxRuntime": { "description": "Runs the speech recognition model in the browser via WebGPU and WebAssembly" }
     },
     "fonts": {
       "title": "Fonts",
@@ -613,12 +650,14 @@
     "SESSION_EXPIRED": "Session expired.",
     "PROJECT_NOT_FOUND": "Project not found.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Project not found or not published.",
+    "INVALID_BUILTIN_AVATAR": "Unknown default avatar.",
     "PROJECT_IMPORT_INVALID": "This file isn't a valid eduavatars project export.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "File is too large (256 KB maximum).",
     "CONVERSATION_NOT_FOUND": "Conversation not found.",
     "REGISTRATION_DISABLED": "Registration is currently disabled.",
     "EMAIL_ALREADY_REGISTERED": "This email address is already in use.",
     "INVALID_CREDENTIALS": "Email or password is incorrect.",
+    "ACCOUNT_DISABLED": "This account has been disabled. Please contact an administrator.",
     "RESET_LINK_INVALID": "This link is invalid or has expired.",
     "CURRENT_PASSWORD_INCORRECT": "Current password is incorrect.",
     "PASSWORD_TOO_SHORT": "Password needs at least 10 characters and a digit.",

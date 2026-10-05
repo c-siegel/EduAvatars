@@ -12,15 +12,21 @@ export interface Project {
   llmModel: string | null;
   preprompt: string;
   // Erste Nachricht des Avatars, Schüler:innen sichtbar UND dem Modell als Kontext mitgegeben
-  // (siehe backend services/llm_service.py::send_chat_message). Leer = generische Begrüßung.
+  // (siehe backend features/ai/llm/__init__.py::complete). Leer = generische Begrüßung.
   startPrompt: string;
-  // Route to the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
+  // URL of the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see the "Generate audio" button in Step3Behavior and pages/PublicChat/index.tsx's autoplay.
   startAudioUrl: string | null;
+  // The avatar: one of the user's own library models (avatarModelId), or a bundled default avatar
+  // by name (builtinAvatar, e.g. "julia" for public/avatars/julia.glb). Neither = default avatar.
+  avatarModelId: string | null;
+  builtinAvatar: string | null;
+  avatarBackgroundId: string | null;
+  // Ready-to-load URLs derived by the backend from the references above (read-only).
   avatarModelUrl: string | null;
   avatarBackgroundUrl: string | null;
   gradeLevel: string | null;
-  // Sampling-Parameter, 1:1 an den Anbieter durchgereicht (siehe backend services/llm_service.py
+  // Sampling-Parameter, 1:1 an den Anbieter durchgereicht (siehe backend features/ai/llm
   // ::_sampling_params). temperature 0.0-2.0, topP 0.0-1.0 — dieselben Grenzen prüft das Backend.
   temperature: number;
   topP: number;
@@ -37,11 +43,15 @@ export interface Project {
   ttsVoice: string | null;
   spokenLanguage: SpokenLanguage;
   // Reference to a key of type STT (mirrors ttsApiKeyId) — null keeps transcribing locally
-  // (see backend services/stt_service.py).
+  // (see backend features/ai/stt).
   sttApiKeyId: string | null;
   sttEnabled: boolean;
+  // Whether this project prefers on-device (browser, WebGPU) transcription over sttApiKeyId/the
+  // server's local Whisper — only shown/usable in the Configurator when the deployment also
+  // allows it (see useBrowserSttStatus in lib/providers.ts).
+  sttBrowserEnabled: boolean;
   // Whether the public chat should use sentence-chunked streaming (text+audio per sentence)
-  // instead of waiting for the full reply — see backend api/public_chat.py's /message/stream.
+  // instead of waiting for the full reply — see backend features/chat/public_router.py's /messages/stream.
   // Meaningless without ttsEnabled, so the configurator only shows this toggle when TTS is on.
   streamingEnabled: boolean;
   // Ob der öffentliche Chat standardmäßig offen (true) oder eingeklappt-aber-ausklappbar (false)
@@ -58,6 +68,12 @@ export interface Project {
   requireVisitorName: boolean;
   createdAt: string;
 }
+
+// What projectsApi.update accepts: every writable field, plus the write-only chat password. The
+// derived URLs (and llmModel) are computed server-side and never sent.
+export type ProjectUpdate = Partial<
+  Omit<Project, "avatarModelUrl" | "avatarBackgroundUrl" | "startAudioUrl" | "llmModel" | "passwordProtected">
+> & { chatPassword?: string | null };
 
 export type SpokenLanguage = "de" | "en";
 

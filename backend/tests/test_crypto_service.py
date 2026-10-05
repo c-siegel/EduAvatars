@@ -1,10 +1,10 @@
-"""Tests for scrub_key_from_text (app/services/crypto_service.py) — redacts a stored key's own
+"""Tests for scrub_key_from_text (app/features/api_keys/crypto.py) — redacts a stored key's own
 plaintext value out of a raw provider/network exception message before it reaches a response
 body. Some providers (e.g. Google Gemini) put the API key directly in the request URL, and some
 HTTP client error messages include that full URL, so an unscrubbed exception can otherwise echo
 the key back to its own owner."""
 
-from app.services.crypto_service import scrub_key_from_text, store_api_key
+from app.features.api_keys.crypto import scrub_key_from_text, store_api_key
 
 
 def test_redacts_the_key_when_present_in_the_text() -> None:

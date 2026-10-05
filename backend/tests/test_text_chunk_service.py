@@ -1,7 +1,7 @@
-"""Tests for SentenceChunker/chunk_text (app/services/text_chunk_service.py) — a pure, dependency-
+"""Tests for SentenceChunker/chunk_text (app/features/chat/streaming.py) — a pure, dependency-
 free module, so these need no app settings or DB and are safe/cheap to run anywhere."""
 
-from app.services.text_chunk_service import SentenceChunker, chunk_text
+from app.features.chat.streaming import SentenceChunker, chunk_text
 
 
 def test_splits_on_sentence_boundary_once_both_sides_are_long_enough():

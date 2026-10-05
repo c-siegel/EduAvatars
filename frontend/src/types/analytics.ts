@@ -33,7 +33,7 @@ export interface SessionDetail {
   projectTitle: string;
   visitorName: string | null;
   startedAt: string;
-  // Full message-by-message transcript — what GET /analytics/sessions/{id} returns, unlike
+  // Full message-by-message transcript — what GET /conversations/{id} returns, unlike
   // SessionRow's truncated lastQuestion. Reused from types/chat.ts since the shape matches
   // exactly (role "user"/"assistant", never "system" — that's a PublicChat-only local notice).
   messages: ChatMessage[];
@@ -52,7 +52,7 @@ export interface AnalyticsFilters {
   model: string | null;
 }
 
-// Body shared by POST /analytics/export and POST /analytics/delete — which checked-off
+// Body shared by POST /conversations/export and POST /conversations/batch-delete — which checked-off
 // conversations (see pages/Dashboard/Analytics) to bundle into a CSV/ZIP download or delete.
 export interface ConversationIdsRequest {
   conversationIds: string[];

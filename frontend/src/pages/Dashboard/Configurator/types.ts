@@ -4,8 +4,10 @@ import type { SpokenLanguage } from "@/types/project";
 export interface ConfiguratorDraft {
   title: string;
   description: string;
-  avatarModelUrl: string | null;
-  avatarBackgroundUrl: string | null;
+  // See Project in types/project.ts — library avatar, bundled avatar, or neither (default).
+  avatarModelId: string | null;
+  builtinAvatar: string | null;
+  avatarBackgroundId: string | null;
   chatDefaultOpen: boolean;
   gradeLevel: string;
   preprompt: string;
@@ -26,6 +28,7 @@ export interface ConfiguratorDraft {
   ttsVoice: string;
   sttApiKeyId: string | null;
   sttEnabled: boolean;
+  sttBrowserEnabled: boolean;
   streamingEnabled: boolean;
 }
 

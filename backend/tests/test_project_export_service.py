@@ -1,4 +1,4 @@
-"""Tests for the project export/import round-trip (app/services/project_export_service.py) —
+"""Tests for the project export/import round-trip (app/features/projects/export.py) —
 in particular that secrets (API keys, chat password hash) never leave in an export, that a
 freshly imported project is always an unpublished draft, and that avatar/background library
 references are dropped rather than carried over when they don't belong to the importing user."""
@@ -6,14 +6,14 @@ references are dropped rather than carried over when they don't belong to the im
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.models.avatar_model import AvatarModel
-from app.models.project import Project
-from app.services.project_export_service import (
+from app.features.media.models import AvatarModel
+from app.features.projects.export import (
     ProjectImportError,
     export_project_yaml,
     import_project,
     parse_project_yaml,
 )
+from app.features.projects.models import Project
 
 
 def _make_session() -> Session:
@@ -80,7 +80,7 @@ def test_import_drops_avatar_reference_not_owned_by_the_importing_user() -> None
     with _make_session() as session:
         avatar = AvatarModel(id="av1", user_id="owner", name="A", file_path="/tmp/a.glb")
         session.add(avatar)
-        project = _make_project(avatar_model_url="/avatars/av1/file")
+        project = _make_project(avatar_model_id="av1")
         session.add(project)
         session.commit()
         session.refresh(project)
@@ -88,14 +88,51 @@ def test_import_drops_avatar_reference_not_owned_by_the_importing_user() -> None
         data = parse_project_yaml(export_project_yaml(project))
 
         imported_for_stranger = import_project(session, "stranger", data)
-        assert imported_for_stranger.avatar_model_url is None
+        assert imported_for_stranger.avatar_model_id is None
 
         imported_for_owner = import_project(session, "owner", data)
-        assert imported_for_owner.avatar_model_url == "/avatars/av1/file"
+        assert imported_for_owner.avatar_model_id == "av1"
+        assert imported_for_owner.avatar_model_url == "/api/v1/avatars/av1/file"
+
+
+def test_export_is_format_version_2_and_keeps_a_builtin_avatar() -> None:
+    with _make_session() as session:
+        project = _make_project(builtin_avatar="david")
+        session.add(project)
+        session.commit()
+        session.refresh(project)
+
+        yaml_text = export_project_yaml(project)
+        imported = import_project(session, "stranger", parse_project_yaml(yaml_text))
+
+    assert "eduavatars_export: 2" in yaml_text
+    assert imported.builtin_avatar == "david"
+    assert imported.avatar_model_url == "/avatars/david.glb"
+
+
+def test_import_reads_version_1_files_with_urls() -> None:
+    v1_file = """
+eduavatars_export: 1
+project:
+  title: Old Export
+  avatar_model_url: /avatar-models/av1/file
+  avatar_background_url: /backgrounds/bg1/file
+"""
+    data = parse_project_yaml(v1_file)
+    assert (data.avatar_model_id, data.builtin_avatar, data.avatar_background_id) == ("av1", None, "bg1")
+
+    builtin = parse_project_yaml("eduavatars_export: 1\nproject:\n  title: x\n  avatar_model_url: /avatars/julia.glb\n")
+    assert (builtin.avatar_model_id, builtin.builtin_avatar) == (None, "julia")
+
+    unknown = parse_project_yaml(
+        "eduavatars_export: 1\nproject:\n  title: x\n  avatar_model_url: https://evil.example/x.glb\n"
+    )
+    assert (unknown.avatar_model_id, unknown.builtin_avatar) == (None, None)
 
 
 def test_parse_rejects_malformed_or_incomplete_input() -> None:
-    for bad_input in ("not: [valid", "no_project_key: true", "project: {temperature: 99}", "project: {}"):
+    for bad_input in ("not: [valid", "no_project_key: true", "project: {temperature: 99}", "project: {}",
+                      "project: {title: x, builtin_avatar: ../../etc}"):
         try:
             parse_project_yaml(bad_input)
             raise AssertionError(f"expected ProjectImportError for input: {bad_input!r}")

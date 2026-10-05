@@ -1,16 +1,17 @@
-"""Tests for update_profile's duplicate-email handling (app/api/profile.py). Changing your own
+"""Tests for update_profile's duplicate-email handling (app/features/users/service.py). Changing your own
 email to one already used by another account used to raise an unhandled IntegrityError (a
 generic 500) instead of the same clean 409 that registration and admin account creation already
-return for the exact same underlying conflict (see api/auth.py, api/admin.py)."""
+return for the exact same underlying conflict (see features/auth/router.py,
+features/users/admin_users_router.py)."""
 
 import pytest
-from fastapi import HTTPException
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.api.profile import update_profile
-from app.models.schemas.profile import ProfileUpdate
-from app.models.user import User
+from app.core.errors import DomainError
+from app.features.users.models import User
+from app.features.users.schemas import ProfileUpdate
+from app.features.users.service import update_profile
 
 
 def _make_session() -> Session:
@@ -27,8 +28,8 @@ def test_update_profile_rejects_duplicate_email_with_a_clean_409() -> None:
         session.commit()
         session.refresh(me)
 
-        with pytest.raises(HTTPException) as exc_info:
-            update_profile(ProfileUpdate(email="taken@example.com"), current_user=me, session=session)
+        with pytest.raises(DomainError) as exc_info:
+            update_profile(session, me, ProfileUpdate(email="taken@example.com").model_dump(exclude_unset=True))
 
         assert exc_info.value.status_code == 409
 
@@ -40,6 +41,6 @@ def test_update_profile_allows_a_non_conflicting_email() -> None:
         session.commit()
         session.refresh(me)
 
-        result = update_profile(ProfileUpdate(email="new@example.com"), current_user=me, session=session)
+        result = update_profile(session, me, ProfileUpdate(email="new@example.com").model_dump(exclude_unset=True))
 
         assert result.email == "new@example.com"

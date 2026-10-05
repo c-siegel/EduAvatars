@@ -2,7 +2,9 @@ import { apiClient } from "./client";
 import type { ApiKey, ApiKeyInput, ProviderSpec } from "@/types/apiKey";
 
 export const apiKeysApi = {
-  listProviders: () => apiClient.get<ProviderSpec[]>("/api-keys/providers"),
+  listProviders: () => apiClient.get<ProviderSpec[]>("/providers"),
+  localTtsStatus: () => apiClient.get<{ available: boolean }>("/providers/local-tts-status"),
+  browserSttStatus: () => apiClient.get<{ available: boolean }>("/providers/browser-stt-status"),
   list: () => apiClient.get<ApiKey[]>("/api-keys"),
   create: (input: ApiKeyInput) => apiClient.post<ApiKey>("/api-keys", input),
   // Keys werden über ihre id adressiert (nicht mehr über den Provider) — dieselbe Lehrkraft kann

@@ -13,10 +13,11 @@ import { SurveyEmbed } from "@/components/SurveyEmbed";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle, type FpsTrackingResult } from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/api/publicChat";
+import { ParakeetSttEngine, type LoadProgress, type StreamingSession } from "@/lib/parakeetStt";
+import { FALLBACK_SILENCE_RMS_THRESHOLD, calibrateSilenceThreshold, rms } from "@/lib/audioLevel";
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./PublicChat.module.css";
@@ -24,7 +25,8 @@ import styles from "./PublicChat.module.css";
 type Stage = "locked" | "name-gate" | "before-survey" | "chat" | "after-survey" | "done";
 
 // micStopAt: client timestamp (performance.now()) when the mic-stop button was clicked.
-// sttMs: backend-only whisper duration, from the /transcribe response.
+// sttMs: speech-to-text time — the backend's own Whisper duration (server fallback), or how long
+// the on-device model took to finish after the mic stopped (see lib/parakeetStt.ts).
 interface SendLatency {
   micStopAt: number;
   sttMs: number | null;
@@ -85,19 +87,23 @@ function toApiHistory(history: ChatMessage[]): ChatMessage[] {
   return history.filter((message) => message.role !== "system");
 }
 
-// Pause-triggered incremental transcription while recording a voice message (see backend
-// services/stt_service.py). Hardcoded constants, not project settings — same posture as the TTS
-// chunker's thresholds (services/text_chunk_service.py).
+// Pause-triggered incremental transcription for the server fallback (see backend
+// features/ai/stt) — used when on-device recognition (lib/parakeetStt.ts) isn't available.
+// Hardcoded constants, not project settings — same posture as the TTS chunker's thresholds
+// (features/chat/streaming.py).
 const RECORDING_SEGMENT_MIN_MS = 2000; // shorter than this, a pause doesn't cut a segment yet
 const SILENCE_PAUSE_MS = 700; // how long a pause must last before it counts as a cut point
-// Empirical cutoff for "quiet" on normalized mic samples (RMS, root mean square) — not measured
-// against real hardware/rooms, may need tuning for a very noisy classroom.
-const SILENCE_RMS_THRESHOLD = 0.015;
-// Mirrors the backend's own truncation (_MAX_INITIAL_PROMPT_CHARS in app/api/public_chat.py) —
+// How long watchForSpeechPauses spends measuring this recording's own ambient noise floor before
+// deriving a real silence threshold from it (see lib/audioLevel.ts) — long enough to average out
+// one stray sound (a cough, a chair scraping), short enough not to meaningfully delay pause
+// detection. Harmless that RECORDING_SEGMENT_MIN_MS-vs-real-cuts overlaps with this window: no
+// segment can be cut before RECORDING_SEGMENT_MIN_MS (2000ms) anyway, well past calibration.
+const CALIBRATION_MS = 400;
+// Mirrors the backend's own truncation (_MAX_INITIAL_PROMPT_CHARS in app/features/chat/public_router.py) —
 // trimming here too avoids uploading an ever-growing prompt on every segment of a long recording,
 // most of which the backend would immediately discard anyway.
 const MAX_INITIAL_PROMPT_CHARS = 500;
-// Mirrors the backend's own cap (_MAX_CHAT_MESSAGE_CHARS in app/models/schemas/chat.py) — caps
+// Mirrors the backend's own cap (_MAX_CHAT_MESSAGE_CHARS in app/features/chat/schemas.py) — caps
 // typing here too so a too-long message shows as "can't type more" instead of a round trip to
 // the backend just to get a 422 back.
 const MAX_CHAT_MESSAGE_CHARS = 8000;
@@ -110,26 +116,45 @@ const MAX_CHAT_MESSAGE_CHARS = 8000;
 // failed to load, with only a small, easy-to-miss play button as the way to find out otherwise.
 const GREETING_REVEAL_GRACE_MS = 2500;
 
-// Calls `onPause` every time the stream has been quiet (RMS below threshold) for SILENCE_PAUSE_MS.
-// Returns a cleanup function that stops watching and releases the AudioContext. Reuses the
-// MediaStream the caller already holds (from getUserMedia) instead of requesting a new one — an
-// AnalyserNode can tap the same stream any number of times.
+// Calls `onPause` every time the stream has been quiet (RMS below the calibrated threshold) for
+// SILENCE_PAUSE_MS. Returns a cleanup function that stops watching and releases the AudioContext.
+// Reuses the MediaStream the caller already holds (from getUserMedia) instead of requesting a new
+// one — an AnalyserNode can tap the same stream any number of times.
+//
+// Spends its first CALIBRATION_MS measuring THIS recording's own ambient noise floor instead of
+// judging silence against one hardcoded RMS number — mic sensitivity and room noise vary too much
+// across real devices for a fixed constant to work everywhere (see lib/audioLevel.ts). Runs
+// concurrently with recording, not before it, so calibration adds no delay before the mic button
+// visibly starts recording and no audio is lost — pause detection just uses
+// FALLBACK_SILENCE_RMS_THRESHOLD for that first stretch, which is safe because no cut can happen
+// before RECORDING_SEGMENT_MIN_MS (2000ms) regardless, well past calibration finishing.
 function watchForSpeechPauses(stream: MediaStream, onPause: () => void): () => void {
   const audioCtx = new AudioContext();
   const source = audioCtx.createMediaStreamSource(stream);
   const analyser = audioCtx.createAnalyser();
   source.connect(analyser);
   const samples = new Float32Array(analyser.fftSize);
+  const calibrationStartedAt = performance.now();
+  const calibrationSamples: number[] = [];
+  let threshold = FALLBACK_SILENCE_RMS_THRESHOLD;
+  let calibrated = false;
   let silenceSince: number | null = null;
   let frameId: number;
 
   function tick() {
     analyser.getFloatTimeDomainData(samples);
-    let sumSquares = 0;
-    for (const sample of samples) sumSquares += sample * sample;
-    const rms = Math.sqrt(sumSquares / samples.length);
+    const level = rms(samples);
     const now = performance.now();
-    if (rms < SILENCE_RMS_THRESHOLD) {
+
+    if (!calibrated) {
+      calibrationSamples.push(level);
+      if (now - calibrationStartedAt >= CALIBRATION_MS) {
+        calibrated = true;
+        threshold = calibrateSilenceThreshold(calibrationSamples);
+      }
+    }
+
+    if (level < threshold) {
       if (silenceSince === null) silenceSince = now;
       else if (now - silenceSince >= SILENCE_PAUSE_MS) {
         silenceSince = now; // avoid firing again every frame while the pause continues
@@ -176,6 +201,39 @@ function logLatency(
     droppedFrames: speaking.fpsResult?.droppedFrames ?? null,
     fpsSampleCount: speaking.fpsResult?.sampleCount ?? null,
   });
+}
+
+/** Full-page loading screen shown instead of the chat while the on-device speech recognition
+ * model loads. */
+function SttLoadingScreen({ progress }: { progress: LoadProgress }) {
+  const { t } = useTranslation();
+  const percent = progress.totalBytes > 0 ? Math.floor((progress.loadedBytes / progress.totalBytes) * 100) : 0;
+  // Once every byte is in, the model is still being set up on the GPU — that takes a few seconds,
+  // and a bar stuck at 100% would look frozen.
+  const preparing = progress.totalBytes > 0 && progress.loadedBytes >= progress.totalBytes;
+  return (
+    <div className={styles.centered}>
+      <div className={styles.sttLoadingScreen}>
+        <Loader2 size={32} className={styles.spinIcon} />
+        <h2>{t("publicChat.sttLoading.title")}</h2>
+        <p className={styles.sttLoadingText}>{t("publicChat.sttLoading.description")}</p>
+        <div
+          className={styles.sttLoadingBar}
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <span className={styles.sttLoadingLabel}>
+            {preparing ? t("publicChat.sttLoading.preparing") : t("publicChat.sttLoading.progress", { percent })}
+          </span>
+          <div className={styles.sttLoadingTrack}>
+            <div className={styles.sttLoadingFill} style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Screen 1i — Öffentliche Schüler-Chat-Seite (mobile-first, kein Login). Gesprochene Nachrichten
@@ -273,6 +331,10 @@ export function PublicChatPage() {
   // the resulting sendMessage) has been kicked off — drives the mic button's spinner/disabled state,
   // the same role transcribeMutation.isPending used to play before segmentation replaced it.
   const [isFinalizingRecording, setIsFinalizingRecording] = useState(false);
+  // Non-null while the on-device speech recognition model is still loading — the chat stays
+  // behind a full-page loading screen until then (see the warm-up effect below). null once it's
+  // not relevant (project transcribes on the server) or loading has finished or failed.
+  const [sttLoadProgress, setSttLoadProgress] = useState<LoadProgress | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const stopWatchingPausesRef = useRef<(() => void) | null>(null);
@@ -286,26 +348,34 @@ export function PublicChatPage() {
   const finalRecorderRef = useRef<MediaRecorder | null>(null);
   const segmentStartedAtRef = useRef(0);
   // Accumulates across every segment of the CURRENT recording — sent back as initial_prompt (see
-  // stt_service.py) so each new segment gets cross-segment context, and used as the final message
+  // features/ai/stt) so each new segment gets cross-segment context, and used as the final message
   // text once recording stops.
   const transcriptSoFarRef = useRef("");
   // Chains every segment's transcribeSegment() call onto the one before it (same pattern as
   // playChainRef below), so segments are always folded into transcriptSoFarRef in the order they
-  // were spoken. Without this, each pause-triggered segment's /transcribe request races the
+  // were spoken. Without this, each pause-triggered segment's /transcriptions request races the
   // others — usually resolving in order on a quiet server, but not guaranteed, and far more likely
-  // to reorder once the shared, single-slot STT queue (see stt_service.py) is also busy with a
+  // to reorder once the shared, single-slot STT queue (see features/ai/stt) is also busy with a
   // second visitor's recording. An out-of-order final segment would otherwise read/reset
   // transcriptSoFarRef before an earlier segment's words had been folded in, silently dropping
   // them from the sent message (or leaking them into the next recording instead).
   const transcriptionChainRef = useRef<Promise<void>>(Promise.resolve());
   // True if ANY segment of the CURRENT recording failed to transcribe (network error, or the
-  // shared STT slot timing out under contention — see stt_service.py); reset at the start of each
+  // shared STT slot timing out under contention — see features/ai/stt); reset at the start of each
   // new recording. Read once the final segment finishes, to decide whether to warn the student
   // their message may be missing words (or didn't send at all) — see transcribeSegment.
   const recordingHadFailureRef = useRef(false);
   // null = no segment has reported an sttMs yet this recording, as opposed to a legitimate sum of
   // exactly 0 — distinguishing the two matters so the final latency log reports null, not 0.
   const segmentSttMsSumRef = useRef<number | null>(null);
+  // Built once per page visit by the warm-up effect below and kept across recordings — loading
+  // the model is the expensive part.
+  const sttEngineRef = useRef<ParakeetSttEngine | null>(null);
+  // The on-device recording in progress, if any (the server fallback uses mediaRecorderRef).
+  const streamingSessionRef = useRef<StreamingSession | null>(null);
+  // Whatever the student had already typed when the recording started — the live transcript is
+  // shown after it in the composer.
+  const inputBeforeRecordingRef = useRef("");
   const threadRef = useRef<HTMLDivElement>(null);
   // Überlebt die Kette toggleRecording -> recorder.onstop -> transcribeSegment, die über mehrere
   // async Hops läuft — nur so lässt sich der ursprüngliche "Sprechende"-Zeitpunkt bis zum
@@ -369,7 +439,7 @@ export function PublicChatPage() {
       if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text }];
       const next = [...prev];
       const last = next[next.length - 1];
-      // Chunks come pre-trimmed (see text_chunk_service.py), so the original spacing/newlines
+      // Chunks come pre-trimmed (see features/chat/streaming.py), so the original spacing/newlines
       // between them is already lost — a single space is a reasonable stand-in for the few
       // hundred ms until the "done" event replaces this with the exact original text below.
       next[next.length - 1] = { ...last, content: `${last.content} ${chunk.text}` };
@@ -585,16 +655,16 @@ export function PublicChatPage() {
       // before this request even resolves), so with no notice it just sits there forever with no
       // reply and no explanation. More likely to actually happen with two people chatting on the
       // same project at once: a shared LLM key's own rate limit or a transient provider error
-      // under doubled load isn't retried indefinitely (see llm_service.py's retry budget).
+      // under doubled load isn't retried indefinitely (see features/ai/llm's retry budget).
       setMessages((prev) => [...prev, { role: "system", content: t("publicChat.messageFailed") }]);
     },
   });
 
-  // Transcribes one segment (see watchForSpeechPauses) and appends the result to the visible
-  // input box; on the final segment (mic button released), sends the full accumulated text
-  // instead — same "no manual send click needed" behavior the single-shot flow had before.
-  // Always called chained onto transcriptionChainRef (see startSegmentRecorder) so segments never
-  // read/reset transcriptSoFarRef out of order relative to each other.
+  // Server fallback: transcribes one segment (see watchForSpeechPauses) via the backend and
+  // appends the result to the visible input box; on the final segment (mic button released),
+  // sends the full accumulated text instead — no manual send click needed. Always called chained
+  // onto transcriptionChainRef (see startSegmentRecorder) so segments never read/reset
+  // transcriptSoFarRef out of order relative to each other.
   async function transcribeSegment(blob: Blob, isFinal: boolean) {
     if (blob.size > 0) {
       try {
@@ -674,6 +744,70 @@ export function PublicChatPage() {
     startSegmentRecorder(stream); // continue recording the next one right away
   }
 
+  // Shows the live transcript after whatever was already typed before the recording started.
+  function showLiveTranscript(text: string) {
+    setInput(`${inputBeforeRecordingRef.current} ${text}`.trim());
+  }
+
+  // On-device path of toggleRecording: the transcript grows in the composer while the student
+  // speaks, and the final text is sent as soon as the model has decoded the last bit of audio.
+  // Returns false if audio capture couldn't be set up, so the caller can use the server instead;
+  // a microphone error (permission denied, ...) is thrown like in the server path.
+  async function startStreamingRecording(engine: ParakeetSttEngine): Promise<boolean> {
+    // Created before awaiting the mic permission, while still inside the click — Safari starts an
+    // AudioContext created later in the async chain as "suspended", so it would capture nothing.
+    const audioContext = new AudioContext();
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+    } catch (error) {
+      void audioContext.close();
+      throw error;
+    }
+    try {
+      inputBeforeRecordingRef.current = input.trim();
+      streamingSessionRef.current = await engine.startStreaming(stream, audioContext, showLiveTranscript);
+    } catch (error) {
+      console.error("On-device audio capture failed, using server transcription instead.", error);
+      engine.status = "error";
+      stream.getTracks().forEach((track) => track.stop());
+      void audioContext.close();
+      return false;
+    }
+    recordingStreamRef.current = stream;
+    avatarRef.current?.startListening(stream);
+    setIsRecording(true);
+    return true;
+  }
+
+  async function stopStreamingRecording(session: StreamingSession) {
+    streamingSessionRef.current = null;
+    setIsFinalizingRecording(true);
+    avatarRef.current?.stopListening();
+    setIsRecording(false);
+    const micStopAt = latencyRef.current?.micStopAt;
+    try {
+      const { text, finalizeMs } = await session.stop();
+      if (text.trim()) {
+        sendMessage(text, micStopAt != null ? { micStopAt, sttMs: finalizeMs } : undefined);
+      } else {
+        setInput(inputBeforeRecordingRef.current);
+      }
+    } catch (error) {
+      // The model failed mid-recording; the engine has switched itself off, so the next
+      // recording goes through the server instead.
+      console.error("On-device transcription failed.", error);
+      setInput(inputBeforeRecordingRef.current);
+      setMessages((prev) => [...prev, { role: "system", content: t("publicChat.onDeviceSttFailed") }]);
+    } finally {
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+      setIsFinalizingRecording(false);
+    }
+  }
+
   // Funktion für Sprachaufnahme im Browser
   async function toggleRecording() {
     // Wird bereits aufgenommen -> Aufnahme stoppen
@@ -681,6 +815,10 @@ export function PublicChatPage() {
       // Frühestmöglicher, eindeutiger "Sprechende"-Zeitpunkt (Klick-Handler) fürs Latenz-Log —
       // Erfassen ist praktisch kostenlos, daher immer, nicht nur wenn latencyTestEnabled.
       latencyRef.current = { micStopAt: performance.now() };
+      if (streamingSessionRef.current) {
+        void stopStreamingRecording(streamingSessionRef.current);
+        return;
+      }
       // Captures the exact recorder instance being stopped — see finalRecorderRef's own comment
       // for why this can't be a plain boolean shared across every segment's onstop handler.
       finalRecorderRef.current = mediaRecorderRef.current;
@@ -700,8 +838,18 @@ export function PublicChatPage() {
     // Wird nicht aufgenommen, Erlaubnis fürs Gerät einholen, aufnehmen und transkribieren
     setMicErrorKey(null);
     try {
-      // Mikrofonanfrage mit warten auf Erlaubnis
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const engine = sttEngineRef.current;
+      if (engine?.status === "ready" && (await startStreamingRecording(engine))) return;
+      // Mikrofonanfrage mit warten auf Erlaubnis. echoCancellation/noiseSuppression requested
+      // explicitly rather than left to the browser's own default — bare booleans (not wrapped in
+      // `exact`) are "ideal" constraints per the Media Capture spec, so a device that can't honor
+      // them still grants the stream instead of getUserMedia rejecting. Suppressing steady room
+      // noise up front also makes watchForSpeechPauses's calibrated threshold below meaningful:
+      // without it, a noisy classroom's noise floor could sit high enough that real speech and
+      // silence become hard to tell apart no matter how the threshold is calibrated.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
       recordingStreamRef.current = stream;
       avatarRef.current?.startListening(stream);
       transcriptSoFarRef.current = "";
@@ -838,6 +986,38 @@ export function PublicChatPage() {
     };
   }, []);
 
+  // Starts loading the on-device speech recognition model as soon as the visitor has passed any
+  // password/name gate — not before (a visitor who never unlocks the page or leaves at the name
+  // prompt would otherwise have started a ~170 MB download for nothing), but before the chat
+  // itself: with a pre-chat survey configured, the download runs while the visitor fills it out.
+  // The chat waits behind a loading screen until this settles (see the "chat" stage below).
+  useEffect(() => {
+    const tutor = tutorQuery.data;
+    if (!tutor?.sttEnabled || !tutor.browserSttModelUrl) return;
+    if (tutor.passwordProtected && !tutor.unlocked) return;
+    if (tutor.requireVisitorName && !visitorNameProvided) return;
+    if (sttEngineRef.current?.modelUrl === tutor.browserSttModelUrl) return;
+    sttEngineRef.current?.dispose();
+    const engine = new ParakeetSttEngine(tutor.browserSttModelUrl);
+    sttEngineRef.current = engine;
+    setSttLoadProgress({ loadedBytes: 0, totalBytes: 0 });
+    void engine
+      .ensureReady((progress) => setSttLoadProgress(progress))
+      .then(() => {
+        setSttLoadProgress(null);
+        // No WebGPU, or the model failed to load: voice input still works, through the server.
+        if (engine.status !== "ready") {
+          setMessages((prev) => [...prev, { role: "system", content: t("publicChat.sttFallbackNotice") }]);
+        }
+      });
+  }, [tutorQuery.data, visitorNameProvided, t]);
+
+  // Terminates the speech recognition worker on unmount — leaving it running would keep the
+  // loaded model in memory for a tab that's no longer showing this chat at all.
+  useEffect(() => {
+    return () => sttEngineRef.current?.dispose();
+  }, []);
+
   if (tutorQuery.isLoading) {
     return (
       <PublicChatLayout>
@@ -875,10 +1055,10 @@ export function PublicChatPage() {
 
   // Plays the project's pre-generated spoken greeting (see api/projects.ts::generateStartAudio) —
   // used both for the autoplay attempt below and the overlay play button. startAudioUrl is
-  // router-relative (see api/projects.py's start-audio route), so it needs the API origin
+  // router-relative (see features/projects/start_audio_router.py), so it needs the API origin
   // prefixed before fetch() can reach it — same as avatarModelUrl/avatarBackgroundUrl below.
   function playGreeting() {
-    const url = toAbsoluteAvatarUrl(tutor.startAudioUrl);
+    const url = tutor.startAudioUrl;
     if (!url) return;
     // Only reveal the avatar and hide the play button once speakFromUrl confirms the audio is
     // actually audible (not just successfully decoded/scheduled) — an autoplay attempt right as
@@ -1020,12 +1200,14 @@ export function PublicChatPage() {
         />
       )}
 
-      {stage === "chat" && (
+      {stage === "chat" && sttLoadProgress && <SttLoadingScreen progress={sttLoadProgress} />}
+
+      {stage === "chat" && !sttLoadProgress && (
         <div className={styles.body}>
           <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
             <TalkingHeadAvatar
-              avatarUrl={toAbsoluteAvatarUrl(tutor.avatarModelUrl)}
-              backgroundImageUrl={toAbsoluteAvatarUrl(tutor.avatarBackgroundUrl)}
+              avatarUrl={tutor.avatarModelUrl ?? undefined}
+              backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
               speechEnabled={tutor.ttsEnabled}
               fallback={<Avatar name={tutor.title} size="lg" />}
               onReady={handleAvatarReady}

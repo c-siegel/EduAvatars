@@ -8,7 +8,7 @@ export interface PublicProject {
   title: string;
   teacherName: string;
   // Erste Nachricht des Avatars, dem Modell ebenfalls als Kontext mitgegeben (siehe Backend
-  // services/llm_service.py::send_chat_message). Leer = generische Begrüßung im Frontend.
+  // features/ai/llm/__init__.py::complete). Leer = generische Begrüßung im Frontend.
   startPrompt: string | null;
   // Route to the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see pages/PublicChat/index.tsx's autoplay-on-load and overlay play button.
@@ -18,6 +18,10 @@ export interface PublicProject {
   spokenLanguage: SpokenLanguage;
   ttsEnabled: boolean;
   sttEnabled: boolean;
+  // Base URL of the on-device (WebGPU) speech recognition model (see lib/parakeetStt.ts), or null
+  // if the project/deployment opted out. Whenever null — or the visitor's browser can't run the
+  // model — voice input goes through the /transcriptions route below instead.
+  browserSttModelUrl: string | null;
   // See types/project.ts — the page only uses the streaming endpoint when this AND ttsEnabled
   // are both true (see pages/PublicChat/index.tsx).
   streamingEnabled: boolean;
@@ -48,7 +52,7 @@ function unlockHeader(slug: string): Record<string, string> | undefined {
 }
 
 // Attaches the visitor-entered name/ID (see visitorNameStorage.ts), if any — encoded because raw
-// HTTP header values can't carry arbitrary Unicode (see visitor_name_service.py::clean_visitor_name
+// HTTP header values can't carry arbitrary Unicode (see features/chat/visitor_name.py::clean_visitor_name
 // on the backend, which decodes it again).
 function visitorNameHeader(slug: string): Record<string, string> | undefined {
   const name = getVisitorName(slug);
@@ -62,7 +66,7 @@ function requestHeaders(slug: string): Record<string, string> {
 }
 
 // One sentence-sized piece of the reply, text and audio together — see
-// app/api/public_chat.py::send_message_stream's SSE (server-sent events) schema. Keys are already
+// app/features/chat/pipeline.py::stream_turn's SSE (server-sent events) schema. Keys are already
 // camelCase as sent by the backend (a plain dict there, not a CamelModel), so no conversion needed.
 export interface StreamChunkEvent {
   index: number;
@@ -100,7 +104,7 @@ function parseSseFrame(frame: string): { event: string; data: unknown } | null {
 // EventSource can't be used here: it can only GET, and can't set the custom headers that
 // requestHeaders() provides — so this reads the stream by hand via fetch + getReader() instead.
 //
-// Whether a caught failure should make the page fall back to the plain /message endpoint depends
+// Whether a caught failure should make the page fall back to the plain /messages endpoint depends
 // on whether any chunk already arrived: once part of the reply has been shown/spoken, retrying via
 // the plain endpoint would ask the LLM again and could speak the answer twice. So this only throws
 // (signalling "safe to fall back") for a failure before the first chunk; anything after that is
@@ -114,7 +118,7 @@ export async function sendMessageStream(
 ): Promise<void> {
   let receivedAnyChunk = false;
   try {
-    const res = await fetch(`${API_BASE_URL}/public/${slug}/message/stream`, {
+    const res = await fetch(`${API_BASE_URL}/public/${slug}/messages/stream`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", ...requestHeaders(slug) },
@@ -167,7 +171,7 @@ export const publicChatApi = {
   loadTutor: (slug: string) => apiClient.get<PublicProject>(`/public/${slug}`, requestHeaders(slug)),
   unlock: (slug: string, password: string) =>
     apiClient.post<{ unlockToken: string }>(`/public/${slug}/unlock`, { password }),
-  // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/api/public_chat.py) —
+  // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/features/chat/public_router.py) —
   // war zuvor fälschlich als Conversation typisiert.
   sendMessage: (slug: string, message: string, history: ChatMessage[], signal?: AbortSignal) =>
     // llmMs/ttsMs: backend-side call durations, only meaningful together with the client-side
@@ -178,7 +182,7 @@ export const publicChatApi = {
       contentType: string | null;
       llmMs: number | null;
       ttsMs: number | null;
-    }>(`/public/${slug}/message`, { message, history }, requestHeaders(slug), signal),
+    }>(`/public/${slug}/messages`, { message, history }, requestHeaders(slug), signal),
   sendMessageStream,
   // initialPrompt: text already transcribed earlier in the same recording (see the pause-triggered
   // segmentation in pages/PublicChat/index.tsx) — improves accuracy right at the segment seam.
@@ -188,7 +192,7 @@ export const publicChatApi = {
     formData.append("audio", audio, "recording.webm");
     if (initialPrompt) formData.append("initial_prompt", initialPrompt);
     return apiClient.upload<{ text: string; sttMs: number | null }>(
-      `/public/${slug}/transcribe`,
+      `/public/${slug}/transcriptions`,
       formData,
       requestHeaders(slug),
     );

@@ -54,6 +54,47 @@ export function CreditsPage() {
         </section>
 
         <section className={styles.section}>
+          <h2>{t("credits.speech.title")}</h2>
+          <div className={styles.content}>
+            <div className={styles.creditItem}>
+              <h3>Parakeet Redux</h3>
+              <p className={styles.author}>
+                {t("credits.byAuthor", { name: "NVIDIA, Moondream, eschmidbauer, mrfakename" })}
+              </p>
+              <p className={styles.description}>{t("credits.speech.parakeet.description")}</p>
+              <div className={styles.links}>
+                <a href="https://huggingface.co/moondream/parakeet-redux" target="_blank" rel="noopener noreferrer">
+                  moondream/parakeet-redux
+                </a>
+                <a href="https://huggingface.co/mrfakename/parakeet-redux-ONNX" target="_blank" rel="noopener noreferrer">
+                  mrfakename/parakeet-redux-ONNX
+                </a>
+              </div>
+              <div className={styles.license}>
+                <strong>{t("credits.licenseLabel")}</strong> CC BY 4.0
+              </div>
+              <div className={styles.note}>
+                <strong>{t("credits.noteLabel")}</strong> {t("credits.speech.parakeet.note")}
+              </div>
+            </div>
+
+            <div className={styles.creditItem}>
+              <h3>ONNX Runtime Web</h3>
+              <p className={styles.author}>{t("credits.byAuthor", { name: "Microsoft" })}</p>
+              <p className={styles.description}>{t("credits.speech.onnxRuntime.description")}</p>
+              <div className={styles.links}>
+                <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener noreferrer">
+                  {t("credits.onGithub", { name: "onnxruntime" })}
+                </a>
+              </div>
+              <div className={styles.license}>
+                <strong>{t("credits.licenseLabel")}</strong> MIT License
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
           <h2>{t("credits.fonts.title")}</h2>
           <div className={styles.content}>
             <p className={styles.intro}>{t("credits.fonts.intro")}</p>

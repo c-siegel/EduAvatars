@@ -19,6 +19,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    volumes:
+      # On-device speech recognition model, served by Caddy at /models/ (see Caddyfile). Filled
+      # once by `scripts/fetch-stt-model.sh "$EDUAVATARS_DATA_DIR/models"` — see docker/README.md.
+      - ${EDUAVATARS_DATA_DIR}/models:/models:ro
 
   backend:
     image: chsiegel/eduavatars:backend
@@ -58,7 +62,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
 
       # --- SMTP (password-reset emails), optional — without SMTP_HOST the reset flow is a silent
-      #     no-op, see backend/app/services/email_service.py. Set SMTP_HOST/PORT/USERNAME/PASSWORD/
+      #     no-op, see backend/app/features/auth/email.py. Set SMTP_HOST/PORT/USERNAME/PASSWORD/
       #     FROM_ADDRESS in the root .env if needed (see .env.example). ---
 
       # --- Defaults from Settings, usually leave unchanged ---

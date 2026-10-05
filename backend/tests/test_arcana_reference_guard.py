@@ -1,10 +1,10 @@
-"""Tests for ArcanaReferenceGuard (app/services/llm_service.py) — filters GWDG Arcana's trailing
+"""Tests for ArcanaReferenceGuard (app/features/ai/llm/arcana.py) — filters GWDG Arcana's trailing
 '---\\nReferences:' citation block out of a token stream so it never reaches (or gets spoken to)
-a visitor. Importing app.services.llm_service pulls in app.core.config, which reads the shared
+a visitor. Importing it pulls in app.core.config, which reads the shared
 root .env for JWT_SECRET/API_KEY_ENCRYPTION_SECRET — already present there for local dev, so no
 extra setup is needed to run these."""
 
-from app.services.llm_service import ArcanaReferenceGuard
+from app.features.ai.llm.arcana import ArcanaReferenceGuard
 
 
 def _feed_all(guard: ArcanaReferenceGuard, text: str) -> str:

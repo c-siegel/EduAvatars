@@ -16,7 +16,8 @@ backend/uploads/
 backend/build/
 backend/whisper-cache
 .pytest_cache/
-backend/qwen-tts-cache
+local-tts/voices/*.wav
+local-tts/.cache/
 
 # Env
 .env
@@ -27,3 +28,6 @@ backend/qwen-tts-cache
 #Agents
 .claude
 CLAUDE.md
+
+# On-device STT model files (see scripts/fetch-stt-model.sh)
+models/

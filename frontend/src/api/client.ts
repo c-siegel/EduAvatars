@@ -1,10 +1,10 @@
 import i18n from "@/i18n";
 
-// Exportiert für Fälle, in denen eine vom Backend gelieferte relative URL direkt als Browser-Ressource
-// gebraucht wird (z.B. <img src>), statt über apiClient zu laufen — z.B. das Profilbild (siehe
-// pages/Dashboard/Profile). Backend-URLs sind grundsätzlich router-relativ ohne /api-Präfix
-// (analog avatar-models/{id}/file), das Präfix kommt immer erst hier dazu.
-export const API_BASE_URL = "/api";
+// Every backend route lives under /api/v1 (see backend/app/core/urls.py). Exported for the few
+// requests that bypass apiClient (file downloads, the streamed chat reply). URLs the backend hands
+// out for direct browser use (avatar files, pictures, start audio) already include this prefix
+// and are used as-is.
+export const API_BASE_URL = "/api/v1";
 const BASE_URL = API_BASE_URL;
 
 export class ApiError extends Error {

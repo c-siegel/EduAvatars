@@ -85,6 +85,14 @@
     "recordingFailed": "Ein Teil deiner Sprachnachricht konnte nicht übertragen werden — sie könnte unvollständig sein.",
     "micPermissionDenied": "Der Zugriff aufs Mikrofon wurde verweigert. Erlaube ihn in den Website-Einstellungen deines Browsers, um Spracheingabe zu nutzen.",
     "micUnavailable": "Spracheingabe ist nicht verfügbar — es wurde kein Mikrofon gefunden, oder es wird bereits verwendet.",
+    "sttLoading": {
+      "title": "Spracherkennung wird vorbereitet",
+      "description": "Deine Sprachnachrichten werden direkt auf diesem Gerät erkannt, deine Aufnahmen bleiben also hier. Das Modell wird einmal heruntergeladen und für den nächsten Besuch gespeichert.",
+      "progress": "Wird heruntergeladen… {{percent}} %",
+      "preparing": "Gleich geht es los…"
+    },
+    "sttFallbackNotice": "Die Spracherkennung läuft auf diesem Gerät nicht, deine Sprachnachrichten werden deshalb auf dem Server verarbeitet.",
+    "onDeviceSttFailed": "Die Spracherkennung auf diesem Gerät ist ausgefallen, diese Sprachnachricht ist deshalb verloren gegangen. Bitte nimm sie noch einmal auf — sie wird jetzt auf dem Server verarbeitet.",
     "messageFailed": "Deine Nachricht konnte nicht gesendet werden. Bitte versuche es erneut.",
     "editMessage": "Nachricht bearbeiten",
     "regenerateMessage": "Antwort neu erzeugen",
@@ -286,6 +294,8 @@
       "ttsKey": "TTS-Schlüssel",
       "noTtsPrefix": "Noch kein TTS eingerichtet. Lege zuerst unter",
       "noTtsSuffix": " einen Schlüssel vom Typ TTS an (z. B. OpenAI, Google Gemini, Cartesia oder ein eigener Endpunkt).",
+      "ttsKeyDefault": "Eingebaut (lokale Stimme)",
+      "ttsKeyHint": "Optional — ohne Schlüssel werden Antworten mit der eingebauten lokalen Stimme vorgelesen. Lege unter API-Schlüsseln einen Schlüssel vom Typ TTS an, um stattdessen einen Cloud-Anbieter zu nutzen.",
       "voiceOptional": "Stimme (optional)",
       "voicePlaceholder": "z. B. alloy — abhängig vom gewählten Anbieter",
       "voiceHint": "Für Cartesia und Google Cloud TTS ist eine Stimme Pflicht (kein Standardwert) — ohne läuft die Sprachausgabe für dieses Projekt ins Leere.",
@@ -294,6 +304,8 @@
       "sttKey": "STT-Schlüssel",
       "sttKeyDefault": "Eingebaut (lokales Whisper)",
       "sttKeyHint": "Optional — ohne Schlüssel werden Sprachnachrichten lokal auf diesem Server transkribiert. Lege unter API-Schlüsseln einen Schlüssel vom Typ STT an, um stattdessen GWDG SAIA zu nutzen.",
+      "sttBrowserTitle": "Spracherkennung auf dem Gerät (empfohlen)",
+      "sttBrowserText": "Sprachnachrichten werden auf dem Gerät der Besucherin erkannt, mit Live-Text schon während des Sprechens — die Aufnahmen verlassen das Gerät nicht. Jedes Gerät lädt das Modell einmal herunter (etwa 170 MB), bevor der Chat startet. Geräte ohne WebGPU nutzen automatisch den STT-Schlüssel bzw. das Whisper des Servers.",
       "streamingTitle": "Gestreamte Antworten",
       "streamingText": "Der Avatar beginnt schon nach dem ersten Satz zu sprechen, statt auf die vollständige Antwort zu warten. Standardmäßig aus."
     },
@@ -523,6 +535,23 @@
       "credits": "Credits"
     }
   },
+  "sttTest": {
+    "title": "Gerätetest Spracherkennung",
+    "intro": "Lädt das Spracherkennungsmodell und misst, wie schnell es auf diesem Gerät läuft. Es wird nichts an den Server geschickt.",
+    "status": "Status: {{status}}",
+    "loadTime": "Modell bereit nach {{seconds}} s",
+    "error": "Fehler: {{message}}",
+    "startMic": "Über das Mikrofon aufnehmen",
+    "stop": "Stopp",
+    "playFile": "Eine Audiodatei durch die Erkennung abspielen",
+    "partial": "Live-Text",
+    "final": "Endgültiger Text",
+    "firstPartial": "Erster Text nach",
+    "decode": "Dauer pro Neu-Erkennung (letzte / Schnitt / max.)",
+    "decodedAudio": "Audiolänge der letzten Neu-Erkennung",
+    "finalize": "Zeit vom Stopp bis zum endgültigen Text",
+    "copy": "Ergebnisse kopieren"
+  },
   "credits": {
     "title": "Credits & Lizenzen",
     "subtitle": "Danksagung an alle Projekte und Bibliotheken, die EduAvatars möglich machen",
@@ -537,6 +566,14 @@
         "description": "Echtzeitfähige, audio-basierte Viseme-Erkennung für präzises Lipsync",
         "note": "Das Modell wurde auf englischen Stimmen trainiert. Für deutschsprachiges Audio ist die Erkennungsqualität unverifiziert."
       }
+    },
+    "speech": {
+      "title": "Spracherkennung",
+      "parakeet": {
+        "description": "Mehrsprachiges Spracherkennungsmodell, das auf dem Gerät der Besucherin läuft (ternäre Version von NVIDIAs Parakeet TDT 0.6B v3)",
+        "note": "Originalmodell von NVIDIA, ternäre Version von Moondream, ONNX-Export von eschmidbauer und mrfakename. Unverändert verwendet; die Dateien werden für die Auslieferung nur neu komprimiert."
+      },
+      "onnxRuntime": { "description": "Führt das Spracherkennungsmodell per WebGPU und WebAssembly im Browser aus" }
     },
     "fonts": {
       "title": "Schriften",
@@ -613,12 +650,14 @@
     "SESSION_EXPIRED": "Sitzung abgelaufen.",
     "PROJECT_NOT_FOUND": "Projekt nicht gefunden.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Projekt nicht gefunden oder nicht veröffentlicht.",
+    "INVALID_BUILTIN_AVATAR": "Unbekannter Standard-Avatar.",
     "PROJECT_IMPORT_INVALID": "Diese Datei ist kein gültiger eduavatars-Projektexport.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "Datei ist zu groß (maximal 256 KB).",
     "CONVERSATION_NOT_FOUND": "Gespräch nicht gefunden.",
     "REGISTRATION_DISABLED": "Registrierung ist aktuell nicht möglich.",
     "EMAIL_ALREADY_REGISTERED": "Diese E-Mail-Adresse wird bereits verwendet.",
     "INVALID_CREDENTIALS": "E-Mail oder Passwort ist falsch.",
+    "ACCOUNT_DISABLED": "Dieses Konto wurde deaktiviert. Bitte wende dich an die Administration.",
     "RESET_LINK_INVALID": "Link ist ungültig oder abgelaufen.",
     "CURRENT_PASSWORD_INCORRECT": "Aktuelles Passwort ist falsch.",
     "PASSWORD_TOO_SHORT": "Passwort muss mindestens 10 Zeichen und eine Zahl enthalten.",

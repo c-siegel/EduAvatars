@@ -179,7 +179,7 @@ class Settings(BaseSettings):
 
     start_audio_upload_dir: str = "uploads/start-audio"
     """
-    Directory where a project's once-generated start-prompt audio (see api/projects.py's
+    Directory where a project's once-generated start-prompt audio (see features/projects/start_audio.py's
     start-audio routes) is stored, so it doesn't need to be re-synthesized on every chat load.
     """
 
@@ -210,7 +210,7 @@ class Settings(BaseSettings):
     
     # For initial deployment, the instance should only be internally usable
     # (accounts are created manually) — Login remains unaffected, only
-    # self-registration is disabled (see api/auth.py).
+    # self-registration is disabled (see features/auth/router.py).
     
     registration_enabled: bool = True
     """
@@ -218,7 +218,7 @@ class Settings(BaseSettings):
     When True: Anyone can create an account via the registration page.
 
     Only used as the INITIAL value the first time the DB-backed site settings row is created
-    (see services/site_settings_service.py) — after that, an admin toggles this from the
+    (see features/site_settings/service.py) — after that, an admin toggles this from the
     dashboard instead, and this env var no longer has any effect.
     """
 
@@ -247,7 +247,7 @@ class Settings(BaseSettings):
     # ==================== SPEECH-TO-TEXT (STT) SETTINGS ====================
     
     # Speech recognition runs directly in the backend process using the
-    # faster-whisper library (see services/stt_service.py) — no separate
+    # faster-whisper library (see features/ai/stt) — no separate
     # Whisper container or cloud service needed.
     # stt_model is either a short name ("small", "medium", …) or a Hugging Face
     # repository (like the default) — both are accepted directly by faster-whisper.
@@ -278,7 +278,7 @@ class Settings(BaseSettings):
     container restart.
     """
 
-    stt_max_concurrent_transcriptions: int = 1
+    stt_max_concurrent_transcriptions: int = 2
     """
     How many Whisper transcriptions may run at the same time, in this one process.
 
@@ -305,6 +305,58 @@ class Settings(BaseSettings):
     machine's cores per call — fine for a single transcription, but worth capping (e.g. to a
     third of the host's cores) on a shared machine so one transcription doesn't starve the
     request-serving thread pool of CPU while it runs.
+    """
+
+    # ==================== LOCAL TEXT-TO-SPEECH (TTS) SETTINGS ====================
+
+    # Unlike local STT (faster-whisper, above), local TTS does NOT run in this process — the
+    # model needs more CPU/RAM than fits comfortably alongside the request-serving backend, so it
+    # runs in its own optional sidecar container instead (see local-tts/ and
+    # docker/local-tts.Dockerfile). This backend only makes an HTTP call to it, and only when
+    # local_tts_enabled is set — a deployment that doesn't run that sidecar sees no change at all.
+
+    local_tts_enabled: bool = False
+    """
+    Whether the local-TTS sidecar (see local-tts/) is reachable and should be used as the
+    fallback when a project has TTS enabled but no cloud key configured — the TTS counterpart to
+    how a missing STT key falls back to local Whisper (see features/ai/stt).
+
+    False by default: unlike Whisper, this fallback needs a separate container actually running
+    (docker/docker-compose.yml's "local-tts" profile), so it's opt-in rather than always-on.
+    """
+
+    local_tts_url: str = "http://tts-local:8080"
+    """Base URL of the local-TTS sidecar container. Only used when local_tts_enabled is True."""
+
+    local_tts_request_timeout_seconds: float = 30.0
+    """How long to wait for the local-TTS sidecar before giving up on one synthesis request."""
+
+    # ==================== BROWSER SPEECH-TO-TEXT (WEBGPU) SETTINGS ====================
+
+    # The default way voice input is transcribed: the Parakeet Redux model runs in the visitor's
+    # own browser via WebGPU (a browser API for using the GPU for general-purpose computation, not
+    # just graphics) and streams live text while the student speaks — see
+    # frontend/src/lib/parakeetStt.ts. Local server Whisper (above) and a cloud STT key remain as
+    # the fallback for a browser without WebGPU or a failed model load. The backend computes
+    # nothing here; it only tells the public chat where the model files live (see
+    # features/api_keys/resolve.py::browser_stt_model_url_for).
+
+    browser_stt_enabled: bool = True
+    """
+    Whether on-device transcription is offered to visitors at all. Each project can still opt
+    out with its own "stt_browser_enabled" checkbox (see features/projects/models.py).
+
+    Needs the model files to be present at browser_stt_model_url (run
+    scripts/fetch-stt-model.sh once per deployment). If they're missing, every visitor's browser
+    falls back to server transcription after a failed load — set this to false instead to skip
+    that wasted attempt.
+    """
+
+    browser_stt_model_url: str = "/models/parakeet-redux/v1/"
+    """
+    Base URL of the model files (manifest.json plus the ONNX files it lists), as written by
+    scripts/fetch-stt-model.sh. Same-origin by default: Caddy serves it in production (see
+    docker/Caddyfile) and Vite in development (see frontend/vite.config.ts).
     """
 
     # ==================== PUBLIC CHAT & VOICE INPUT RATE LIMITS ====================
@@ -352,7 +404,7 @@ class Settings(BaseSettings):
     request_thread_pool_size: int = 100
     """
     How many worker threads FastAPI/Starlette may use at once, across every sync route and
-    every /message/stream response body, in this one process.
+    every /messages/stream response body, in this one process.
 
     Applied to anyio's default thread limiter on startup (see main.py's lifespan) — anyio's own
     default is 40, shared by literally everything that isn't `async def`, which a class of ~30
@@ -362,7 +414,7 @@ class Settings(BaseSettings):
 
     tts_stream_worker_pool_size: int = 16
     """
-    How many text-to-speech chunks may be synthesized at once, across every /message/stream
+    How many text-to-speech chunks may be synthesized at once, across every /messages/stream
     request, in this one process.
 
     Each streamed reply used to get its own single-worker thread pool for this; now they all

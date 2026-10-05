@@ -3,7 +3,7 @@ Provider Registry for the "Bring Your Own Key" Feature
 
 This module is the single source of truth for which LLM/TTS providers a user can connect
 with their own API key, and what each one needs (endpoint, model list, whether a key is
-required, ...). The frontend fetches this list via GET /api-keys/providers, so the UI and
+required, ...). The frontend fetches this list via GET /api/v1/providers, so the UI and
 the backend's validation never drift apart.
 
 What is a provider registry?
@@ -26,7 +26,7 @@ from app.core.error_codes import ErrorCode
 
 # What a stored API key is used for. LLM = large language model (chat), TTS = text-to-speech,
 # STT = speech-to-text. An STT key is optional — a project with none configured still transcribes
-# locally via the instance-wide Whisper server (see services/stt_service.py).
+# locally via the instance-wide Whisper server (see features/ai/stt).
 
 KEY_TYPE_LLM = "llm"
 KEY_TYPE_TTS = "tts"
@@ -39,7 +39,7 @@ KEY_TYPE_LABELS = {KEY_TYPE_LLM: "LLM", KEY_TYPE_TTS: "TTS", KEY_TYPE_STT: "STT"
 OPENAI_COMPATIBLE_PROVIDER = "openai_compatible"
 OLLAMA_PROVIDER = "ollama"
 
-# Own integrations, independent of litellm (see services/tts_service.py:_synthesize_cartesia) —
+# Own integrations, independent of litellm (see features/ai/tts/cartesia.py) —
 # Cartesia has a proprietary API that litellm doesn't support.
 CARTESIA_PROVIDER = "cartesia"
 # Also independent of litellm — the classic Google Cloud Text-to-Speech product (texttospeech.
@@ -47,11 +47,11 @@ CARTESIA_PROVIDER = "cartesia"
 # provider because it's a different API/pricing model (per-character, cheaper, mature WaveNet/
 # Neural2 voices with strong German coverage) and litellm doesn't wrap this REST shape.
 GOOGLE_CLOUD_TTS_PROVIDER = "google_cloud_tts"
-# Also independent of litellm (see services/llm_service.py::_send_chat_arcana) — the GWDG
+# Also independent of litellm (see features/ai/llm/arcana.py::ArcanaClient) — the GWDG
 # Academic Cloud knowledge base (RAG) needs an extra request header and an "arcana" field that
 # litellm's OpenAI-compatible call path doesn't know about.
 GWDG_ARCANA_PROVIDER = "gwdg_arcana"
-# Also independent of litellm (see services/stt_service.py::_transcribe_saia) — GWDG's SAIA speech
+# Also independent of litellm (see features/ai/stt/saia.py) — GWDG's SAIA speech
 # API is a different host/gateway than Arcana's chat endpoint above and, unlike it, needs no extra
 # "inference-service" header.
 GWDG_SAIA_PROVIDER = "gwdg_saia"
@@ -85,11 +85,11 @@ class ProviderSpec:
     stt_model: str | None = None
     hint: str | None = None
     # Only relevant for GWDG Arcana — requires an Arcana ID (which knowledge base to query) in
-    # addition to the model, see services/llm_service.py: _send_chat_arcana.
+    # addition to the model, see features/ai/llm/arcana.py::ArcanaClient.
     requires_arcana_id: bool = False
 
 
-# Ordered for the frontend dropdown (api/api_keys.py::list_providers returns PROVIDERS as-is,
+# Ordered for the frontend dropdown (features/api_keys/providers_router.py::list_providers returns PROVIDERS as-is,
 # unsorted): named providers first, alphabetically by label, then the two generic "bring your own
 # endpoint" providers last (Ollama, OpenAI-compatible) — those need infrastructure the user already
 # runs themselves, so they're the advanced/fallback choice rather than a first pick.
@@ -118,10 +118,10 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         api_base_required=False,
         key_required=True,
         supported_types=(KEY_TYPE_TTS,),
-        # Unused — Cartesia doesn't go through litellm, see services/tts_service.py.
+        # Unused — Cartesia doesn't go through litellm, see features/ai/tts.
         model_prefix="",
         # Verified against https://docs.cartesia.ai/api-reference/tts/bytes (see the comment in
-        # tts_service.py::_synthesize_cartesia for when) — previously there was no selection here
+        # features/ai/tts/cartesia.py for when) — previously there was no selection here
         # at all, so a mistyped/outdated model name only surfaced live as a "model_not_found"
         # error from Cartesia, not already when the key was created.
         models=(
@@ -143,7 +143,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         api_base_required=False,
         key_required=True,
         supported_types=(KEY_TYPE_TTS,),
-        # Unused — doesn't go through litellm, see services/tts_service.py::_synthesize_google_cloud_tts.
+        # Unused — doesn't go through litellm, see features/ai/tts/google.py.
         model_prefix="",
         models=(),
         test_model=None,
@@ -184,7 +184,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         api_base_required=False,
         key_required=True,
         supported_types=(KEY_TYPE_LLM,),
-        # Unused — doesn't go through litellm, see services/llm_service.py: _send_chat_arcana.
+        # Unused — doesn't go through litellm, see features/ai/llm/arcana.py::ArcanaClient.
         model_prefix="",
         models=(),
         test_model=None,
@@ -202,7 +202,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         api_base_required=False,
         key_required=True,
         supported_types=(KEY_TYPE_STT,),
-        # Unused — doesn't go through litellm, see services/stt_service.py::_transcribe_saia.
+        # Unused — doesn't go through litellm, see features/ai/stt/saia.py.
         model_prefix="",
         models=(),
         test_model=None,

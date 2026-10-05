@@ -21,7 +21,6 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -117,7 +116,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       </nav>
       <div className={styles.sidebarFooter}>
         <div className={styles.userRow}>
-          <Avatar name={user?.name ?? ""} src={toAbsoluteAvatarUrl(user?.avatarUrl)} size="sm" />
+          <Avatar name={user?.name ?? ""} src={user?.avatarUrl ?? undefined} size="sm" />
           <div className={styles.userInfo}>
             <span className={styles.userName}>{user?.name ?? "…"}</span>
             <span className={styles.userSchool}>{user?.school ?? ""}</span>

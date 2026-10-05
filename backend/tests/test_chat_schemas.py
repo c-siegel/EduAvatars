@@ -1,17 +1,17 @@
 """Tests for ChatMessageIn's blank-message and length guards, and ChatUnlockRequest's
-password-length guard (app/models/schemas/chat.py). The blank-message check is the backend's own
+password-length guard (app/features/chat/schemas.py). The blank-message check is the backend's own
 backstop against an empty user turn reaching the LLM, alongside the frontend's own check
 (sendMessage's trim-check in pages/PublicChat/index.tsx). The length caps exist because an
 anonymous visitor had no server-side limit on message (or echoed history) size, so a handful of
 requests within the existing rate limit could send arbitrarily large text against the project
 owner's own LLM API key. The password-length check exists because bcrypt.checkpw (see
-services/chat_password_service.py) raises an unhandled error above 72 bytes instead of
+features/chat/unlock.py) raises an unhandled error above 72 bytes instead of
 truncating — without it, a single oversized guess would 500 this fully unauthenticated route."""
 
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas.chat import ChatHistoryEntry, ChatMessageIn, ChatUnlockRequest
+from app.features.chat.schemas import ChatHistoryEntry, ChatMessageIn, ChatUnlockRequest
 
 
 @pytest.mark.parametrize("message", ["", "   ", "\n\t"])

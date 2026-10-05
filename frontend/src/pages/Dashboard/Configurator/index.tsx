@@ -31,8 +31,9 @@ function toDraft(project: Project): ConfiguratorDraft {
   return {
     title: project.title,
     description: project.description ?? "",
-    avatarModelUrl: project.avatarModelUrl,
-    avatarBackgroundUrl: project.avatarBackgroundUrl,
+    avatarModelId: project.avatarModelId,
+    builtinAvatar: project.builtinAvatar,
+    avatarBackgroundId: project.avatarBackgroundId,
     chatDefaultOpen: project.chatDefaultOpen,
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
@@ -55,6 +56,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     ttsVoice: project.ttsVoice ?? "",
     sttApiKeyId: project.sttApiKeyId,
     sttEnabled: project.sttEnabled,
+    sttBrowserEnabled: project.sttBrowserEnabled,
     streamingEnabled: project.streamingEnabled,
   };
 }
@@ -65,8 +67,9 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
   return (
     draft.title !== project.title ||
     draft.description !== (project.description ?? "") ||
-    draft.avatarModelUrl !== project.avatarModelUrl ||
-    draft.avatarBackgroundUrl !== project.avatarBackgroundUrl ||
+    draft.avatarModelId !== project.avatarModelId ||
+    draft.builtinAvatar !== project.builtinAvatar ||
+    draft.avatarBackgroundId !== project.avatarBackgroundId ||
     draft.chatDefaultOpen !== project.chatDefaultOpen ||
     (draft.gradeLevel || null) !== project.gradeLevel ||
     draft.preprompt !== (project.preprompt ?? "") ||
@@ -86,6 +89,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.ttsVoice !== (project.ttsVoice ?? "") ||
     draft.sttApiKeyId !== project.sttApiKeyId ||
     draft.sttEnabled !== project.sttEnabled ||
+    draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
     draft.streamingEnabled !== project.streamingEnabled
   );
 }
@@ -121,8 +125,9 @@ export function ConfiguratorPage() {
       projectsApi.update(projectId, {
         title: data.title,
         description: data.description,
-        avatarModelUrl: data.avatarModelUrl,
-        avatarBackgroundUrl: data.avatarBackgroundUrl,
+        avatarModelId: data.avatarModelId,
+        builtinAvatar: data.builtinAvatar,
+        avatarBackgroundId: data.avatarBackgroundId,
         chatDefaultOpen: data.chatDefaultOpen,
         gradeLevel: data.gradeLevel || null,
         preprompt: data.preprompt,
@@ -142,6 +147,7 @@ export function ConfiguratorPage() {
         ttsVoice: data.ttsVoice || null,
         sttApiKeyId: data.sttApiKeyId,
         sttEnabled: data.sttEnabled,
+        sttBrowserEnabled: data.sttBrowserEnabled,
         streamingEnabled: data.streamingEnabled,
       }),
     onSuccess: (updated) => {
@@ -212,7 +218,7 @@ export function ConfiguratorPage() {
         )}
         {step === 4 && (
           // avatarModelUrl/ttsEnabled kommen bewusst von project (gespeicherter Stand), nicht vom
-          // draft — die preview-message-Route arbeitet serverseitig auch auf den persistierten
+          // draft — die Preview-Chat-Route (/projects/{id}/chat/messages) arbeitet serverseitig auch auf den persistierten
           // Projektdaten (siehe Kommentar in Step4Preview.tsx).
           <Step4Preview
             projectId={projectId}

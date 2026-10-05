@@ -1,5 +1,5 @@
-"""Tests for build_conversation_csv's CSV/formula-injection guard (app/services/
-analytics_service.py). visitor_name and message content come straight from an anonymous chat
+"""Tests for build_conversation_csv's CSV/formula-injection guard (app/features/
+analytics/csv_export.py). visitor_name and message content come straight from an anonymous chat
 visitor with no format restriction, so a value starting with =, +, -, or @ must not reach the
 exported cell unescaped — Excel/Sheets would read it as a live formula the moment a teacher
 opens the exported file."""
@@ -8,9 +8,9 @@ import csv
 import io
 import json
 
-from app.models.conversation import Conversation
-from app.models.project import Project
-from app.services.analytics_service import build_conversation_csv
+from app.features.analytics.csv_export import build_conversation_csv
+from app.features.chat.models import Conversation
+from app.features.projects.models import Project
 
 
 def _project() -> Project:

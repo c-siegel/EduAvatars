@@ -38,7 +38,7 @@ export interface FpsTrackingResult {
 
 export interface TalkingHeadAvatarHandle {
   /**
-   * Decodes base64 MP3 audio (from services/tts_service.py, one chunk for a streamed reply, see
+   * Decodes base64 MP3 audio (from features/ai/tts, one chunk for a streamed reply, see
    * api/publicChat.ts::sendMessageStream) into a playable buffer, without starting playback —
    * split from speakBuffer() so callers can time/sequence playback themselves (wait out
    * audioBuffer.duration, then call stopSpeaking() — see pages/PublicChat/index.tsx).

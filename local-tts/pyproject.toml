@@ -1,0 +1,18 @@
+[project]
+name = "eduavatars-local-tts"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+    # torch/torchaudio are sopro's own dependencies (torch>=2.3) but are deliberately NOT listed
+    # here — see docker/local-tts.Dockerfile for why they're installed as a separate, earlier
+    # step (the plain PyPI torch wheel pulls in several GB of CUDA libraries this CPU-only
+    # service never uses).
+    "sopro>=2.2.0",
+    "soundfile>=0.12.1",
+]
+
+[tool.setuptools]
+packages = ["app"]

@@ -20,7 +20,7 @@ Why import all models here?
 
 How to use:
     # When you create a new model, add it here:
-    from app.models.your_new_model import YourNewModel  # noqa: F401
+    from app.features.your_feature.models import YourNewModel  # noqa: F401
     
     # Then run:
     # alembic revision --autogenerate -m "Add YourNewModel"
@@ -28,12 +28,10 @@ How to use:
 """
 
 # Collects all SQLModel metadata for Alembic autogenerate.
-from app.models.api_key import UserApiKey  # noqa: F401
-from app.models.avatar_model import AvatarModel  # noqa: F401
-from app.models.background_image import BackgroundImage  # noqa: F401
-from app.models.conversation import Conversation  # noqa: F401
-from app.models.project import Project  # noqa: F401
-from app.models.password_reset_token import PasswordResetToken  # noqa: F401
-from app.models.project_access import ProjectAccess  # noqa: F401
-from app.models.site_settings import SiteSettings  # noqa: F401
-from app.models.user import User  # noqa: F401
+from app.features.api_keys.models import UserApiKey  # noqa: F401
+from app.features.auth.models import PasswordResetToken  # noqa: F401
+from app.features.chat.models import Conversation, ProjectAccess  # noqa: F401
+from app.features.media.models import AvatarModel, BackgroundImage  # noqa: F401
+from app.features.projects.models import Project  # noqa: F401
+from app.features.site_settings.models import SiteSettings  # noqa: F401
+from app.features.users.models import User  # noqa: F401

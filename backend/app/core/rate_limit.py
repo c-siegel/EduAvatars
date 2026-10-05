@@ -33,6 +33,7 @@ How to use:
         ...
 """
 
+import threading
 import time
 from collections import defaultdict
 
@@ -41,8 +42,10 @@ from fastapi import HTTPException, Request
 from app.core.config import settings
 from app.core.error_codes import ErrorCode
 
-# Timestamps (in seconds) of recent hits per rate-limit key, e.g. "login-ip:1.2.3.4".
+# Timestamps (in seconds) of recent hits per rate-limit key, e.g. "login-ip:1.2.3.4". Only ever
+# touched while holding _lock (see _enforce).
 _hits: dict[str, list[float]] = defaultdict(list)
+_lock = threading.Lock()
 
 # _enforce only ever trims a KEY's own timestamp list, never removes the key itself — a visitor
 # or IP never seen again (very much the norm: visitor_id is a cookie that resets on every clear)
@@ -98,14 +101,20 @@ def _client_ip(request: Request) -> str:
 
 def _enforce(key: str, *, max_requests: int, window_seconds: int, message: str) -> None:
     """Raise HTTP 429 if `key` already hit `max_requests` within the last `window_seconds`."""
-    if len(_hits) > _SWEEP_THRESHOLD:
-        _sweep_stale_keys()
-    now = time.monotonic()
-    recent = [t for t in _hits[key] if now - t < window_seconds]
-    if len(recent) >= max_requests:
-        raise HTTPException(status_code=429, detail=message)
-    recent.append(now)
-    _hits[key] = recent
+    # Every sync route runs in FastAPI's worker thread pool, so many threads call this at once.
+    # The lock makes the sweep (which iterates _hits — another thread inserting mid-iteration
+    # would raise "dictionary changed size during iteration") and the check-then-append below
+    # atomic; without it, a burst of concurrent requests could all pass the check before any of
+    # them recorded its hit. Held only for in-memory list work, so contention stays negligible.
+    with _lock:
+        if len(_hits) > _SWEEP_THRESHOLD:
+            _sweep_stale_keys()
+        now = time.monotonic()
+        recent = [t for t in _hits[key] if now - t < window_seconds]
+        if len(recent) >= max_requests:
+            raise HTTPException(status_code=429, detail=message)
+        recent.append(now)
+        _hits[key] = recent
 
 
 def enforce_public_chat_rate_limit(request: Request, visitor_id: str) -> None:

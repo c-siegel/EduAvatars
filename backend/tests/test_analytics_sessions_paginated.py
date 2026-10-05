@@ -1,4 +1,4 @@
-"""Tests for get_sessions_paginated (app/services/analytics_service.py). Used to look up each
+"""Tests for get_sessions_paginated (app/features/analytics/service.py). Used to look up each
 row's Project via a separate session.get() call per conversation — an N+1 query pattern, since
 Project is already joined into the same query for its WHERE filters. Selecting Project.title
 alongside Conversation instead should return identical results from a single query."""
@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.models.conversation import Conversation
-from app.models.project import Project
-from app.services.analytics_service import get_sessions_paginated
+from app.features.analytics.service import get_sessions_paginated
+from app.features.chat.models import Conversation
+from app.features.projects.models import Project
 
 
 def _make_session() -> Session:
