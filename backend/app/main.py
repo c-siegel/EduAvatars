@@ -6,7 +6,7 @@ What is this file for?
 This file:
 - Creates the FastAPI application instance (create_app)
 - Configures CORS (Cross-Origin Resource Sharing) and the security-headers middleware
-- Registers all API route handlers (collected in app/api_router.py)
+- Registers all API route handlers (collected in app/api_router.py) under /api/v1
 - Provides a health check endpoint
 
 How it works:
@@ -27,6 +27,7 @@ from app.api_router import api_router
 from app.core.config import settings
 from app.core.errors import DomainError, domain_error_handler
 from app.core.middleware import add_security_headers
+from app.core.urls import API_PREFIX
 from app.tasks.retention import retention_loop, run_retention_purge
 
 
@@ -35,7 +36,7 @@ async def lifespan(app: FastAPI):
     """Run startup tasks: raise the thread-pool ceiling, run the data-retention cleanup once
     immediately, then keep re-running it periodically for as long as the process is up."""
     # anyio's own default (40) caps how many worker threads every sync route (almost all of
-    # them) and every /message/stream response body may use at once, across the whole
+    # them) and every /messages/stream response body may use at once, across the whole
     # process — sized for a handful of simultaneous users, not a class of ~30 each holding a
     # thread for their own request. Settable only from inside a running event loop, hence here.
     anyio.to_thread.current_default_thread_limiter().total_tokens = settings.request_thread_pool_size
@@ -80,8 +81,11 @@ def create_app() -> FastAPI:
     # Services raise DomainError instead of HTTPException; rendered identically (see core/errors.py).
     app.add_exception_handler(DomainError, domain_error_handler)
 
-    app.include_router(api_router)
+    app.include_router(api_router, prefix=API_PREFIX)
+    # Reachable both at the bare path (what a load balancer or uptime check tries first, and what
+    # the Docker healthcheck calls) and next to every other route under the API prefix.
     app.get("/health")(health)
+    app.get(f"{API_PREFIX}/health", include_in_schema=False)(health)
     return app
 
 

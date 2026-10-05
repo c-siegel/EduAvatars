@@ -2,7 +2,7 @@
 Analytics Stats Routes
 
 Read-only numbers for the teacher-facing dashboards: aggregate stats and a timeseries for charts
-(analytics page), plus the overview page's summary (/projects/stats). All scoped to the current
+(analytics page), plus the overview page's summary (/analytics/overview). All scoped to the current
 user's own projects — the queries live in service.py.
 """
 
@@ -16,10 +16,6 @@ from app.features.projects.schemas import ProjectStats
 from app.features.users.models import User
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
-
-# The overview's summary keeps its historical /projects/stats path. Registered before the project
-# CRUD router (see app/api_router.py) so "stats" is never swallowed as a project id.
-projects_router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("/stats", response_model=AnalyticsStatsOut)
@@ -50,7 +46,7 @@ def read_timeseries(
     )
 
 
-@projects_router.get("/stats", response_model=ProjectStats)
-def get_stats_route(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+@router.get("/overview", response_model=ProjectStats)
+def read_overview(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     """Summary stats (project count, published count, sessions/messages this week) for the current user."""
     return get_project_overview(session, current_user.id)

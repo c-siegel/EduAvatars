@@ -3,7 +3,7 @@ Provider Registry for the "Bring Your Own Key" Feature
 
 This module is the single source of truth for which LLM/TTS providers a user can connect
 with their own API key, and what each one needs (endpoint, model list, whether a key is
-required, ...). The frontend fetches this list via GET /api-keys/providers, so the UI and
+required, ...). The frontend fetches this list via GET /api/v1/providers, so the UI and
 the backend's validation never drift apart.
 
 What is a provider registry?

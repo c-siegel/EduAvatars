@@ -16,7 +16,6 @@ import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/ap
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./PublicChat.module.css";
@@ -878,7 +877,7 @@ export function PublicChatPage() {
   // router-relative (see features/projects/start_audio_router.py), so it needs the API origin
   // prefixed before fetch() can reach it — same as avatarModelUrl/avatarBackgroundUrl below.
   function playGreeting() {
-    const url = toAbsoluteAvatarUrl(tutor.startAudioUrl);
+    const url = tutor.startAudioUrl;
     if (!url) return;
     // Only reveal the avatar and hide the play button once speakFromUrl confirms the audio is
     // actually audible (not just successfully decoded/scheduled) — an autoplay attempt right as
@@ -1024,8 +1023,8 @@ export function PublicChatPage() {
         <div className={styles.body}>
           <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
             <TalkingHeadAvatar
-              avatarUrl={toAbsoluteAvatarUrl(tutor.avatarModelUrl)}
-              backgroundImageUrl={toAbsoluteAvatarUrl(tutor.avatarBackgroundUrl)}
+              avatarUrl={tutor.avatarModelUrl ?? undefined}
+              backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
               speechEnabled={tutor.ttsEnabled}
               fallback={<Avatar name={tutor.title} size="lg" />}
               onReady={handleAvatarReady}

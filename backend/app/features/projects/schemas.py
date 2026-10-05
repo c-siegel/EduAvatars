@@ -9,6 +9,7 @@ start-prompt audio path are all either secret, instance-specific, or derived, so
 round-trip.
 """
 
+import re
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
@@ -28,6 +29,16 @@ MIN_CHAT_PASSWORD_LENGTH = 4
 MAX_TEMPERATURE = 2.0
 MAX_TOP_P = 1.0
 
+# A bundled default avatar is addressed by its file name in frontend/public/avatars/ (e.g.
+# "julia" -> /avatars/julia.glb) — restricted to a plain slug so it can never point anywhere else.
+_BUILTIN_AVATAR_RE = re.compile(r"^[a-z0-9-]{1,40}$")
+
+
+def _check_builtin_avatar(value: str | None) -> str | None:
+    if value is not None and not _BUILTIN_AVATAR_RE.match(value):
+        raise ValueError(ErrorCode.INVALID_BUILTIN_AVATAR)
+    return value
+
 
 class ProjectOut(CamelModel):
     id: str
@@ -40,6 +51,10 @@ class ProjectOut(CamelModel):
     llm_model: str | None
     preprompt: str | None
     start_prompt: str | None
+    avatar_model_id: str | None
+    builtin_avatar: str | None
+    avatar_background_id: str | None
+    # Ready-to-load URLs derived from the three fields above (read-only).
     avatar_model_url: str | None
     avatar_background_url: str | None
     grade_level: str | None
@@ -62,7 +77,7 @@ class ProjectOut(CamelModel):
     chat_default_open: bool
     password_protected: bool
     require_visitor_name: bool
-    # Route to the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
+    # URL of the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
     # see features/projects/start_audio.py. Read-only: generated via its own endpoint, never
     # written directly through ProjectUpdate.
     start_audio_url: str | None
@@ -77,8 +92,10 @@ class ProjectUpdate(CamelModel):
     llm_api_key_id: str | None = None
     preprompt: str | None = None
     start_prompt: str | None = None
-    avatar_model_url: str | None = None
-    avatar_background_url: str | None = None
+    # One of the user's own library avatars, or a bundled default avatar by name (e.g. "julia").
+    avatar_model_id: str | None = None
+    builtin_avatar: str | None = None
+    avatar_background_id: str | None = None
     grade_level: str | None = None
     temperature: float | None = None
     top_p: float | None = None
@@ -97,9 +114,14 @@ class ProjectUpdate(CamelModel):
     chat_default_open: bool | None = None
     require_visitor_name: bool | None = None
     # None = no change (field omitted); "" or explicit null clears/disables the password; a
-    # non-empty string sets/changes it — handled separately in features/projects/service.py, never written
-    # straight to the DB (see features/projects/service.py::set_or_clear_chat_password).
+    # non-empty string sets/changes it — handled separately in features/projects/service.py, never
+    # written straight to the DB (see features/projects/service.py::set_or_clear_chat_password).
     chat_password: str | None = None
+
+    @field_validator("builtin_avatar")
+    @classmethod
+    def validate_builtin_avatar(cls, value: str | None) -> str | None:
+        return _check_builtin_avatar(value)
 
     @field_validator("temperature")
     @classmethod
@@ -153,8 +175,11 @@ class ProjectExportData(BaseModel):
     description: str | None = None
     preprompt: str | None = None
     start_prompt: str | None = None
-    avatar_model_url: str | None = None
-    avatar_background_url: str | None = None
+    # Library references only survive an import into the same account (see export.py); a
+    # bundled default avatar works everywhere.
+    avatar_model_id: str | None = None
+    builtin_avatar: str | None = None
+    avatar_background_id: str | None = None
     grade_level: str | None = None
     temperature: float = 0.5
     top_p: float = 1.0
@@ -170,6 +195,11 @@ class ProjectExportData(BaseModel):
     streaming_enabled: bool = True
     chat_default_open: bool = True
     require_visitor_name: bool = False
+
+    @field_validator("builtin_avatar")
+    @classmethod
+    def validate_builtin_avatar(cls, value: str | None) -> str | None:
+        return _check_builtin_avatar(value)
 
     @field_validator("temperature")
     @classmethod

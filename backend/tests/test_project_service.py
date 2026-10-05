@@ -5,7 +5,6 @@ avatar_model_url/avatar_background_url are deliberately NOT covered here: those 
 library assets other projects may still reference, so only their own library-delete endpoints
 remove those files."""
 
-from pathlib import Path
 
 from sqlmodel import Session, SQLModel, create_engine
 

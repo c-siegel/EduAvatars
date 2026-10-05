@@ -8,8 +8,7 @@ import { Callout } from "@/components/Callout";
 import { errorMessage } from "@/api/client";
 import { avatarLibraryApi, type AvatarModel } from "@/api/avatarLibrary";
 import { backgroundLibraryApi, type BackgroundImage } from "@/api/backgroundLibrary";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
-import type { StepProps } from "../types";
+import type { ConfiguratorDraft, StepProps } from "../types";
 import styles from "./Step1Appearance.module.css";
 import sharedStyles from "./shared.module.css";
 
@@ -17,7 +16,8 @@ import sharedStyles from "./shared.module.css";
 // user's own upload library — shown in every project's avatar grid below so a project always has
 // a usable face without requiring an upload first. Not real AvatarModel rows (no DB id, no
 // thumbnail), so isBuiltinAvatar() below keys off the "builtin-" id prefix to skip the delete
-// button and the removeAvatarMutation call, which only work on the user's own library entries.
+// button and the removeAvatarMutation call, which only work on the user's own library entries. A
+// project stores one of these by name (builtinAvatar, the part after "builtin-"), see avatarRef().
 const BUILTIN_AVATARS: AvatarModel[] = [
   { id: "builtin-julia", name: "Julia", fileUrl: "/avatars/julia.glb", thumbnailUrl: null, createdAt: "" },
   { id: "builtin-david", name: "David", fileUrl: "/avatars/david.glb", thumbnailUrl: null, createdAt: "" },
@@ -25,6 +25,18 @@ const BUILTIN_AVATARS: AvatarModel[] = [
 
 function isBuiltinAvatar(avatar: AvatarModel): boolean {
   return avatar.id.startsWith("builtin-");
+}
+
+// The draft fields that select `avatar` — exactly one of the two references is set.
+function avatarRef(avatar: AvatarModel): Pick<ConfiguratorDraft, "avatarModelId" | "builtinAvatar"> {
+  return isBuiltinAvatar(avatar)
+    ? { avatarModelId: null, builtinAvatar: avatar.id.slice("builtin-".length) }
+    : { avatarModelId: avatar.id, builtinAvatar: null };
+}
+
+function isSelectedAvatar(draft: ConfiguratorDraft, avatar: AvatarModel): boolean {
+  const ref = avatarRef(avatar);
+  return draft.avatarModelId === ref.avatarModelId && draft.builtinAvatar === ref.builtinAvatar;
 }
 
 // Schritt 1 — Aussehen: Projektname, Kurzbeschreibung, Avatar-Bibliothek, Hintergrundbild und
@@ -41,7 +53,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
     mutationFn: avatarLibraryApi.upload,
     onSuccess: async (avatar) => {
       queryClient.invalidateQueries({ queryKey: ["avatar-models"] });
-      onChange({ avatarModelUrl: avatar.fileUrl });
+      onChange(avatarRef(avatar));
 
       // Vorschaubild ist ein reines Extra (Grid zeigt sonst weiter Initialen) — Fehler hier
       // (z.B. kein WebGL) sollen den eigentlichen Upload nicht als fehlgeschlagen erscheinen lassen.
@@ -50,7 +62,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
       // (gleiches Muster wie der dynamische Import von @met4citizen/talkinghead in TalkingHeadAvatar.tsx).
       try {
         const { captureAvatarThumbnail } = await import("@/lib/avatarThumbnail");
-        const thumbnail = await captureAvatarThumbnail(toAbsoluteAvatarUrl(avatar.fileUrl)!);
+        const thumbnail = await captureAvatarThumbnail(avatar.fileUrl);
         await avatarLibraryApi.uploadThumbnail(avatar.id, thumbnail);
         queryClient.invalidateQueries({ queryKey: ["avatar-models"] });
       } catch (error) {
@@ -63,7 +75,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
     mutationFn: backgroundLibraryApi.upload,
     onSuccess: (background) => {
       queryClient.invalidateQueries({ queryKey: ["backgrounds"] });
-      onChange({ avatarBackgroundUrl: background.fileUrl });
+      onChange({ avatarBackgroundId: background.id });
     },
   });
 
@@ -93,13 +105,13 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
     if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: avatar.name }))) return;
     // Ausgewählter Avatar wird beim Löschen mit abgewählt, statt im Entwurf auf eine nicht mehr
     // existierende Datei zeigen zu lassen.
-    if (draft.avatarModelUrl === avatar.fileUrl) onChange({ avatarModelUrl: null });
+    if (isSelectedAvatar(draft, avatar)) onChange({ avatarModelId: null, builtinAvatar: null });
     removeAvatarMutation.mutate(avatar.id);
   }
 
   function handleRemoveBackground(background: BackgroundImage) {
     if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: background.name }))) return;
-    if (draft.avatarBackgroundUrl === background.fileUrl) onChange({ avatarBackgroundUrl: null });
+    if (draft.avatarBackgroundId === background.id) onChange({ avatarBackgroundId: null });
     removeBackgroundMutation.mutate(background.id);
   }
 
@@ -134,17 +146,17 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
               <button
                 type="button"
                 className={styles.avatarButton}
-                onClick={() => onChange({ avatarModelUrl: avatar.fileUrl })}
+                onClick={() => onChange(avatarRef(avatar))}
                 aria-label={avatar.name}
-                aria-pressed={draft.avatarModelUrl === avatar.fileUrl}
+                aria-pressed={isSelectedAvatar(draft, avatar)}
               >
                 {/* fileUrl zeigt auf die .glb-3D-Datei selbst, kein Bild — die Kachel zeigt stattdessen
                     das einmalig client-seitig gerenderte Vorschaubild (thumbnailUrl), solange keins
                     vorhanden ist (z.B. noch in Erzeugung oder fehlgeschlagen) bleibt es bei Initialen. */}
                 <Avatar
                   name={avatar.name}
-                  src={toAbsoluteAvatarUrl(avatar.thumbnailUrl)}
-                  selected={draft.avatarModelUrl === avatar.fileUrl}
+                  src={avatar.thumbnailUrl ?? undefined}
+                  selected={isSelectedAvatar(draft, avatar)}
                 />
               </button>
               {!isBuiltinAvatar(avatar) && (
@@ -187,11 +199,11 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
           <button
             type="button"
             className={`${styles.backgroundTile} ${styles.backgroundNone} ${
-              !draft.avatarBackgroundUrl ? styles.backgroundTileSelected : ""
+              !draft.avatarBackgroundId ? styles.backgroundTileSelected : ""
             }`}
-            onClick={() => onChange({ avatarBackgroundUrl: null })}
+            onClick={() => onChange({ avatarBackgroundId: null })}
             aria-label={t("configurator.step1.noBackgroundAriaLabel")}
-            aria-pressed={!draft.avatarBackgroundUrl}
+            aria-pressed={!draft.avatarBackgroundId}
           >
             {t("configurator.step1.default")}
           </button>
@@ -200,12 +212,12 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
               <button
                 type="button"
                 className={`${styles.backgroundTile} ${
-                  draft.avatarBackgroundUrl === background.fileUrl ? styles.backgroundTileSelected : ""
+                  draft.avatarBackgroundId === background.id ? styles.backgroundTileSelected : ""
                 }`}
-                style={{ backgroundImage: `url(${toAbsoluteAvatarUrl(background.fileUrl)})` }}
-                onClick={() => onChange({ avatarBackgroundUrl: background.fileUrl })}
+                style={{ backgroundImage: `url(${background.fileUrl})` }}
+                onClick={() => onChange({ avatarBackgroundId: background.id })}
                 aria-label={background.name}
-                aria-pressed={draft.avatarBackgroundUrl === background.fileUrl}
+                aria-pressed={draft.avatarBackgroundId === background.id}
               />
               <button
                 type="button"

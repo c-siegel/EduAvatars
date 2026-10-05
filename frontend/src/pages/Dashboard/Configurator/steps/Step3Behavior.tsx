@@ -9,7 +9,6 @@ import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { projectsApi } from "@/api/projects";
 import { errorMessage } from "@/api/client";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import type { StepProps } from "../types";
 import styles from "./Step3Behavior.module.css";
 
@@ -48,7 +47,7 @@ export function Step3Behavior({
   const [prepromptCompiled, setPrepromptCompiled] = useState(false);
 
   function playAudioPreview() {
-    const url = toAbsoluteAvatarUrl(startAudioUrl);
+    const url = startAudioUrl;
     if (!url) return;
     previewAudioRef.current?.pause();
     const audio = new Audio(url);

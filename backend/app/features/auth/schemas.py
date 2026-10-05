@@ -2,7 +2,7 @@
 Auth Request/Response Shapes
 
 The request/response shapes for app/features/auth/router.py, plus the shared password-strength check used
-by both registration and password reset/change (see also schemas/profile.py).
+by both registration and password reset/change (see also features/users/schemas.py).
 
 How to use:
     from app.features.auth.schemas import LoginRequest

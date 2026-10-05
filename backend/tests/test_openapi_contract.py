@@ -1,7 +1,7 @@
 """Pins the HTTP contract (paths, methods, parameters, request/response schemas, status codes) to
 a committed snapshot, so restructuring the backend can't silently change what the frontend sees.
 
-operationId, tags, summary and description are left out — they only follow internal
+operationId, tags, summary and description (operations and schemas) are left out — they only follow internal
 function/router names and docstrings.
 Regenerate deliberately with: UPDATE_OPENAPI_SNAPSHOT=1 python -m pytest tests/test_openapi_contract.py
 """
@@ -21,6 +21,9 @@ def _contract() -> dict:
         for operation in operations.values():
             for key in ("operationId", "tags", "summary", "description"):
                 operation.pop(key, None)
+    # A schema's description is its model class's docstring — documentation, not contract.
+    for schema in spec.get("components", {}).get("schemas", {}).values():
+        schema.pop("description", None)
     return {"paths": spec["paths"], "components": spec.get("components", {})}
 
 

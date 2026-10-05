@@ -134,7 +134,7 @@ async def run_student(
     deadline = time.monotonic() + duration
     async with httpx.AsyncClient(base_url=base_url, timeout=60.0) as client:
         try:
-            await client.get(f"/public/{slug}")
+            await client.get(f"/api/v1/public/{slug}")
         except httpx.HTTPError as exc:
             print(f"[student {student_id}] failed to load page: {exc}")
             return
@@ -142,7 +142,7 @@ async def run_student(
         headers: dict[str, str] = {}
         if unlock_password:
             try:
-                resp = await client.post(f"/public/{slug}/unlock", json={"password": unlock_password})
+                resp = await client.post(f"/api/v1/public/{slug}/unlock", json={"password": unlock_password})
                 resp.raise_for_status()
                 headers["X-Chat-Unlock-Token"] = resp.json()["unlockToken"]
             except httpx.HTTPError as exc:
@@ -159,7 +159,7 @@ async def run_student(
                 start = time.monotonic()
                 try:
                     resp = await client.post(
-                        f"/public/{slug}/transcribe",
+                        f"/api/v1/public/{slug}/transcriptions",
                         headers=headers,
                         files={"audio": ("sample.webm", audio_bytes, audio_content_type)},
                     )
@@ -173,7 +173,7 @@ async def run_student(
                 if stream:
                     async with client.stream(
                         "POST",
-                        f"/public/{slug}/message/stream",
+                        f"/api/v1/public/{slug}/messages/stream",
                         headers=headers,
                         json={"message": message, "history": history},
                     ) as resp:
@@ -182,7 +182,7 @@ async def run_student(
                             pass  # draining the stream is enough to measure total duration
                 else:
                     resp = await client.post(
-                        f"/public/{slug}/message", headers=headers, json={"message": message, "history": history}
+                        f"/api/v1/public/{slug}/messages", headers=headers, json={"message": message, "history": history}
                     )
                     resp.raise_for_status()
                 chat_stats.record((time.monotonic() - start) * 1000)
@@ -203,10 +203,10 @@ async def main() -> None:
     parser.add_argument(
         "--message-interval", type=float, default=15.0, help="Seconds between one student's own messages."
     )
-    parser.add_argument("--stream", action="store_true", help="Use /message/stream instead of /message.")
+    parser.add_argument("--stream", action="store_true", help="Use /messages/stream instead of /messages.")
     parser.add_argument(
         "--audio-file",
-        help="Path to a short sample recording (webm/ogg/mp4/wav/mpeg) to also load-test /transcribe. "
+        help="Path to a short sample recording (webm/ogg/mp4/wav/mpeg) to also load-test /transcriptions. "
         "Provide your own — none is bundled with this script.",
     )
     parser.add_argument("--unlock-password", help="Chat password, if the project is password-protected.")
@@ -227,13 +227,13 @@ async def main() -> None:
         ext = args.audio_file.rsplit(".", 1)[-1].lower()
         audio_content_type = _AUDIO_CONTENT_TYPES.get(ext, "audio/webm")
 
-    chat_stats = RequestStats(label="/message/stream" if args.stream else "/message")
-    transcribe_stats = RequestStats(label="/transcribe")
+    chat_stats = RequestStats(label="/messages/stream" if args.stream else "/messages")
+    transcribe_stats = RequestStats(label="/transcriptions")
 
     stop = asyncio.Event()
     health_task = asyncio.create_task(poll_health(args.base_url, stop, args.health_interval, args.freeze_threshold_ms))
 
-    print(f"Starting {args.students} virtual students for {args.duration:.0f}s against {args.base_url}/public/{args.slug} ...")
+    print(f"Starting {args.students} virtual students for {args.duration:.0f}s against {args.base_url}/api/v1/public/{args.slug} ...")
     run_start = time.monotonic()
     await asyncio.gather(
         *(

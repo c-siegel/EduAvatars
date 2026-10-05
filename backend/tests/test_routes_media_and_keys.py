@@ -1,7 +1,7 @@
 """Route-level tests for the avatar/background libraries, the profile picture, and the API-key
 management routes (/api-keys)."""
 
-from conftest import create_key, create_project, login_as, make_user, publish
+from conftest import browser_url, create_key, create_project, login_as, make_user, publish
 
 GLB = b"glTF" + b"\x00" * 16
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
@@ -11,47 +11,48 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 
 
 def test_avatar_library(client, anon, engine, teacher):
-    bad_ext = client.post("/avatar-models", files={"file": ("a.obj", GLB, "application/octet-stream")})
+    bad_ext = client.post("/avatars", files={"file": ("a.obj", GLB, "application/octet-stream")})
     assert bad_ext.status_code == 400
     assert bad_ext.json() == {"detail": "AVATAR_FILE_INVALID_TYPE"}
-    bad_magic = client.post("/avatar-models", files={"file": ("a.glb", b"nope" * 4, "model/gltf-binary")})
+    bad_magic = client.post("/avatars", files={"file": ("a.glb", b"nope" * 4, "model/gltf-binary")})
     assert bad_magic.status_code == 400
     assert bad_magic.json() == {"detail": "AVATAR_FILE_INVALID_CONTENT"}
 
-    avatar = client.post("/avatar-models", files={"file": ("Julia.glb", GLB, "model/gltf-binary")}).json()
+    avatar = client.post("/avatars", files={"file": ("Julia.glb", GLB, "model/gltf-binary")}).json()
     assert avatar["name"] == "Julia"
-    assert avatar["fileUrl"] == f"/avatar-models/{avatar['id']}/file"
+    assert avatar["fileUrl"] == f"/api/v1/avatars/{avatar['id']}/file"
     assert avatar["thumbnailUrl"] is None
-    assert [a["id"] for a in client.get("/avatar-models").json()] == [avatar["id"]]
+    assert [a["id"] for a in client.get("/avatars").json()] == [avatar["id"]]
 
-    owner_file = client.get(avatar["fileUrl"])
+    owner_file = client.get(browser_url(avatar["fileUrl"]))
     assert owner_file.status_code == 200
     assert owner_file.content == GLB
     assert owner_file.headers["content-type"] == "model/gltf-binary"
     assert owner_file.headers["cache-control"] == IMMUTABLE
 
     # Anonymous access only once a published project uses it.
-    assert anon.get(avatar["fileUrl"]).json() == {"detail": "AVATAR_NOT_FOUND"}
-    project = create_project(client, avatarModelUrl=avatar["fileUrl"])
-    assert anon.get(avatar["fileUrl"]).status_code == 404
+    assert anon.get(browser_url(avatar["fileUrl"])).json() == {"detail": "AVATAR_NOT_FOUND"}
+    project = create_project(client, avatarModelId=avatar["id"])
+    assert project["avatarModelUrl"] == avatar["fileUrl"]
+    assert anon.get(browser_url(avatar["fileUrl"])).status_code == 404
     publish(client, project["id"])
-    assert anon.get(avatar["fileUrl"]).content == GLB
+    assert anon.get(browser_url(avatar["fileUrl"])).content == GLB
 
-    bad_thumb = client.post(f"/avatar-models/{avatar['id']}/thumbnail", files={"file": ("t.png", JPEG, "image/png")})
+    bad_thumb = client.post(f"/avatars/{avatar['id']}/thumbnail", files={"file": ("t.png", JPEG, "image/png")})
     assert bad_thumb.json() == {"detail": "AVATAR_THUMBNAIL_INVALID"}
-    with_thumb = client.post(f"/avatar-models/{avatar['id']}/thumbnail", files={"file": ("t.png", PNG, "image/png")}).json()
-    assert with_thumb["thumbnailUrl"] == f"/avatar-models/{avatar['id']}/thumbnail"
-    thumb = client.get(with_thumb["thumbnailUrl"])
+    with_thumb = client.post(f"/avatars/{avatar['id']}/thumbnail", files={"file": ("t.png", PNG, "image/png")}).json()
+    assert with_thumb["thumbnailUrl"] == f"/api/v1/avatars/{avatar['id']}/thumbnail"
+    thumb = client.get(browser_url(with_thumb["thumbnailUrl"]))
     assert thumb.content == PNG
     assert thumb.headers["content-type"] == "image/png"
 
     stranger = login_as(anon, make_user(engine, email="other@example.com"))
-    assert stranger.delete(f"/avatar-models/{avatar['id']}").json() == {"detail": "AVATAR_NOT_FOUND"}
-    assert stranger.get(with_thumb["thumbnailUrl"]).json() == {"detail": "AVATAR_THUMBNAIL_NOT_FOUND"}
+    assert stranger.delete(f"/avatars/{avatar['id']}").json() == {"detail": "AVATAR_NOT_FOUND"}
+    assert stranger.get(browser_url(with_thumb["thumbnailUrl"])).json() == {"detail": "AVATAR_THUMBNAIL_NOT_FOUND"}
 
-    assert client.delete(f"/avatar-models/{avatar['id']}").status_code == 204
-    assert client.get(avatar["fileUrl"]).status_code == 404
-    assert client.get("/avatar-models").json() == []
+    assert client.delete(f"/avatars/{avatar['id']}").status_code == 204
+    assert client.get(browser_url(avatar["fileUrl"])).status_code == 404
+    assert client.get("/avatars").json() == []
 
 
 def test_background_library(client, anon, teacher):
@@ -63,40 +64,41 @@ def test_background_library(client, anon, teacher):
     # The stored extension follows the content, not the uploaded name.
     background = client.post("/backgrounds", files={"file": ("Klasse.png", JPEG, "image/png")}).json()
     assert background["name"] == "Klasse"
-    assert background["fileUrl"] == f"/backgrounds/{background['id']}/file"
-    served = client.get(background["fileUrl"])
+    assert background["fileUrl"] == f"/api/v1/backgrounds/{background['id']}/file"
+    served = client.get(browser_url(background["fileUrl"]))
     assert served.content == JPEG
     assert served.headers["content-type"] == "image/jpeg"
     assert served.headers["cache-control"] == IMMUTABLE
 
-    assert anon.get(background["fileUrl"]).json() == {"detail": "BACKGROUND_NOT_FOUND"}
-    project = create_project(client, avatarBackgroundUrl=background["fileUrl"])
+    assert anon.get(browser_url(background["fileUrl"])).json() == {"detail": "BACKGROUND_NOT_FOUND"}
+    project = create_project(client, avatarBackgroundId=background["id"])
+    assert project["avatarBackgroundUrl"] == background["fileUrl"]
     publish(client, project["id"])
-    assert anon.get(background["fileUrl"]).status_code == 200
+    assert anon.get(browser_url(background["fileUrl"])).status_code == 200
 
     assert client.delete(f"/backgrounds/{background['id']}").status_code == 204
     assert client.get("/backgrounds").json() == []
 
 
 def test_profile_picture(client, teacher):
-    invalid = client.post("/profile/picture", files={"file": ("p.gif", b"GIF89a" + b"\x00" * 8, "image/gif")})
+    invalid = client.post("/me/picture", files={"file": ("p.gif", b"GIF89a" + b"\x00" * 8, "image/gif")})
     assert invalid.status_code == 400
     assert invalid.json() == {"detail": "PROFILE_PICTURE_INVALID_TYPE"}
-    too_big = client.post("/profile/picture", files={"file": ("p.png", PNG + b"\x00" * (5 * 1024 * 1024), "image/png")})
+    too_big = client.post("/me/picture", files={"file": ("p.png", PNG + b"\x00" * (5 * 1024 * 1024), "image/png")})
     assert too_big.json() == {"detail": "PROFILE_PICTURE_TOO_LARGE"}
 
-    user = client.post("/profile/picture", files={"file": ("p.webp", WEBP, "image/webp")}).json()
-    assert user["avatarUrl"].startswith("/profile/picture?v=")
-    picture = client.get("/profile/picture")
+    user = client.post("/me/picture", files={"file": ("p.webp", WEBP, "image/webp")}).json()
+    assert user["avatarUrl"].startswith("/api/v1/me/picture?v=")
+    picture = client.get(browser_url(user["avatarUrl"]))
     assert picture.content == WEBP
     assert picture.headers["content-type"] == "image/webp"
 
-    assert client.delete("/profile/picture").json()["avatarUrl"] is None
-    assert client.get("/profile/picture").json() == {"detail": "PROFILE_PICTURE_NOT_FOUND"}
+    assert client.delete("/me/picture").json()["avatarUrl"] is None
+    assert client.get("/me/picture").json() == {"detail": "PROFILE_PICTURE_NOT_FOUND"}
 
 
 def test_providers_list(client, teacher):
-    providers = client.get("/api-keys/providers").json()
+    providers = client.get("/providers").json()
     openai = next(p for p in providers if p["value"] == "openai")
     assert openai["label"] == "OpenAI"
     assert "llm" in openai["supportedTypes"] and "tts" in openai["supportedTypes"]

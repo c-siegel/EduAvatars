@@ -1,10 +1,10 @@
 """
 API Router
 
-Collects every feature's router into one APIRouter that app/main.py mounts. Registration order
-matters wherever two routes could match the same path: a literal segment like /projects/stats or
-/projects/import must be registered before /projects/{project_id}, or the earlier, generic route
-swallows it.
+Collects every feature's router into one APIRouter that app/main.py mounts under API_PREFIX
+(/api/v1, see core/urls.py). Registration order matters wherever two routes could match the same
+path: a literal segment like /projects/import or /conversations/ids must be registered before a
+parameterized sibling like /projects/{project_id}, or the generic route swallows it.
 """
 
 from fastapi import APIRouter
@@ -25,25 +25,24 @@ api_router = APIRouter()
 
 # Authentication and the user's own account
 api_router.include_router(auth_router.router)  # /auth: register, login, logout, password reset
-api_router.include_router(profile_router.router)  # /profile: own profile, picture, password, deletion
+api_router.include_router(profile_router.router)  # /me: own profile, picture, password, deletion
 
-# Projects — the literal /projects/stats and /projects/import routes first (see module docstring)
-api_router.include_router(stats_router.projects_router)  # /projects/stats: dashboard overview
+# Projects — the literal /projects/import route first (see module docstring)
 api_router.include_router(transfer_router.router)  # /projects/import, /projects/{id}/export
 api_router.include_router(projects_router.router)  # /projects: CRUD
-api_router.include_router(publication_router.router)  # /projects/{id}/publish, /unpublish
+api_router.include_router(publication_router.router)  # /projects/{id}/publication
 api_router.include_router(start_audio_router.router)  # /projects/{id}/start-audio
-api_router.include_router(preview_router.router)  # /projects/{id}/preview-message, /transcribe
+api_router.include_router(preview_router.router)  # /projects/{id}/chat/messages, /chat/transcriptions
 
 # Libraries and keys
-api_router.include_router(avatars_router.router)  # /avatar-models
+api_router.include_router(avatars_router.router)  # /avatars
 api_router.include_router(backgrounds_router.router)  # /backgrounds
-api_router.include_router(providers_router.router)  # /api-keys/providers: provider registry
+api_router.include_router(providers_router.router)  # /providers: provider registry
 api_router.include_router(api_keys_router.router)  # /api-keys: the user's stored keys
 
 # Analytics
-api_router.include_router(stats_router.router)  # /analytics/stats, /analytics/timeseries
-api_router.include_router(conversations_router.router)  # /analytics/sessions, /export, /delete
+api_router.include_router(stats_router.router)  # /analytics/stats, /timeseries, /overview
+api_router.include_router(conversations_router.router)  # /conversations: list, ids, detail, export, batch-delete
 
 # Public chat (no login)
 api_router.include_router(public_router.router)  # /public/{slug}...

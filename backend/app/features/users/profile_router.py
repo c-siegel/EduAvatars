@@ -21,14 +21,14 @@ from app.features.users.models import User
 from app.features.users.schemas import PasswordChange, ProfileUpdate
 from app.storage.files import sniff_image
 
-router = APIRouter(prefix="/profile", tags=["profile"])
+router = APIRouter(prefix="/me", tags=["me"])
 
 _MAX_PICTURE_BYTES = 5 * 1024 * 1024  # 5 MB — a profile photo, not a 3D model
 
 
 @router.get("", response_model=UserOut)
 def get_profile(current_user: User = Depends(get_current_user)):
-    """The current user's profile."""
+    """The currently authenticated user (also what the dashboard checks on load to see if it's logged in)."""
     return user_to_out(current_user)
 
 

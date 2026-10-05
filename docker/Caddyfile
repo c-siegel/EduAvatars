@@ -44,14 +44,13 @@ http://{$SITE_ADDRESS} {
 		}
 	}
 
-	# Backend routes are mounted without an /api prefix (e.g. /auth/login, not /api/auth/login, see
-	# backend/app/main.py) — same rewrite as locally in frontend/vite.config.ts.
+	# The backend serves every route under /api/v1 itself (see backend/app/core/urls.py), so API
+	# requests are passed through unchanged — same as locally in frontend/vite.config.ts.
 	handle /api/* {
-		uri strip_prefix /api
 		reverse_proxy backend:8000
 	}
 
-	# Also reachable at the bare path, not just /api/health — the URL an external load balancer
+	# Also reachable at the bare path, not just /api/v1/health — the URL an external load balancer
 	# or monitoring/uptime check would naturally try first. Without this it falls through to the
 	# SPA handle below and gets a false "200 OK" from index.html instead of the backend's actual
 	# health status, even while the backend container is fully down.

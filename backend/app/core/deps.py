@@ -68,7 +68,7 @@ def get_current_user(
         HTTPException: 401 if not authenticated, token expired, or user disabled
     
     Example:
-        @router.get("/profile")
+        @router.get("/me")
         def get_profile(user: User = Depends(get_current_user)):
             return {"email": user.email, "name": user.name}
     """

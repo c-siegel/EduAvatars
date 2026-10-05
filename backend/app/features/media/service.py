@@ -17,24 +17,12 @@ from app.features.projects.models import Project
 from app.storage.files import save_file, unlink_quietly
 
 
-def avatar_file_url(avatar_id: str) -> str:
-    return f"/avatar-models/{avatar_id}/file"
-
-
-def avatar_thumbnail_url(avatar_id: str) -> str:
-    return f"/avatar-models/{avatar_id}/thumbnail"
-
-
-def background_file_url(background_id: str) -> str:
-    return f"/backgrounds/{background_id}/file"
-
-
-def is_used_by_published_project(session: Session, column, url: str) -> bool:
-    """Whether any published project references `url` in `column` (Project.avatar_model_url or
-    Project.avatar_background_url) — the condition for serving a library file anonymously, since
+def is_used_by_published_project(session: Session, column, item_id: str) -> bool:
+    """Whether any published project references `item_id` in `column` (Project.avatar_model_id or
+    Project.avatar_background_id) — the condition for serving a library file anonymously, since
     the public chat needs the avatar/background visible to students."""
     return (
-        session.exec(select(Project).where(column == url, Project.published == True)).first()  # noqa: E712
+        session.exec(select(Project).where(column == item_id, Project.published == True)).first()  # noqa: E712
         is not None
     )
 

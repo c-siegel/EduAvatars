@@ -1,8 +1,8 @@
 """
 Project Publishing Routes
 
-Publishing gives a project a fresh public share link (see publish.py); unpublishing takes it
-out of circulation.
+A project's publication is its public share link: PUT creates it (always a fresh link, see
+publish.py), DELETE takes the project out of circulation.
 """
 
 from fastapi import APIRouter, Depends
@@ -16,13 +16,13 @@ from app.features.projects.schemas import ProjectOut
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.post("/{project_id}/publish", response_model=ProjectOut)
+@router.put("/{project_id}/publication", response_model=ProjectOut)
 def publish(project: Project = Depends(get_owned_project), session: Session = Depends(get_session)):
     """Publish a project, making it reachable via its public share link."""
     return publish_project(session, project)
 
 
-@router.post("/{project_id}/unpublish", response_model=ProjectOut)
+@router.delete("/{project_id}/publication", response_model=ProjectOut)
 def unpublish(project: Project = Depends(get_owned_project), session: Session = Depends(get_session)):
     """Unpublish a project, removing public access."""
     return unpublish_project(session, project)

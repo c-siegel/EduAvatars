@@ -12,10 +12,10 @@ from app.core.providers import PROVIDERS
 from app.features.api_keys.schemas import ProviderModelOut, ProviderSpecOut
 from app.features.users.models import User
 
-router = APIRouter(prefix="/api-keys", tags=["api-keys"])
+router = APIRouter(prefix="/providers", tags=["providers"])
 
 
-@router.get("/providers", response_model=list[ProviderSpecOut])
+@router.get("", response_model=list[ProviderSpecOut])
 def list_providers(_: User = Depends(get_current_user)):
     """List all supported providers and their config, for building the API-key form."""
     # Providers, endpoint defaults, and curated models all come from a single registry

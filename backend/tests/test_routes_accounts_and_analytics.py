@@ -4,16 +4,14 @@ app-level bits (health check, security headers)."""
 import io
 import zipfile
 
-from conftest import PASSWORD, login_as, make_user
-from fastapi.testclient import TestClient
-
-from app.main import app
+from conftest import PASSWORD, browser_url, login_as, make_user, new_client
 
 NEW_PASSWORD = "another-pass-2"
 
 
 def test_health_and_security_headers(anon):
-    response = anon.get("/health")
+    assert anon.get("/health").json() == {"status": "ok"}  # also under the API prefix
+    response = anon.get(browser_url("/health"))
     assert response.json() == {"status": "ok"}
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
@@ -29,18 +27,18 @@ def test_register_login_me_logout(client, anon):
     assert registered.json()["email"] == "neu@example.com"
     assert "access_token" in registered.headers["set-cookie"]
 
-    duplicate = TestClient(app).post("/auth/register", json={"name": "X", "email": "neu@example.com", "password": PASSWORD})
+    duplicate = new_client().post("/auth/register", json={"name": "X", "email": "neu@example.com", "password": PASSWORD})
     assert duplicate.status_code == 409
     assert duplicate.json() == {"detail": "EMAIL_ALREADY_REGISTERED"}
-    weak = TestClient(app).post("/auth/register", json={"name": "X", "email": "w@example.com", "password": "short"})
+    weak = new_client().post("/auth/register", json={"name": "X", "email": "w@example.com", "password": "short"})
     assert weak.status_code == 422
 
-    fresh = TestClient(app)
+    fresh = new_client()
     wrong = fresh.post("/auth/login", json={"email": "neu@example.com", "password": "wrong-pass-1"})
     assert wrong.status_code == 401
     assert wrong.json() == {"detail": "INVALID_CREDENTIALS"}
     assert fresh.post("/auth/login", json={"email": "neu@example.com", "password": PASSWORD}).status_code == 200
-    assert fresh.get("/auth/me").json()["name"] == "Neu"
+    assert fresh.get("/me").json()["name"] == "Neu"
 
     logout = fresh.post("/auth/logout")
     assert logout.status_code == 200
@@ -49,7 +47,7 @@ def test_register_login_me_logout(client, anon):
 
 def test_session_errors(anon, engine):
     anon.cookies.set("access_token", "garbage")
-    assert anon.get("/auth/me").json() == {"detail": "SESSION_EXPIRED"}
+    assert anon.get("/me").json() == {"detail": "SESSION_EXPIRED"}
 
 
 def test_password_reset_flow_endpoints(anon, engine):
@@ -66,31 +64,31 @@ def test_password_reset_flow_endpoints(anon, engine):
 
 
 def test_profile_routes(client, anon, engine, teacher):
-    assert client.get("/profile").json()["email"] == "teacher@example.com"
-    assert client.put("/profile", json={"school": "Gymnasium"}).json()["school"] == "Gymnasium"
+    assert client.get("/me").json()["email"] == "teacher@example.com"
+    assert client.put("/me", json={"school": "Gymnasium"}).json()["school"] == "Gymnasium"
     make_user(engine, email="taken@example.com")
-    conflict = client.put("/profile", json={"email": "taken@example.com"})
+    conflict = client.put("/me", json={"email": "taken@example.com"})
     assert conflict.status_code == 409
     assert conflict.json() == {"detail": "EMAIL_ALREADY_REGISTERED"}
 
-    wrong = client.put("/profile/password", json={"currentPassword": "nope-nope-1", "newPassword": NEW_PASSWORD})
+    wrong = client.put("/me/password", json={"currentPassword": "nope-nope-1", "newPassword": NEW_PASSWORD})
     assert wrong.status_code == 400
     assert wrong.json() == {"detail": "CURRENT_PASSWORD_INCORRECT"}
 
     other_session = login_as(anon, teacher)
-    changed = client.put("/profile/password", json={"currentPassword": PASSWORD, "newPassword": NEW_PASSWORD})
+    changed = client.put("/me/password", json={"currentPassword": PASSWORD, "newPassword": NEW_PASSWORD})
     assert changed.status_code == 200
     assert "access_token" in changed.headers["set-cookie"]
-    assert client.get("/profile").status_code == 200
-    assert other_session.get("/profile").json() == {"detail": "SESSION_EXPIRED"}
+    assert client.get("/me").status_code == 200
+    assert other_session.get("/me").json() == {"detail": "SESSION_EXPIRED"}
 
-    assert client.post("/profile/logout-everywhere").status_code == 200
-    assert client.get("/profile").status_code == 200
+    assert client.post("/me/logout-everywhere").status_code == 200
+    assert client.get("/me").status_code == 200
 
 
 def test_delete_account(client, anon, chat_project):
-    anon.post(f"/public/{chat_project['shareSlug']}/message", json={"message": "Hi"})
-    response = client.delete("/profile")
+    anon.post(f"/public/{chat_project['shareSlug']}/messages", json={"message": "Hi"})
+    response = client.delete("/me")
     assert response.status_code == 200
     assert 'access_token=""' in response.headers["set-cookie"]
     assert anon.get(f"/public/{chat_project['shareSlug']}").status_code == 404
@@ -118,7 +116,7 @@ def test_admin_routes(client, anon, engine):
     assert demote_last.json() == {"detail": "LAST_ADMIN_PROTECTED"}
     disabled = client.put(f"/admin/users/{teacher.id}", json={"enabled": False}).json()
     assert disabled["enabled"] is False
-    assert anon.get("/profile").json() == {"detail": "NOT_AUTHENTICATED"}
+    assert anon.get("/me").json() == {"detail": "NOT_AUTHENTICATED"}
     assert client.put("/admin/users/missing", json={"enabled": True}).json() == {"detail": "USER_NOT_FOUND"}
 
     reset = client.post(f"/admin/users/{teacher.id}/reset-password", json={"newPassword": NEW_PASSWORD})
@@ -144,10 +142,10 @@ def test_site_settings(client, anon, engine):
 
 def _two_conversations(client, chat_project) -> list[str]:
     for name in ("Anna", "Ben"):
-        visitor = TestClient(app)
+        visitor = new_client()
         visitor.get(f"/public/{chat_project['shareSlug']}")
-        visitor.post(f"/public/{chat_project['shareSlug']}/message", json={"message": f"Frage von {name}"}, headers={"X-Visitor-Name": name})
-    return client.get("/analytics/sessions/ids").json()
+        visitor.post(f"/public/{chat_project['shareSlug']}/messages", json={"message": f"Frage von {name}"}, headers={"X-Visitor-Name": name})
+    return client.get("/conversations/ids").json()
 
 
 def test_analytics_and_conversations(client, anon, engine, chat_project):
@@ -158,33 +156,33 @@ def test_analytics_and_conversations(client, anon, engine, chat_project):
     assert stats["sessions"] == 2 and stats["messages"] == 4
     assert client.get("/analytics/stats", params={"model": "other/model"}).json()["sessions"] == 0
 
-    page = client.get("/analytics/sessions", params={"page": 1}).json()
+    page = client.get("/conversations", params={"page": 1}).json()
     assert page["total"] == 2 and len(page["items"]) == 2
     assert {row["visitorName"] for row in page["items"]} == {"Anna", "Ben"}
-    assert client.get("/analytics/sessions", params={"page": 2}).json()["items"] == []
+    assert client.get("/conversations", params={"page": 2}).json()["items"] == []
 
-    detail = client.get(f"/analytics/sessions/{ids[0]}").json()
+    detail = client.get(f"/conversations/{ids[0]}").json()
     assert detail["projectTitle"] == "Mathe-Tutor"
     assert [m["role"] for m in detail["messages"]] == ["user", "assistant"]
-    assert client.get("/analytics/sessions/missing").json() == {"detail": "CONVERSATION_NOT_FOUND"}
+    assert client.get("/conversations/missing").json() == {"detail": "CONVERSATION_NOT_FOUND"}
 
     timeseries = client.get("/analytics/timeseries", params={"granularity": "day"}).json()
     assert sum(point["value"] for point in timeseries) == 2
 
-    single = client.post("/analytics/export", json={"conversationIds": [ids[0]]})
+    single = client.post("/conversations/export", json={"conversationIds": [ids[0]]})
     assert single.headers["content-type"].startswith("text/csv")
     assert single.headers["content-disposition"].startswith('attachment; filename="Mathe-Tutor_')
     assert "Zeitpunkt,Avatar,Schüler:in" in single.text
 
-    bundle = client.post("/analytics/export", json={"conversationIds": ids})
+    bundle = client.post("/conversations/export", json={"conversationIds": ids})
     assert bundle.headers["content-type"] == "application/zip"
     assert bundle.headers["content-disposition"] == 'attachment; filename="eduavatars-gespraeche.zip"'
     assert len(zipfile.ZipFile(io.BytesIO(bundle.content)).namelist()) == 2
 
-    assert client.post("/analytics/export", json={"conversationIds": ["missing"]}).json() == {"detail": "CONVERSATION_NOT_FOUND"}
+    assert client.post("/conversations/export", json={"conversationIds": ["missing"]}).json() == {"detail": "CONVERSATION_NOT_FOUND"}
 
     stranger = login_as(anon, make_user(engine, email="other@example.com"))
-    assert stranger.post("/analytics/delete", json={"conversationIds": ids}).status_code == 204
-    assert client.get("/analytics/sessions").json()["total"] == 2
-    assert client.post("/analytics/delete", json={"conversationIds": ids}).status_code == 204
-    assert client.get("/analytics/sessions").json()["total"] == 0
+    assert stranger.post("/conversations/batch-delete", json={"conversationIds": ids}).status_code == 204
+    assert client.get("/conversations").json()["total"] == 2
+    assert client.post("/conversations/batch-delete", json={"conversationIds": ids}).status_code == 204
+    assert client.get("/conversations").json()["total"] == 0

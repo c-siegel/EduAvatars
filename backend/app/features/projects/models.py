@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 
 from sqlmodel import Field, SQLModel
 
+from app.core.urls import avatar_file_url, background_file_url, builtin_avatar_url, start_audio_url
+
 
 class Project(SQLModel, table=True):
     """One user's configured AI persona (avatar, prompt, LLM/TTS setup, publishing state)."""
@@ -39,10 +41,15 @@ class Project(SQLModel, table=True):
     # greeting, the model now actually knows this text too (e.g. for a posed task students are
     # meant to respond to). Empty means the frontend shows a generic greeting.
     start_prompt: str | None = None
-    avatar_model_url: str | None = None
-    # Route to a background image from the library (see features/media/models.py), e.g.
-    # "/backgrounds/{id}/file" — None keeps showing the neutral light-gray default surface.
-    avatar_background_url: str | None = None
+    # The avatar is either one of the user's own library models (avatar_model_id, see
+    # features/media/models.py) or one of the frontend's bundled default avatars (builtin_avatar,
+    # e.g. "julia" for frontend/public/avatars/julia.glb). If both are set, the library model wins;
+    # if neither is, the frontend shows its default avatar.
+    avatar_model_id: str | None = Field(default=None, foreign_key="avatarmodel.id", index=True)
+    builtin_avatar: str | None = None
+    # A background image from the user's library — None keeps showing the neutral light-gray
+    # default surface.
+    avatar_background_id: str | None = Field(default=None, foreign_key="backgroundimage.id", index=True)
     grade_level: str | None = None
     pedagogy: str | None = None
     safety: str | None = None
@@ -52,7 +59,7 @@ class Project(SQLModel, table=True):
     manual_system_prompt: str | None = None
     # Both are passed straight through to the model as the standard sampling parameters (see
     # features/ai/llm). Providers accept 0.0-2.0 for temperature and 0.0-1.0 for top_p;
-    # the same range is enforced in schemas/project.py so a bad value is rejected here rather
+    # the same range is enforced in features/projects/schemas.py so a bad value is rejected here rather
     # than by the provider mid-chat. Changing both at once is discouraged (see the hint texts in
     # the configurator), but nothing stops an educator from doing it.
     temperature: float = 0.5
@@ -95,8 +102,8 @@ class Project(SQLModel, table=True):
     # value is configurable and persisted from the Configurator, but features/chat/public_router.py/PublicChat
     # frontend don't yet render a collapsed state — that's still to be implemented.
     chat_default_open: bool = True
-    # Optional teacher-set access gate for the public chat link (see services/chat_password_
-    # service.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
+    # Optional teacher-set access gate for the public chat link (see
+    # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.
     chat_password_hash: str | None = None
     # Whether a visitor must type a name or ID before the chat starts (see
@@ -120,5 +127,19 @@ class Project(SQLModel, table=True):
 
     @property
     def start_audio_url(self) -> str | None:
-        """Route to the cached start-prompt audio, or None if it hasn't been generated yet."""
-        return f"/projects/{self.id}/start-audio" if self.start_audio_path else None
+        """URL of the cached start-prompt audio, or None if it hasn't been generated yet."""
+        return start_audio_url(self.id) if self.start_audio_path else None
+
+    @property
+    def avatar_model_url(self) -> str | None:
+        """URL of the avatar's .glb file (library model or bundled default), or None for the frontend default."""
+        if self.avatar_model_id:
+            return avatar_file_url(self.avatar_model_id)
+        if self.builtin_avatar:
+            return builtin_avatar_url(self.builtin_avatar)
+        return None
+
+    @property
+    def avatar_background_url(self) -> str | None:
+        """URL of the background image, or None for the neutral default surface."""
+        return background_file_url(self.avatar_background_id) if self.avatar_background_id else None

@@ -23,7 +23,7 @@ from app.features.projects.schemas import PreviewMessageRequest, PreviewMessageR
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.post("/{project_id}/preview-message", response_model=PreviewMessageResponse)
+@router.post("/{project_id}/chat/messages", response_model=PreviewMessageResponse)
 def preview_message(
     data: PreviewMessageRequest,
     project: Project = Depends(get_owned_project),
@@ -54,7 +54,7 @@ def preview_message(
     return PreviewMessageResponse(reply=reply.text, audio_base64=reply.audio_base64, content_type=reply.content_type)
 
 
-@router.post("/{project_id}/transcribe", response_model=TranscriptionOut)
+@router.post("/{project_id}/chat/transcriptions", response_model=TranscriptionOut)
 def transcribe(
     audio: UploadFile,
     project: Project = Depends(get_owned_project),

@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.security import hash_password, verify_password
+from app.core.urls import profile_picture_url
 from app.features.auth.schemas import UserOut
 from app.features.users.models import User
 from app.features.users.service import EmailAlreadyRegistered
@@ -49,7 +50,7 @@ def user_to_out(user: User) -> UserOut:
     # passing the SQLModel object straight through as the response_model.
     avatar_url = None
     if user.avatar_path and user.avatar_updated_at:
-        avatar_url = f"/profile/picture?v={int(user.avatar_updated_at.timestamp())}"
+        avatar_url = profile_picture_url(int(user.avatar_updated_at.timestamp()))
     return UserOut(
         id=user.id,
         name=user.name,

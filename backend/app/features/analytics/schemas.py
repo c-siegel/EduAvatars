@@ -37,7 +37,7 @@ class SessionRowOut(CamelModel):
 
 class ConversationDetailOut(CamelModel):
     """Full message-by-message transcript of one saved conversation — what GET
-    /analytics/sessions/{id} returns, as opposed to SessionRowOut's one-line summary."""
+    /conversations/{id} returns, as opposed to SessionRowOut's one-line summary."""
 
     id: str
     project_title: str
@@ -59,7 +59,7 @@ class TimeseriesPointOut(CamelModel):
 
 
 class ConversationIdsIn(CamelModel):
-    """Body shared by POST /analytics/export and POST /analytics/delete — which saved
+    """Body shared by POST /conversations/export and POST /conversations/batch-delete — which saved
     conversations (checked off in the analytics table, see
     frontend/src/pages/Dashboard/Analytics) to bundle into a CSV/ZIP download or delete."""
 

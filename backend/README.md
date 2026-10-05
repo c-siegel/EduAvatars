@@ -26,13 +26,13 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | Path | Contents |
 |---|---|
 | `app/main.py` | Builds the app (`create_app()`): middleware, error handling, lifespan, `/health` |
-| `app/api_router.py` | Mounts every feature's router; the order matters for overlapping paths |
+| `app/api_router.py` | Mounts every feature's router under `/api/v1` (`app/core/urls.py`); the order matters for overlapping paths |
 | `app/core/` | Cross-cutting setup: settings (`config.py`), auth dependencies (`deps.py`), cookies, domain errors, middleware, the LLM/TTS/STT provider registry (`providers.py`), rate limiting, security helpers |
 | `app/db/` | Database session/engine setup; `base.py` imports every feature's models for Alembic |
 | `app/storage/` | Shared upload handling: content sniffing, saving/deleting files, cached file responses |
 | `app/tasks/` | Background work: the periodic data-retention purge |
 | `app/features/auth/` | Register, login, logout, password reset |
-| `app/features/users/` | Own profile (`/profile`), account deletion, admin account management (`/admin/users`) |
+| `app/features/users/` | Own profile (`/me`), account deletion, admin account management (`/admin/users`) |
 | `app/features/site_settings/` | Instance-wide settings: public (`/settings/public`) and admin (`/admin/settings`) |
 | `app/features/projects/` | Project CRUD, publishing, YAML export/import, cached start-prompt audio |
 | `app/features/chat/` | Public chat (`/public/{slug}`) and the configurator's preview chat; `pipeline.py` combines LLM → save → TTS for both |
@@ -90,13 +90,13 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 
 | Endpoint | Field(s) | What it measures |
 |---|---|---|
-| `POST /{slug}/message` | `llmMs` | Wall-clock time inside the LLM (large language model) call. |
+| `POST /{slug}/messages` | `llmMs` | Wall-clock time inside the LLM (large language model) call. |
 | | `ttsMs` | Wall-clock time inside the TTS (text-to-speech) call. `null` if TTS didn't run. |
-| `POST /{slug}/message/stream` (SSE `done` event) | `llmMs` | Time from request start to the full LLM reply being assembled. |
+| `POST /{slug}/messages/stream` (SSE `done` event) | `llmMs` | Time from request start to the full LLM reply being assembled. |
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
-| `POST /{slug}/transcribe` | `sttMs` | Wall-clock time inside the STT (speech-to-text, via faster-whisper) call. |
+| `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text, via faster-whisper) call. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio

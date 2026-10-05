@@ -26,7 +26,9 @@ from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectExportData
 
 # Bumped only if a future format change stops being readable by older versions of this parser.
-FORMAT_VERSION = 1
+# Version 2 references the avatar/background by id (plus builtin_avatar for a bundled default
+# avatar); version 1 files carried their URLs instead and are still accepted (see _upgrade_v1).
+FORMAT_VERSION = 2
 
 _YAML_HEADER = (
     "# eduavatars project export\n"
@@ -35,8 +37,10 @@ _YAML_HEADER = (
     "# up again after importing.\n"
 )
 
-_AVATAR_URL_RE = re.compile(r"^/avatars/([^/]+)/file$")
-_BACKGROUND_URL_RE = re.compile(r"^/backgrounds/([^/]+)/file$")
+# The URL shapes a version-1 export stored (the API's routes at the time, without any prefix).
+_V1_LIBRARY_AVATAR_RE = re.compile(r"^/avatar-models/([^/]+)/file$")
+_V1_BUILTIN_AVATAR_RE = re.compile(r"^/avatars/([a-z0-9-]{1,40})\.glb$")
+_V1_BACKGROUND_RE = re.compile(r"^/backgrounds/([^/]+)/file$")
 
 # Generous cap for a hand-edited YAML text file — real exports are a few hundred bytes.
 MAX_IMPORT_UPLOAD_BYTES = 256 * 1024
@@ -71,30 +75,37 @@ def parse_project_yaml(raw: bytes | str) -> ProjectExportData:
         raise ProjectImportError("not valid YAML") from exc
     if not isinstance(document, dict) or not isinstance(document.get("project"), dict):
         raise ProjectImportError("missing a 'project' section")
+    fields = document["project"]
+    if document.get("eduavatars_export", 1) == 1:
+        fields = _upgrade_v1(fields)
     try:
-        return ProjectExportData.model_validate(document["project"])
+        return ProjectExportData.model_validate(fields)
     except ValidationError as exc:
         raise ProjectImportError(str(exc)) from exc
 
 
-def _owned_avatar_url(session: Session, user_id: str, url: str | None) -> str | None:
-    """Keep `url` only if it still points at one of this user's own avatar-library files —
+def _upgrade_v1(fields: dict) -> dict:
+    """Turn a version-1 export's avatar/background URLs into version-2 references."""
+    fields = dict(fields)
+    avatar_url = fields.pop("avatar_model_url", None) or ""
+    background_url = fields.pop("avatar_background_url", None) or ""
+    if match := _V1_LIBRARY_AVATAR_RE.match(avatar_url):
+        fields["avatar_model_id"] = match.group(1)
+    elif match := _V1_BUILTIN_AVATAR_RE.match(avatar_url):
+        fields["builtin_avatar"] = match.group(1)
+    if match := _V1_BACKGROUND_RE.match(background_url):
+        fields["avatar_background_id"] = match.group(1)
+    return fields
+
+
+def _owned(session: Session, model: type[AvatarModel] | type[BackgroundImage], user_id: str, item_id: str | None) -> str | None:
+    """Keep a library reference only if it still points at one of this user's own uploads —
     dropped instead of failing the import, e.g. when importing a colleague's export whose avatar
     isn't in this account's library, so the project just falls back to the default look."""
-    match = _AVATAR_URL_RE.match(url) if url else None
-    if match is None:
+    if not item_id:
         return None
-    avatar = session.get(AvatarModel, match.group(1))
-    return url if avatar is not None and avatar.user_id == user_id else None
-
-
-def _owned_background_url(session: Session, user_id: str, url: str | None) -> str | None:
-    """Same as _owned_avatar_url, for the background-image library."""
-    match = _BACKGROUND_URL_RE.match(url) if url else None
-    if match is None:
-        return None
-    background = session.get(BackgroundImage, match.group(1))
-    return url if background is not None and background.user_id == user_id else None
+    item = session.get(model, item_id)
+    return item_id if item is not None and item.user_id == user_id else None
 
 
 def import_project(session: Session, user_id: str, data: ProjectExportData) -> Project:
@@ -105,8 +116,8 @@ def import_project(session: Session, user_id: str, data: ProjectExportData) -> P
     silently broken/misleading until the educator re-configures them anyway.
     """
     fields = data.model_dump()
-    fields["avatar_model_url"] = _owned_avatar_url(session, user_id, fields["avatar_model_url"])
-    fields["avatar_background_url"] = _owned_background_url(session, user_id, fields["avatar_background_url"])
+    fields["avatar_model_id"] = _owned(session, AvatarModel, user_id, fields["avatar_model_id"])
+    fields["avatar_background_id"] = _owned(session, BackgroundImage, user_id, fields["avatar_background_id"])
     project = Project(user_id=user_id, **fields)
     session.add(project)
     session.commit()

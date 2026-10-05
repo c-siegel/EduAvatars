@@ -8,8 +8,8 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.db.base  # noqa: F401  (registers every model's table on SQLModel.metadata)
-from app.features.users.models import User
 from app.core.errors import DomainError
+from app.features.users.models import User
 from app.features.users.schemas import ProfileUpdate
 from app.features.users.service import update_profile
 

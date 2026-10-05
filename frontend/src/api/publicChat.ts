@@ -100,7 +100,7 @@ function parseSseFrame(frame: string): { event: string; data: unknown } | null {
 // EventSource can't be used here: it can only GET, and can't set the custom headers that
 // requestHeaders() provides — so this reads the stream by hand via fetch + getReader() instead.
 //
-// Whether a caught failure should make the page fall back to the plain /message endpoint depends
+// Whether a caught failure should make the page fall back to the plain /messages endpoint depends
 // on whether any chunk already arrived: once part of the reply has been shown/spoken, retrying via
 // the plain endpoint would ask the LLM again and could speak the answer twice. So this only throws
 // (signalling "safe to fall back") for a failure before the first chunk; anything after that is
@@ -114,7 +114,7 @@ export async function sendMessageStream(
 ): Promise<void> {
   let receivedAnyChunk = false;
   try {
-    const res = await fetch(`${API_BASE_URL}/public/${slug}/message/stream`, {
+    const res = await fetch(`${API_BASE_URL}/public/${slug}/messages/stream`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", ...requestHeaders(slug) },
@@ -178,7 +178,7 @@ export const publicChatApi = {
       contentType: string | null;
       llmMs: number | null;
       ttsMs: number | null;
-    }>(`/public/${slug}/message`, { message, history }, requestHeaders(slug), signal),
+    }>(`/public/${slug}/messages`, { message, history }, requestHeaders(slug), signal),
   sendMessageStream,
   // initialPrompt: text already transcribed earlier in the same recording (see the pause-triggered
   // segmentation in pages/PublicChat/index.tsx) — improves accuracy right at the segment seam.
@@ -188,7 +188,7 @@ export const publicChatApi = {
     formData.append("audio", audio, "recording.webm");
     if (initialPrompt) formData.append("initial_prompt", initialPrompt);
     return apiClient.upload<{ text: string; sttMs: number | null }>(
-      `/public/${slug}/transcribe`,
+      `/public/${slug}/transcriptions`,
       formData,
       requestHeaders(slug),
     );

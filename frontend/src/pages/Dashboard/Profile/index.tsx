@@ -10,7 +10,6 @@ import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useToast } from "@/hooks/useToast";
 import { profileApi } from "@/api/profile";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import styles from "./Profile.module.css";
 
 const PICTURE_ACCEPT = "image/png,image/jpeg,image/webp";
@@ -135,7 +134,7 @@ export function ProfilePage() {
         <h3>{t("profile.account")}</h3>
 
         <div className={styles.avatarRow}>
-          <Avatar name={account.name} src={toAbsoluteAvatarUrl(user?.avatarUrl)} size="lg" />
+          <Avatar name={account.name} src={user?.avatarUrl ?? undefined} size="lg" />
           <div className={styles.avatarActions}>
             <input
               ref={pictureInputRef}

@@ -15,6 +15,7 @@ from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_current_user_optional, get_session
 from app.core.error_codes import ErrorCode
+from app.core.urls import avatar_file_url, avatar_thumbnail_url
 from app.features.media import service as media
 from app.features.media.models import AvatarModel
 from app.features.media.schemas import AvatarModelOut
@@ -22,7 +23,7 @@ from app.features.projects.models import Project
 from app.features.users.models import User
 from app.storage.files import immutable_file_response, is_glb, sniff_image
 
-router = APIRouter(prefix="/avatar-models", tags=["avatar-library"])
+router = APIRouter(prefix="/avatars", tags=["avatar-library"])
 
 _MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB — generous but bounded (HeadTTS avatars are ~4.5 MB)
 _MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024  # 2 MB is plenty for a 256x256 PNG snapshot
@@ -32,8 +33,8 @@ def _to_out(avatar: AvatarModel) -> AvatarModelOut:
     return AvatarModelOut(
         id=avatar.id,
         name=avatar.name,
-        file_url=media.avatar_file_url(avatar.id),
-        thumbnail_url=media.avatar_thumbnail_url(avatar.id) if avatar.thumbnail_path else None,
+        file_url=avatar_file_url(avatar.id),
+        thumbnail_url=avatar_thumbnail_url(avatar.id) if avatar.thumbnail_path else None,
         created_at=avatar.created_at,
     )
 
@@ -83,7 +84,7 @@ def get_avatar_file(
 
     is_owner = current_user is not None and avatar.user_id == current_user.id
     if not is_owner and not media.is_used_by_published_project(
-        session, Project.avatar_model_url, media.avatar_file_url(avatar_id)
+        session, Project.avatar_model_id, avatar_id
     ):
         raise HTTPException(status_code=404, detail=ErrorCode.AVATAR_NOT_FOUND)
 

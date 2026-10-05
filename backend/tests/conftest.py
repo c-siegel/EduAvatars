@@ -28,6 +28,7 @@ import app.db.base  # noqa: E402,F401  (registers every model's table on SQLMode
 from app.core import rate_limit  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
+from app.core.urls import API_PREFIX  # noqa: E402
 from app.db.session import get_session  # noqa: E402
 from app.features.users.models import User  # noqa: E402
 from app.main import app  # noqa: E402
@@ -45,6 +46,9 @@ UPLOAD_DIR_SETTINGS = [
     "profile_picture_upload_dir",
     "start_audio_upload_dir",
 ]
+
+# Every request path in the route tests is relative to the API prefix, like the frontend's client.
+API_BASE_URL = f"http://testserver{API_PREFIX}"
 
 PASSWORD = "correct-horse-1"
 LLM_REPLY = "Hallo! Das ist eine Antwort vom Tutor. Sie hat mehrere Sätze, damit sie gestreamt wird."
@@ -70,7 +74,7 @@ def client(engine, monkeypatch, tmp_path):
     for name in UPLOAD_DIR_SETTINGS:
         monkeypatch.setattr(settings, name, str(tmp_path / name))
     rate_limit._hits.clear()
-    yield TestClient(app)
+    yield new_client()
     app.dependency_overrides.clear()
     rate_limit._hits.clear()
 
@@ -78,7 +82,17 @@ def client(engine, monkeypatch, tmp_path):
 @pytest.fixture
 def anon(client):
     """A second, cookie-less client against the same app — an anonymous chat visitor."""
-    return TestClient(app)
+    return new_client()
+
+
+def new_client() -> TestClient:
+    """A fresh client (own cookie jar) whose request paths are relative to the API prefix."""
+    return TestClient(app, base_url=API_BASE_URL)
+
+
+def browser_url(url: str) -> str:
+    """An absolute URL the API handed out (e.g. an avatar's fileUrl), fetched as a browser would."""
+    return f"http://testserver{url}"
 
 
 class FakeAI:
@@ -169,7 +183,7 @@ def create_project(client: TestClient, **fields) -> dict:
 
 
 def publish(client: TestClient, project_id: str) -> str:
-    response = client.post(f"/projects/{project_id}/publish")
+    response = client.put(f"/projects/{project_id}/publication")
     assert response.status_code == 200, response.text
     return response.json()["shareSlug"]
 

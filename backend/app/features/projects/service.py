@@ -60,8 +60,9 @@ def sync_llm_model(session: Session, project: Project) -> None:
 # fail the DB's NOT NULL constraint anyway.
 _CLEARABLE_FIELDS = {
     "llm_api_key_id",
-    "avatar_model_url",
-    "avatar_background_url",
+    "avatar_model_id",
+    "builtin_avatar",
+    "avatar_background_id",
     "grade_level",
     "tts_voice",
     "tts_api_key_id",
@@ -79,7 +80,7 @@ def delete_project(session: Session, project: Project) -> None:
 
     The dependent rows have to go explicitly: SQLite runs with foreign-key enforcement off (see
     features/users/account.py), so deleting only the project row would silently orphan every
-    student conversation and page view belonging to it. avatar_model_url/avatar_background_url
+    student conversation and page view belonging to it. avatar_model_id/avatar_background_id
     aren't touched here — unlike start_audio_path, those point at reusable library assets
     (AvatarModel/BackgroundImage) other projects may still reference, so only their own
     library-delete endpoints (with their own reference checks) may remove those files.

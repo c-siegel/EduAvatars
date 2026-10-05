@@ -43,8 +43,8 @@ Both containers have a Docker healthcheck (`docker-compose.yml`): `backend` poll
 orchestrator restart Caddy, which wouldn't fix it. `web`'s `depends_on` waits for `backend`'s
 healthcheck to pass, not just for its container to have started.
 
-The backend's `/health` is reachable two ways behind Caddy: `/api/health` (the general `/api/*`
-route) and the bare `/health` path (a dedicated route in `Caddyfile`, for whatever external load
+The backend's `/health` is reachable two ways behind Caddy: `/api/v1/health` (the general `/api/*`
+route; every backend route lives under `/api/v1`) and the bare `/health` path (a dedicated route in `Caddyfile`, for whatever external load
 balancer or uptime monitor tries the more obvious URL first). Both hit the same endpoint.
 
 ## Deploying

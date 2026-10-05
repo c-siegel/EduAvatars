@@ -3,7 +3,7 @@ preview chat and transcription, and the cached start-prompt audio."""
 
 import base64
 
-from conftest import LLM_REPLY, TTS_BYTES, create_key, create_project, login_as, make_user, publish
+from conftest import LLM_REPLY, TTS_BYTES, browser_url, create_key, create_project, login_as, make_user, publish
 
 
 def test_crud_and_ownership(client, anon, engine, teacher):
@@ -75,10 +75,10 @@ def test_chat_password_set_and_clear(client, teacher):
 
 def test_stats_route_is_not_shadowed_by_project_id(client, anon, teacher, chat_project):
     anon.get(f"/public/{chat_project['shareSlug']}")
-    anon.post(f"/public/{chat_project['shareSlug']}/message", json={"message": "Hi"})
+    anon.post(f"/public/{chat_project['shareSlug']}/messages", json={"message": "Hi"})
     create_project(client, title="Entwurf")
 
-    response = client.get("/projects/stats")
+    response = client.get("/analytics/overview")
     assert response.status_code == 200
     assert response.json() == {
         "totalProjects": 2,
@@ -92,7 +92,7 @@ def test_publish_unpublish_republish(client, teacher):
     project = create_project(client)
     slug = publish(client, project["id"])
     assert len(slug) == 5 and slug.isupper()
-    unpublished = client.post(f"/projects/{project['id']}/unpublish").json()
+    unpublished = client.delete(f"/projects/{project['id']}/publication").json()
     assert unpublished["published"] is False
     new_slug = publish(client, project["id"])
     assert new_slug != slug
@@ -128,15 +128,15 @@ def test_import_rejections(client, teacher):
 
 
 def test_delete_removes_conversations(client, anon, chat_project):
-    anon.post(f"/public/{chat_project['shareSlug']}/message", json={"message": "Hi"})
-    assert client.get("/analytics/sessions").json()["total"] == 1
+    anon.post(f"/public/{chat_project['shareSlug']}/messages", json={"message": "Hi"})
+    assert client.get("/conversations").json()["total"] == 1
     client.delete(f"/projects/{chat_project['id']}")
-    assert client.get("/analytics/sessions").json()["total"] == 0
+    assert client.get("/conversations").json()["total"] == 0
 
 
 def test_preview_message(client, chat_project, fake_ai):
     response = client.post(
-        f"/projects/{chat_project['id']}/preview-message",
+        f"/projects/{chat_project['id']}/chat/messages",
         json={"message": "Test", "history": [{"role": "assistant", "content": "Hallo"}]},
     )
     assert response.status_code == 200
@@ -147,44 +147,44 @@ def test_preview_message(client, chat_project, fake_ai):
         {"role": "user", "content": "Test"},
     ]
     # Preview never saves conversations.
-    assert client.get("/analytics/sessions").json()["total"] == 0
+    assert client.get("/conversations").json()["total"] == 0
 
 
 def test_preview_message_errors(client, teacher, chat_project, fake_ai):
     no_key = create_project(client)
-    response = client.post(f"/projects/{no_key['id']}/preview-message", json={"message": "x"})
+    response = client.post(f"/projects/{no_key['id']}/chat/messages", json={"message": "x"})
     assert response.status_code == 400
     assert response.json() == {"detail": "NO_LLM_MODEL_SELECTED"}
 
     fake_ai.llm_error = RuntimeError("bad key sk-test-secret-1234 rejected")
-    response = client.post(f"/projects/{chat_project['id']}/preview-message", json={"message": "x"})
+    response = client.post(f"/projects/{chat_project['id']}/chat/messages", json={"message": "x"})
     assert response.status_code == 502
     assert response.json() == {"detail": {"code": "LLM_REQUEST_FAILED", "message": "bad key [REDACTED] rejected"}}
 
     fake_ai.llm_error = None
     fake_ai.tts_error = RuntimeError("tts down")
-    body = client.post(f"/projects/{chat_project['id']}/preview-message", json={"message": "x"}).json()
+    body = client.post(f"/projects/{chat_project['id']}/chat/messages", json={"message": "x"}).json()
     assert body["reply"] == LLM_REPLY
     assert body["audioBase64"] is None
 
 
 def test_preview_transcribe(client, chat_project, fake_ai):
     files = {"audio": ("rec.webm", b"fake-audio", "audio/webm")}
-    response = client.post(f"/projects/{chat_project['id']}/transcribe", files=files)
+    response = client.post(f"/projects/{chat_project['id']}/chat/transcriptions", files=files)
     assert response.status_code == 200
     assert response.json() == {"text": "hallo welt", "sttMs": None}
 
-    bad = client.post(f"/projects/{chat_project['id']}/transcribe", files={"audio": ("a.txt", b"x", "text/plain")})
+    bad = client.post(f"/projects/{chat_project['id']}/chat/transcriptions", files={"audio": ("a.txt", b"x", "text/plain")})
     assert bad.status_code == 400
     assert bad.json() == {"detail": "UNSUPPORTED_AUDIO_FORMAT"}
 
     fake_ai.stt_text = None
-    failing = client.post(f"/projects/{chat_project['id']}/transcribe", files=files)
+    failing = client.post(f"/projects/{chat_project['id']}/chat/transcriptions", files=files)
     assert failing.status_code == 502
     assert failing.json()["detail"]["code"] == "STT_REQUEST_FAILED"
 
     client.put(f"/projects/{chat_project['id']}", json={"sttEnabled": False})
-    disabled = client.post(f"/projects/{chat_project['id']}/transcribe", files=files)
+    disabled = client.post(f"/projects/{chat_project['id']}/chat/transcriptions", files=files)
     assert disabled.status_code == 400
     assert disabled.json() == {"detail": "VOICE_INPUT_DISABLED"}
 
@@ -210,9 +210,9 @@ def test_start_audio_lifecycle(client, anon, teacher, fake_ai):
     fake_ai.tts_error = None
 
     generated = client.post(f"/projects/{pid}/start-audio").json()
-    assert generated["startAudioUrl"] == f"/projects/{pid}/start-audio"
+    assert generated["startAudioUrl"] == f"/api/v1/projects/{pid}/start-audio"
 
-    owner_get = client.get(f"/projects/{pid}/start-audio")
+    owner_get = client.get(browser_url(generated["startAudioUrl"]))
     assert owner_get.status_code == 200
     assert owner_get.content == TTS_BYTES
     assert owner_get.headers["content-type"] == "audio/mpeg"
@@ -222,8 +222,26 @@ def test_start_audio_lifecycle(client, anon, teacher, fake_ai):
     assert hidden.json() == {"detail": "START_AUDIO_NOT_FOUND"}
     slug = publish(client, pid)
     assert anon.get(f"/projects/{pid}/start-audio").content == TTS_BYTES
-    assert anon.get(f"/public/{slug}").json()["startAudioUrl"] == f"/projects/{pid}/start-audio"
+    assert anon.get(f"/public/{slug}").json()["startAudioUrl"] == f"/api/v1/projects/{pid}/start-audio"
 
     # Changing the start prompt invalidates the cached file.
     assert client.put(f"/projects/{pid}", json={"startPrompt": "Neu"}).json()["startAudioUrl"] is None
     assert client.get(f"/projects/{pid}/start-audio").status_code == 404
+
+
+def test_avatar_references(client, teacher):
+    project = create_project(client, builtinAvatar="julia")
+    assert project["builtinAvatar"] == "julia"
+    assert project["avatarModelUrl"] == "/avatars/julia.glb"
+    assert project["avatarBackgroundUrl"] is None
+    cleared = client.put(f"/projects/{project['id']}", json={"builtinAvatar": None}).json()
+    assert cleared["avatarModelUrl"] is None
+
+    invalid = client.post("/projects", json={"title": "x", "builtinAvatar": "../secret"})
+    assert invalid.status_code == 422
+    assert "INVALID_BUILTIN_AVATAR" in invalid.text
+
+
+def test_routes_live_under_the_api_prefix_only(client, teacher):
+    assert client.get(browser_url("/api/v1/projects")).status_code == 200
+    assert client.get(browser_url("/projects")).status_code == 404

@@ -1,8 +1,8 @@
 """
 Authentication Routes
 
-Handles account registration, login, logout, the current-user check, and the password-reset
-flow. Every route here is rate-limited (see app/core/rate_limit.py) to protect against
+Handles account registration, login, logout, and the password-reset flow (the current-user
+check is GET /me, see app/features/users/profile_router.py). Every route here is rate-limited (see app/core/rate_limit.py) to protect against
 brute-force login attempts, credential stuffing, and mass account creation.
 
 How does login work here?
@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session
 
 from app.core.cookies import clear_auth_cookie, set_auth_cookie
-from app.core.deps import get_current_user, get_session
+from app.core.deps import get_session
 from app.core.error_codes import ErrorCode
 from app.core.rate_limit import (
     enforce_login_rate_limit,
@@ -33,7 +33,6 @@ from app.features.auth.schemas import (
 )
 from app.features.auth.service import authenticate_user, register_user, user_to_out
 from app.features.site_settings.service import get_or_create_site_settings
-from app.features.users.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -76,12 +75,6 @@ def logout(response: Response):
     """Clear the auth cookie."""
     clear_auth_cookie(response)
     return None
-
-
-@router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)):
-    """The currently authenticated user."""
-    return user_to_out(current_user)
 
 
 @router.post("/forgot-password")

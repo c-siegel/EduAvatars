@@ -17,14 +17,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Backend-Routen liegen ohne /api-Präfix (z.B. /auth/login, nicht /api/auth/login) —
-      // ohne dieses rewrite würde Vite /api/auth/login unverändert weiterleiten und jede
-      // echte Frontend-Anfrage liefe ins Leere (404). Dieselbe Umschreibung braucht der
-      // Reverse-Proxy im institutionellen Hosting später ebenfalls.
+      // The backend serves every route under /api/v1 itself (see backend/app/core/urls.py), so
+      // requests are forwarded unchanged — same as the Caddy reverse proxy in production.
       "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },

@@ -147,7 +147,7 @@ def _start_turn(
     return ChatTurn(data.message, history, visitor_id, visitor_name, received_at)
 
 
-@router.post("/{slug}/message", response_model=ChatMessageOut)
+@router.post("/{slug}/messages", response_model=ChatMessageOut)
 def send_message(
     data: ChatMessageIn,
     request: Request,
@@ -183,7 +183,7 @@ def send_message(
     )
 
 
-@router.post("/{slug}/message/stream")
+@router.post("/{slug}/messages/stream")
 def send_message_stream(
     data: ChatMessageIn,
     request: Request,
@@ -195,7 +195,7 @@ def send_message_stream(
 ):
     """Streamed variant of send_message: the LLM reply is split into sentence-sized chunks, each
     synthesized and sent to the client as soon as it's ready (see pipeline.py::stream_turn). Falls
-    back to the plain /message endpoint on the frontend if this fails; see pages/PublicChat/index.tsx.
+    back to the plain /messages endpoint on the frontend if this fails; see pages/PublicChat/index.tsx.
     """
     turn = _start_turn(data, request, response, project, x_chat_unlock_token, x_visitor_name)
 
@@ -213,7 +213,7 @@ def send_message_stream(
     )
 
 
-@router.post("/{slug}/transcribe", response_model=TranscriptionOut)
+@router.post("/{slug}/transcriptions", response_model=TranscriptionOut)
 def transcribe(
     audio: UploadFile,
     request: Request,

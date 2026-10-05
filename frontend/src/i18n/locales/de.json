@@ -613,6 +613,7 @@
     "SESSION_EXPIRED": "Sitzung abgelaufen.",
     "PROJECT_NOT_FOUND": "Projekt nicht gefunden.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Projekt nicht gefunden oder nicht veröffentlicht.",
+    "INVALID_BUILTIN_AVATAR": "Unbekannter Standard-Avatar.",
     "PROJECT_IMPORT_INVALID": "Diese Datei ist kein gültiger eduavatars-Projektexport.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "Datei ist zu groß (maximal 256 KB).",
     "CONVERSATION_NOT_FOUND": "Gespräch nicht gefunden.",

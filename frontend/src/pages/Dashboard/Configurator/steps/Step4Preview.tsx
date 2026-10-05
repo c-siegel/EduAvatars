@@ -9,7 +9,6 @@ import { Callout } from "@/components/Callout";
 import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle } from "@/components/TalkingHeadAvatar";
 import { projectsApi } from "@/api/projects";
-import { toAbsoluteAvatarUrl } from "@/lib/avatarUrl";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./Step4Preview.module.css";
 
@@ -79,8 +78,8 @@ export function Step4Preview({
         <div className={styles.avatarStage}>
           <TalkingHeadAvatar
             ref={avatarRef}
-            avatarUrl={toAbsoluteAvatarUrl(avatarModelUrl)}
-            backgroundImageUrl={toAbsoluteAvatarUrl(avatarBackgroundUrl)}
+            avatarUrl={avatarModelUrl ?? undefined}
+            backgroundImageUrl={avatarBackgroundUrl ?? undefined}
             speechEnabled
             fallback={<Avatar name={title} size="lg" />}
           />

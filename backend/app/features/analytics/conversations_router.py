@@ -27,10 +27,10 @@ from app.features.analytics.service import (
 )
 from app.features.users.models import User
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
-@router.get("/sessions", response_model=SessionsPageOut)
+@router.get("", response_model=SessionsPageOut)
 def read_sessions(
     project_id: str | None = None,
     period_days: int | None = None,
@@ -46,7 +46,7 @@ def read_sessions(
     return SessionsPageOut(items=result["items"], total=result["total"])
 
 
-@router.get("/sessions/ids", response_model=list[str])
+@router.get("/ids", response_model=list[str])
 def read_session_ids(
     project_id: str | None = None,
     period_days: int | None = None,
@@ -56,12 +56,12 @@ def read_session_ids(
 ):
     """Every conversation id matching the given filters, ignoring pagination — what the "select
     all" button in the analytics table calls before a bulk export, since the table itself only
-    ever has the current page's ids loaded. Registered before /sessions/{conversation_id} so
+    ever has the current page's ids loaded. Registered before /{conversation_id} so
     "ids" isn't swallowed as a conversation id."""
     return get_session_ids(session, current_user.id, project_id=project_id, model=model, days=period_days)
 
 
-@router.get("/sessions/{conversation_id}", response_model=ConversationDetailOut)
+@router.get("/{conversation_id}", response_model=ConversationDetailOut)
 def read_session_detail(
     conversation_id: str,
     current_user: User = Depends(get_current_user),
@@ -99,7 +99,7 @@ def export_conversations(
     )
 
 
-@router.post("/delete", status_code=204)
+@router.post("/batch-delete", status_code=204)
 def delete_conversations_route(
     data: ConversationIdsIn,
     current_user: User = Depends(get_current_user),

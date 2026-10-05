@@ -1,4 +1,4 @@
-import { apiClient, filenameFromContentDisposition } from "./client";
+import { API_BASE_URL, apiClient, filenameFromContentDisposition } from "./client";
 import type {
   AnalyticsFilters,
   AnalyticsStats,
@@ -24,16 +24,16 @@ export const analyticsApi = {
   sessions: (filters: AnalyticsFilters, page: number) => {
     const params = filterParams(filters);
     params.set("page", String(page));
-    return apiClient.get<SessionsPage>(`/analytics/sessions?${params}`);
+    return apiClient.get<SessionsPage>(`/conversations?${params}`);
   },
 
   // Alle zum Filter passenden Konversations-IDs, unabhängig von der Seite — für den "Wähle alle"-
   // Knopf, siehe pages/Dashboard/Analytics/index.tsx.
-  sessionIds: (filters: AnalyticsFilters) => apiClient.get<string[]>(`/analytics/sessions/ids?${filterParams(filters)}`),
+  sessionIds: (filters: AnalyticsFilters) => apiClient.get<string[]>(`/conversations/ids?${filterParams(filters)}`),
 
   // Full transcript for one session's "view" action (see pages/Dashboard/Analytics/index.tsx) —
   // separate from `sessions` above since the table's paginated list stays a lightweight summary.
-  sessionDetail: (id: string) => apiClient.get<SessionDetail>(`/analytics/sessions/${id}`),
+  sessionDetail: (id: string) => apiClient.get<SessionDetail>(`/conversations/${id}`),
 
   timeseries: (filters: AnalyticsFilters, granularity: Granularity) => {
     const params = filterParams(filters);
@@ -45,7 +45,7 @@ export const analyticsApi = {
   // statt sie wie die übrigen Endpunkte als JSON zu parsen.
   exportConversations: async (conversationIds: string[]) => {
     const body: ConversationIdsRequest = { conversationIds };
-    const res = await fetch(`/api/analytics/export`, {
+    const res = await fetch(`${API_BASE_URL}/conversations/export`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -66,6 +66,6 @@ export const analyticsApi = {
   // user are silently skipped server-side (see app/features/analytics/conversations_router.py::delete_conversations_route).
   deleteConversations: (conversationIds: string[]) => {
     const body: ConversationIdsRequest = { conversationIds };
-    return apiClient.post<void>("/analytics/delete", body);
+    return apiClient.post<void>("/conversations/batch-delete", body);
   },
 };

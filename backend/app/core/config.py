@@ -352,7 +352,7 @@ class Settings(BaseSettings):
     request_thread_pool_size: int = 100
     """
     How many worker threads FastAPI/Starlette may use at once, across every sync route and
-    every /message/stream response body, in this one process.
+    every /messages/stream response body, in this one process.
 
     Applied to anyio's default thread limiter on startup (see main.py's lifespan) — anyio's own
     default is 40, shared by literally everything that isn't `async def`, which a class of ~30
@@ -362,7 +362,7 @@ class Settings(BaseSettings):
 
     tts_stream_worker_pool_size: int = 16
     """
-    How many text-to-speech chunks may be synthesized at once, across every /message/stream
+    How many text-to-speech chunks may be synthesized at once, across every /messages/stream
     request, in this one process.
 
     Each streamed reply used to get its own single-worker thread pool for this; now they all

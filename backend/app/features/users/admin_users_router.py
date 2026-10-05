@@ -9,7 +9,7 @@ app/features/site_settings/admin_router.py.
 Why disable instead of delete?
 There's deliberately no admin-initiated delete endpoint — disabling (User.enabled) is the
 primary way an admin removes someone's access. The only way an account is actually deleted is
-the existing self-service DELETE /profile, which cascades a user's own data. See service.py for
+the existing self-service DELETE /me, which cascades a user's own data. See service.py for
 the guard rails (can't disable yourself, can't remove the last active admin).
 """
 

@@ -13,6 +13,7 @@ from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_current_user_optional, get_session
 from app.core.error_codes import ErrorCode
+from app.core.urls import background_file_url
 from app.features.media import service as media
 from app.features.media.models import BackgroundImage
 from app.features.media.schemas import BackgroundImageOut
@@ -31,7 +32,7 @@ def _to_out(background: BackgroundImage) -> BackgroundImageOut:
     return BackgroundImageOut(
         id=background.id,
         name=background.name,
-        file_url=media.background_file_url(background.id),
+        file_url=background_file_url(background.id),
         created_at=background.created_at,
     )
 
@@ -80,7 +81,7 @@ def get_background_file(
 
     is_owner = current_user is not None and background.user_id == current_user.id
     if not is_owner and not media.is_used_by_published_project(
-        session, Project.avatar_background_url, media.background_file_url(background_id)
+        session, Project.avatar_background_id, background_id
     ):
         raise HTTPException(status_code=404, detail=ErrorCode.BACKGROUND_NOT_FOUND)
 

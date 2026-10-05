@@ -59,7 +59,7 @@ class PublicProjectOut(CamelModel):
     spoken_language: str = "de"
     tts_enabled: bool = False
     stt_enabled: bool = False
-    # Whether the frontend should use POST /message/stream instead of /message — see
+    # Whether the frontend should use POST /messages/stream instead of /messages — see
     # features/chat/pipeline.py::stream_turn. Meaningless (and always False here) without
     # tts_enabled, since the whole point is audio starting before the full reply is ready.
     streaming_enabled: bool = False
