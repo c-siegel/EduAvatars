@@ -47,3 +47,31 @@ def test_accounts_stored_in_mixed_case_before_the_fix_still_work(client, engine)
     assert other.put("/me", json={"email": "LEGACY@schule.de"}).status_code == 409
     # Re-saving your own address (in another case) isn't a conflict with yourself.
     assert login_as(new_client(), legacy).put("/me", json={"email": "LEGACY@SCHULE.DE"}).json()["email"] == "legacy@schule.de"
+
+
+# ==================== Rate limiter is thread-safe ====================
+
+
+def test_rate_limiter_counts_exactly_under_concurrency_and_sweeps_safely(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from fastapi import HTTPException
+
+    from app.core import rate_limit
+
+    rate_limit._hits.clear()
+    monkeypatch.setattr(rate_limit, "_SWEEP_THRESHOLD", 5)  # sweep on almost every call
+
+    def hit(i: int) -> bool:
+        # Every call also inserts a fresh key, so sweeps and inserts constantly overlap.
+        rate_limit._enforce(f"other-{i}", max_requests=1, window_seconds=600, message="x")
+        try:
+            rate_limit._enforce("shared", max_requests=25, window_seconds=600, message="x")
+            return True
+        except HTTPException:
+            return False
+
+    with ThreadPoolExecutor(max_workers=32) as pool:
+        allowed = sum(pool.map(hit, range(400)))
+    assert allowed == 25
+    rate_limit._hits.clear()
