@@ -294,3 +294,24 @@ def test_self_service_reset_clears_must_change_password(client, engine, monkeypa
 
     login = visitor.post("/auth/login", json={"email": "reset@example.com", "password": "own-pass-123"})
     assert login.json()["mustChangePassword"] is False
+
+
+# ==================== Migrations match the models ====================
+
+
+def test_migrations_produce_exactly_the_models_schema(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    from app.core.config import settings
+
+    # alembic/env.py reads the URL from settings, not from the Config.
+    monkeypatch.setattr(settings, "database_url", f"sqlite:///{tmp_path / 'migrated.db'}")
+    # No alembic.ini: env.py would otherwise apply its logging config to the whole test run.
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+
+    command.upgrade(config, "head")
+    command.check(config)  # raises if autogenerate would still add anything, e.g. a missing foreign key
