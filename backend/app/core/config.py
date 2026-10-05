@@ -278,7 +278,7 @@ class Settings(BaseSettings):
     container restart.
     """
 
-    stt_max_concurrent_transcriptions: int = 1
+    stt_max_concurrent_transcriptions: int = 2
     """
     How many Whisper transcriptions may run at the same time, in this one process.
 
@@ -305,6 +305,72 @@ class Settings(BaseSettings):
     machine's cores per call — fine for a single transcription, but worth capping (e.g. to a
     third of the host's cores) on a shared machine so one transcription doesn't starve the
     request-serving thread pool of CPU while it runs.
+    """
+
+    # ==================== LOCAL TEXT-TO-SPEECH (TTS) SETTINGS ====================
+
+    # Unlike local STT (faster-whisper, above), local TTS does NOT run in this process — the
+    # model needs more CPU/RAM than fits comfortably alongside the request-serving backend, so it
+    # runs in its own optional sidecar container instead (see local-tts/ and
+    # docker/local-tts.Dockerfile). This backend only makes an HTTP call to it, and only when
+    # local_tts_enabled is set — a deployment that doesn't run that sidecar sees no change at all.
+
+    local_tts_enabled: bool = False
+    """
+    Whether the local-TTS sidecar (see local-tts/) is reachable and should be used as the
+    fallback when a project has TTS enabled but no cloud key configured — the TTS counterpart to
+    how a missing STT key falls back to local Whisper (see features/ai/stt).
+
+    False by default: unlike Whisper, this fallback needs a separate container actually running
+    (docker/docker-compose.yml's "local-tts" profile), so it's opt-in rather than always-on.
+    """
+
+    local_tts_url: str = "http://tts-local:8080"
+    """Base URL of the local-TTS sidecar container. Only used when local_tts_enabled is True."""
+
+    local_tts_request_timeout_seconds: float = 30.0
+    """How long to wait for the local-TTS sidecar before giving up on one synthesis request."""
+
+    # ==================== BROWSER SPEECH-TO-TEXT (WEBGPU) SETTINGS ====================
+
+    # An alternative to both local STT (faster-whisper, above) and a cloud STT key: transcription
+    # runs entirely in the visitor's own browser via WebGPU (a browser API for using the GPU for
+    # general-purpose computation, not just graphics), through the transformers.js JavaScript
+    # library — see frontend/src/lib/browserStt.ts. Unlike local TTS, this needs no backend
+    # compute or sidecar container at all; the backend's only role is handing out this
+    # deployment-wide opt-in (and which model id to load) via PublicProjectOut, per project (see
+    # features/chat/public_router.py::load_tutor and features/api_keys/resolve.py::browser_stt_model_for).
+
+    browser_stt_enabled: bool = False
+    """
+    Whether browser-side (WebGPU) transcription may be offered to visitors at all, for projects
+    that also opt in via their own "stt_browser_enabled" checkbox (see features/projects/models.py).
+
+    False by default: this only makes sense once the deployment has verified real classroom
+    devices actually support WebGPU well enough — with it off, every project keeps transcribing
+    exactly as it does today (cloud key, else local server Whisper).
+    """
+
+    browser_stt_model_de: str = "onnx-community/whisper-small"
+    """
+    transformers.js-compatible ONNX model repository to load in the browser for a project whose
+    spoken_language is "de".
+
+    Was a German fine-tune of Whisper's "turbo" architecture (more accurate on German), but
+    "turbo" only prunes the *decoder* — its encoder is still full large-v3 size (~635M
+    parameters) regardless of quantization, which reliably ran iPadOS Safari's WASM memory out
+    partway through loading (a silent OS-level tab reload, not something a try/catch can recover
+    from). Generic "small" has a ~7x smaller encoder (~88M parameters) and reliably fits — accept
+    the German-specific accuracy loss over risking that crash. A self-hosted, properly quantized
+    ONNX conversion of a small/base-sized German fine-tune would be worth revisiting if one
+    becomes available.
+    """
+
+    browser_stt_model_en: str = "onnx-community/whisper-base.en"
+    """
+    Same as browser_stt_model_de, for a project whose spoken_language is "en". English-only
+    models drop multilingual-token overhead and stay accurate even at a small size, since
+    English is Whisper's best-supported language.
     """
 
     # ==================== PUBLIC CHAT & VOICE INPUT RATE LIMITS ====================

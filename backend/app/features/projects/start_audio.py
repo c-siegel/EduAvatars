@@ -18,7 +18,15 @@ from app.features.api_keys.crypto import scrub_key_from_text
 from app.features.api_keys.resolve import resolve_tts_key
 from app.features.projects.models import Project
 from app.features.users.models import User
-from app.storage.files import save_file
+from app.storage.files import save_file, unlink_quietly
+
+# The only two content types synthesize_speech ever returns (MP3 from every cloud provider, real
+# WAV from the local-TTS sidecar) — used to pick a matching file extension when caching the audio
+# to disk, and the reverse mapping to serve it back with the right Content-Type. Not Python's
+# stdlib `mimetypes` module: its audio/wav guess is inconsistent across platforms ("audio/x-wav"
+# on some), and this only ever needs to cover these two known cases.
+_AUDIO_FILE_EXTENSIONS = {"audio/mpeg": ".mp3", "audio/wav": ".wav"}
+_AUDIO_CONTENT_TYPE_BY_EXTENSION = {ext: content_type for content_type, ext in _AUDIO_FILE_EXTENSIONS.items()}
 
 
 class StartPromptRequired(DomainError):
@@ -36,10 +44,12 @@ def generate_start_audio(session: Session, project: Project) -> Project:
     if not project.start_prompt or not project.start_prompt.strip():
         raise StartPromptRequired()
     api_key = resolve_tts_key(session, project) if project.tts_enabled else None
-    if api_key is None:
+    # A missing key is only a hard failure without the local-TTS fallback available — with it,
+    # synthesize_speech(..., None, ...) below succeeds via the sidecar instead.
+    if not project.tts_enabled or (api_key is None and not settings.local_tts_enabled):
         raise TtsNotConfigured()
     try:
-        audio_bytes, _content_type = synthesize_speech(
+        audio_bytes, content_type = synthesize_speech(
             project.start_prompt, project.tts_voice, api_key, project.spoken_language
         )
     except Exception as exc:
@@ -49,13 +59,23 @@ def generate_start_audio(session: Session, project: Project) -> Project:
             status_code=502,
             detail={
                 "code": ErrorCode.START_AUDIO_GENERATION_FAILED,
-                "message": scrub_key_from_text(str(exc), api_key.encrypted_api_key),
+                # No key to scrub when the local-TTS sidecar (not a cloud provider) failed.
+                "message": scrub_key_from_text(str(exc), api_key.encrypted_api_key) if api_key else str(exc),
             },
         ) from exc
 
     # Deterministic filename (not a fresh UUID per generation, unlike the avatar library) —
-    # regenerating just overwrites the same file, so there's never a stale one left behind.
-    file_path = save_file(Path(settings.start_audio_upload_dir) / project.user_id, f"{project.id}.mp3", audio_bytes)
+    # regenerating just overwrites the same file, so there's never a stale one left behind. The
+    # extension follows the actual content type, and servable_start_audio infers the media type
+    # the same way, so a mismatched Content-Type header never reaches the browser.
+    extension = _AUDIO_FILE_EXTENSIONS.get(content_type, ".mp3")
+    directory = Path(settings.start_audio_upload_dir) / project.user_id
+    file_name = f"{project.id}{extension}"
+    # A previous generation may have used a different provider (and therefore extension) — clear
+    # it so switching providers doesn't leave an orphaned file behind alongside the new one.
+    if project.start_audio_path and project.start_audio_path != str(directory / file_name):
+        unlink_quietly(project.start_audio_path)
+    file_path = save_file(directory, file_name, audio_bytes)
 
     project.start_audio_path = str(file_path)
     session.add(project)
@@ -64,13 +84,15 @@ def generate_start_audio(session: Session, project: Project) -> Project:
     return project
 
 
-def servable_start_audio_path(session: Session, project_id: str, current_user: User | None) -> str | None:
-    """The stored start audio's path if `current_user` may hear it — its owner, or anyone once the
-    project is published — else None."""
+def servable_start_audio(session: Session, project_id: str, current_user: User | None) -> tuple[str, str] | None:
+    """The stored start audio's (path, media type) if `current_user` may hear it — its owner, or
+    anyone once the project is published — else None."""
     project = session.get(Project, project_id)
     if project is None or not project.start_audio_path:
         return None
     is_owner = current_user is not None and project.user_id == current_user.id
     if not is_owner and not project.published:
         return None
-    return project.start_audio_path
+    # Defaulting to mpeg keeps serving files written before WAV support (always real MP3s then).
+    media_type = _AUDIO_CONTENT_TYPE_BY_EXTENSION.get(Path(project.start_audio_path).suffix, "audio/mpeg")
+    return project.start_audio_path, media_type

@@ -29,7 +29,7 @@ class CartesiaClient:
     def __init__(self, api_key_record: UserApiKey) -> None:
         self._key = api_key_record
 
-    def synthesize(self, text: str, voice: str | None) -> tuple[bytes, str]:
+    def synthesize(self, text: str, voice: str | None, language: str) -> tuple[bytes, str]:
         if not voice:
             raise VoiceRequiredError("Cartesia braucht eine Stimme (Feld „Stimme“ im Projekt) — es gibt keinen Standardwert.")
         if not self._key.model_id:

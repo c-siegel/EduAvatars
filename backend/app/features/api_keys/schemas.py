@@ -149,6 +149,20 @@ class ApiKeyTestResult(CamelModel):
     message: str | None = None
 
 
+class LocalTtsStatusOut(CamelModel):
+    # Whether the local-TTS sidecar (see local-tts/) is enabled for this deployment — lets the
+    # frontend treat "no TTS key configured" the same forgiving way it already treats local STT,
+    # instead of always showing the "add a key" warning (see Step2Technical.tsx).
+    available: bool
+
+
+class BrowserSttStatusOut(CamelModel):
+    # Whether this deployment allows browser-side (WebGPU) transcription at all (see
+    # Settings.browser_stt_enabled) — gates whether the Configurator even shows its per-project
+    # "on-device transcription" checkbox (see Step2Technical.tsx).
+    available: bool
+
+
 class ProviderModelOut(CamelModel):
     value: str
     label: str

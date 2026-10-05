@@ -5,7 +5,7 @@ Projects used to store the URL of their avatar model and background image (e.g.
 library item's id (or, for a bundled default avatar, its name) and the API builds the URL.
 
 Revision ID: f6a7b8c9d0e1
-Revises: a1b2c3d4e5f7
+Revises: f4a5b6c7d8e9
 Create Date: 2026-10-05 15:00:00.000000
 
 """
@@ -17,7 +17,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'f6a7b8c9d0e1'
-down_revision: Union[str, None] = 'a1b2c3d4e5f7'
+down_revision: Union[str, None] = 'f4a5b6c7d8e9'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

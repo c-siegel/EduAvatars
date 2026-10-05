@@ -20,7 +20,7 @@ class LiteLLMSpeechClient:
     def __init__(self, api_key_record: UserApiKey) -> None:
         self._key = api_key_record
 
-    def synthesize(self, text: str, voice: str | None) -> tuple[bytes, str]:
+    def synthesize(self, text: str, voice: str | None, language: str) -> tuple[bytes, str]:
         spec = get_provider(self._key.provider)
         if spec is None:
             raise ValueError(ErrorCode.UNKNOWN_PROVIDER)

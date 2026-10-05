@@ -2,14 +2,17 @@
 Provider Registry Route
 
 Exposes the provider registry (app/core/providers.py) so the frontend can build its API-key form
-— provider dropdown, endpoint defaults, curated models — without duplicating that data.
+— provider dropdown, endpoint defaults, curated models — without duplicating that data. Also
+reports the deployment-wide speech options that need no key at all: the local-TTS sidecar and
+browser-side (WebGPU) transcription.
 """
 
 from fastapi import APIRouter, Depends
 
+from app.core.config import settings
 from app.core.deps import get_current_user
 from app.core.providers import PROVIDERS
-from app.features.api_keys.schemas import ProviderModelOut, ProviderSpecOut
+from app.features.api_keys.schemas import BrowserSttStatusOut, LocalTtsStatusOut, ProviderModelOut, ProviderSpecOut
 from app.features.users.models import User
 
 router = APIRouter(prefix="/providers", tags=["providers"])
@@ -37,3 +40,16 @@ def list_providers(_: User = Depends(get_current_user)):
         )
         for spec in PROVIDERS
     ]
+
+
+@router.get("/local-tts-status", response_model=LocalTtsStatusOut)
+def local_tts_status(_: User = Depends(get_current_user)):
+    """Whether the local-TTS sidecar is enabled for this deployment (see Settings.local_tts_enabled)."""
+    return LocalTtsStatusOut(available=settings.local_tts_enabled)
+
+
+@router.get("/browser-stt-status", response_model=BrowserSttStatusOut)
+def browser_stt_status(_: User = Depends(get_current_user)):
+    """Whether browser-side (WebGPU) transcription is enabled for this deployment (see
+    Settings.browser_stt_enabled)."""
+    return BrowserSttStatusOut(available=settings.browser_stt_enabled)

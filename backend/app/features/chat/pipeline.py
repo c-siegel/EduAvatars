@@ -57,6 +57,9 @@ class ChatContext:
 
     project_id: str
     llm_key: UserApiKey
+    tts_enabled: bool
+    # May be None even with tts_enabled: no cloud key configured, so synthesize_speech falls back
+    # to the local-TTS sidecar (or fails like any other TTS error, see features/ai/tts).
     tts_key: UserApiKey | None
     preprompt: str
     temperature: float | None
@@ -86,7 +89,8 @@ class ChatReply:
     audio_base64: str | None
     content_type: str | None
     llm_ms: float
-    # None (not ~0ms) when TTS didn't actually run (disabled/no key).
+    # None (not ~0ms) when TTS didn't actually run (disabled, or enabled with nothing configured to
+    # synthesize with).
     tts_ms: float | None
 
 
@@ -111,6 +115,7 @@ def prepare_chat(session: Session, project: Project) -> ChatContext | None:
     return ChatContext(
         project_id=project.id,
         llm_key=api_key,
+        tts_enabled=project.tts_enabled,
         tts_key=tts_api_key,
         preprompt=project.preprompt or "",
         temperature=project.temperature,
@@ -137,7 +142,7 @@ def _save(context: ChatContext, turn: ChatTurn, reply: str, reply_ready_at: date
 def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None, float]:
     """Speech for `text` as (audioBase64, contentType, ms); never raises — speech output is an
     addition to the text reply, so a TTS failure is logged and the text still goes out."""
-    if context.tts_key is None:
+    if not context.tts_enabled:
         return None, None, 0.0
     synth_start = time.perf_counter()
     try:
@@ -185,7 +190,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     # in submit() itself since that's the one place both the per-delta loop and the
     # chunker.flush() tail path funnel through.
     first_chunk_ready_ms: float | None = None
-    total_tts_ms: float | None = 0.0 if context.tts_key is not None else None
+    total_tts_ms: float | None = 0.0 if context.tts_enabled else None
     full_text_parts: list[str] = []
     chunker = SentenceChunker()
     # Chunks are submitted to the shared _tts_executor (module-level, see its definition

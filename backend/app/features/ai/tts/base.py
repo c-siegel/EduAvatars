@@ -20,6 +20,6 @@ class VoiceRequiredError(ValueError):
 class TTSClient(Protocol):
     """A speech-synthesis provider bound to one stored API key."""
 
-    def synthesize(self, text: str, voice: str | None) -> tuple[bytes, str]:
+    def synthesize(self, text: str, voice: str | None, language: str) -> tuple[bytes, str]:
         """Turn already speech-normalized `text` into audio; returns (audio bytes, content type)."""
         ...

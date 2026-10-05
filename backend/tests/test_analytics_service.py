@@ -1,5 +1,5 @@
-"""Tests for build_conversation_csv's CSV/formula-injection guard (app/services/
-features/analytics/service.py). visitor_name and message content come straight from an anonymous chat
+"""Tests for build_conversation_csv's CSV/formula-injection guard (app/features/
+analytics/csv_export.py). visitor_name and message content come straight from an anonymous chat
 visitor with no format restriction, so a value starting with =, +, -, or @ must not reach the
 exported cell unescaped — Excel/Sheets would read it as a live formula the moment a teacher
 opens the exported file."""

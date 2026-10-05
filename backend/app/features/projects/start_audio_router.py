@@ -38,7 +38,8 @@ def get_start_audio(
     """Serve a project's pre-generated start-prompt audio — to its owner, or anonymously if published."""
     # 404 (not 403) for foreign/inaccessible projects, same IDOR (Insecure Direct Object
     # Reference) posture as get_avatar_file in features/media/avatars_router.py.
-    path = start_audio.servable_start_audio_path(session, project_id, current_user)
-    if path is None:
+    servable = start_audio.servable_start_audio(session, project_id, current_user)
+    if servable is None:
         raise HTTPException(status_code=404, detail=ErrorCode.START_AUDIO_NOT_FOUND)
-    return FileResponse(path, media_type="audio/mpeg")
+    path, media_type = servable
+    return FileResponse(path, media_type=media_type)

@@ -38,7 +38,7 @@ class GoogleCloudTTSClient:
     def __init__(self, api_key_record: UserApiKey) -> None:
         self._key = api_key_record
 
-    def synthesize(self, text: str, voice: str | None) -> tuple[bytes, str]:
+    def synthesize(self, text: str, voice: str | None, language: str) -> tuple[bytes, str]:
         if not voice:
             raise VoiceRequiredError(
                 "Google Cloud TTS braucht eine Stimme (Feld „Stimme“ im Projekt) — die Sprache steckt im "

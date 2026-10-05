@@ -27,7 +27,7 @@ from app.core.rate_limit import (
     enforce_public_transcribe_rate_limit,
 )
 from app.features.ai.stt import transcribe_audio
-from app.features.api_keys.resolve import resolve_stt_key
+from app.features.api_keys.resolve import browser_stt_model_for, resolve_stt_key
 from app.features.chat.audio_upload import read_audio_upload
 from app.features.chat.pipeline import ChatTurn, LLMFailed, prepare_chat, reply_turn, stream_turn
 from app.features.chat.schemas import (
@@ -93,6 +93,7 @@ def load_tutor(
         spoken_language=project.spoken_language,
         tts_enabled=project.tts_enabled,
         stt_enabled=project.stt_enabled,
+        browser_stt_model=browser_stt_model_for(project),
         streaming_enabled=project.streaming_enabled,
         chat_default_open=project.chat_default_open,
         # The checkbox and URL are combined here, before anything goes out to the anonymous page —

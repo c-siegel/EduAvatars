@@ -599,6 +599,19 @@
         "title": "Body_upload_profile_picture_api_v1_me_picture_post",
         "type": "object"
       },
+      "BrowserSttStatusOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "BrowserSttStatusOut",
+        "type": "object"
+      },
       "ChatHistoryEntry": {
         "properties": {
           "content": {
@@ -820,6 +833,19 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LocalTtsStatusOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "LocalTtsStatusOut",
         "type": "object"
       },
       "LoginRequest": {
@@ -1152,6 +1178,10 @@
             ],
             "title": "Sttapikeyid"
           },
+          "sttBrowserEnabled": {
+            "title": "Sttbrowserenabled",
+            "type": "boolean"
+          },
           "sttEnabled": {
             "title": "Sttenabled",
             "type": "boolean"
@@ -1255,6 +1285,7 @@
           "spokenLanguage",
           "sttApiKeyId",
           "sttEnabled",
+          "sttBrowserEnabled",
           "streamingEnabled",
           "chatDefaultOpen",
           "passwordProtected",
@@ -1459,6 +1490,17 @@
               }
             ],
             "title": "Sttapikeyid"
+          },
+          "sttBrowserEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttbrowserenabled"
           },
           "sttEnabled": {
             "anyOf": [
@@ -1713,6 +1755,17 @@
               }
             ],
             "title": "Avatarmodelurl"
+          },
+          "browserSttModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Browsersttmodel"
           },
           "chatDefaultOpen": {
             "default": true,
@@ -4319,6 +4372,38 @@
                   },
                   "title": "Response List Providers Api V1 Providers Get",
                   "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/browser-stt-status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserSttStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/local-tts-status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalTtsStatusOut"
                 }
               }
             },
