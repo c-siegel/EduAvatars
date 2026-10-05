@@ -2663,6 +2663,7 @@
             "required": false,
             "schema": {
               "default": 7,
+              "minimum": 1,
               "title": "Period Days",
               "type": "integer"
             }
@@ -2733,6 +2734,7 @@
             "required": false,
             "schema": {
               "default": 30,
+              "minimum": 1,
               "title": "Period Days",
               "type": "integer"
             }
@@ -3477,6 +3479,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -3508,6 +3511,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
@@ -3626,6 +3630,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {

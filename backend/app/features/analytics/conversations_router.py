@@ -10,7 +10,7 @@ One session = one visitor's conversation with a published project (grouped by vi
 Conversation in app/features/chat/models.py) — not an HTTP/login session.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlmodel import Session
 
@@ -33,9 +33,10 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 @router.get("", response_model=SessionsPageOut)
 def read_sessions(
     project_id: str | None = None,
-    period_days: int | None = None,
+    period_days: int | None = Query(default=None, ge=1),
     model: str | None = None,
-    page: int = 1,
+    # ge=1 — a page of 0 or below would turn into a negative SQL OFFSET.
+    page: int = Query(default=1, ge=1),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -49,7 +50,7 @@ def read_sessions(
 @router.get("/ids", response_model=list[str])
 def read_session_ids(
     project_id: str | None = None,
-    period_days: int | None = None,
+    period_days: int | None = Query(default=None, ge=1),
     model: str | None = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),

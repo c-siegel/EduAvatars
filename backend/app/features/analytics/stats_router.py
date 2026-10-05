@@ -6,7 +6,7 @@ Read-only numbers for the teacher-facing dashboards: aggregate stats and a times
 user's own projects — the queries live in service.py.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_session
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 @router.get("/stats", response_model=AnalyticsStatsOut)
 def read_stats(
     project_id: str | None = None,
-    period_days: int = 7,
+    period_days: int = Query(default=7, ge=1),
     model: str | None = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -33,7 +33,7 @@ def read_stats(
 @router.get("/timeseries", response_model=list[TimeseriesPointOut])
 def read_timeseries(
     project_id: str | None = None,
-    period_days: int = 30,
+    period_days: int = Query(default=30, ge=1),
     model: str | None = None,
     granularity: str = "day",
     current_user: User = Depends(get_current_user),

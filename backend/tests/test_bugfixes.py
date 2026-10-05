@@ -211,3 +211,20 @@ def test_account_deletion_removes_the_projects_start_audio_files(client, engine,
 
     assert client.delete("/me").status_code == 200
     assert not audio_path.exists()
+
+
+# ==================== Analytics paging/period parameters are validated ====================
+
+
+def test_analytics_rejects_zero_or_negative_page_and_period(client, teacher):
+    for path in (
+        "/conversations?page=0",
+        "/conversations?page=-1",
+        "/conversations?period_days=0",
+        "/conversations/ids?period_days=-5",
+        "/analytics/stats?period_days=0",
+        "/analytics/timeseries?period_days=-1",
+    ):
+        assert client.get(path).status_code == 422, path
+    assert client.get("/conversations?page=1&period_days=7").status_code == 200
+    assert client.get("/analytics/stats?period_days=1").status_code == 200
