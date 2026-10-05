@@ -18,7 +18,7 @@ about 10 minutes per device.
 ## 1. Load time (first visit)
 
 1. Clear site data for the app (browser settings), then open `/stt-test`.
-2. Note **"Model ready after … s"**. On a first visit this is mostly download time (~170 MB).
+2. Note **"Model ready after … s"**. On a first visit this is mostly download time (~175 MB).
 3. If the status ends as `unsupported` or `error`, note the error message and skip to step 5 —
    the device will use server transcription.
 

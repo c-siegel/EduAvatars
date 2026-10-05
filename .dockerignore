@@ -22,3 +22,6 @@ frontend/*.tsbuildinfo
 .env
 
 docs/STYLE.md
+
+# On-device STT model files (see scripts/fetch-stt-model.sh)
+models/

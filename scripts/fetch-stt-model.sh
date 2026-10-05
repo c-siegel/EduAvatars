@@ -11,9 +11,12 @@
 #
 # Usage:
 #   scripts/fetch-stt-model.sh                              # dev: writes ./models (served by Vite)
-#   scripts/fetch-stt-model.sh "$EDUAVATARS_DATA_DIR/models"  # production: the volume Caddy mounts
+#   scripts/fetch-stt-model.sh "$EDUAVATARS_DATA_DIR/models"  # production, by hand
+# In production this normally runs by itself: the frontend image ships this script, and the
+# `stt-model` service in docker/docker-compose.yml runs it on every `docker compose up`.
 #
-# Safe to re-run: files whose checksum already matches are not downloaded again.
+# Safe to re-run: files whose checksum already matches are not downloaded again. Plain POSIX sh
+# and BusyBox-compatible, since it also runs inside the Alpine-based frontend image.
 
 set -eu
 
@@ -34,6 +37,9 @@ encoder-model.onnx ade2c65c188776b3662db620a553ab82ac7e9ca11a7be6b696bcc5190f753
 vocab.txt d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d
 "
 
+# BusyBox's sha256sum has no --status, so compare the printed hash instead of using -c.
+hash_ok() { [ "$(sha256sum "$1" | cut -d ' ' -f 1)" = "$2" ]; }
+
 for tool in curl sha256sum gzip; do
   command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
 done
@@ -43,12 +49,12 @@ mkdir -p "$TARGET"
 echo "$FILES" | while read -r name sha; do
   [ -n "$name" ] || continue
   file="$TARGET/$name"
-  if [ -f "$file" ] && echo "$sha  $file" | sha256sum -c --status; then
+  if [ -f "$file" ] && hash_ok "$file" "$sha"; then
     echo "ok        $name"
   else
     echo "download  $name"
-    curl -fL --retry 3 -o "$file.part" "https://huggingface.co/$REPO/resolve/$REVISION/$name"
-    if ! echo "$sha  $file.part" | sha256sum -c --status; then
+    curl -fsSL --retry 3 -o "$file.part" "https://huggingface.co/$REPO/resolve/$REVISION/$name"
+    if ! hash_ok "$file.part" "$sha"; then
       rm -f "$file.part"
       echo "Checksum mismatch for $name — refusing to install it." >&2
       exit 1
@@ -62,11 +68,13 @@ echo "$FILES" | while read -r name sha; do
   fi
 done
 
-# The frontend reads raw (uncompressed) sizes from here for its progress bar: with gzip transfer
-# encoding, the Content-Length header carries the *compressed* size while the browser hands the
-# page decompressed bytes, so the header alone can't say how far along the download is.
+# Written last, and the frontend loads nothing without it: until every file above is in place,
+# browsers just fall back to server transcription instead of loading a half-downloaded model.
+# The frontend also reads raw (uncompressed) sizes from here for its progress bar: with gzip
+# transfer encoding, the Content-Length header carries the *compressed* size while the browser
+# hands the page decompressed bytes, so the header alone can't say how far along it is.
 size() { wc -c < "$TARGET/$1" | tr -d ' '; }
-cat > "$TARGET/manifest.json" <<EOF
+cat > "$TARGET/manifest.json.part" <<EOF
 {
   "version": "$VERSION",
   "source": "https://huggingface.co/$REPO/tree/$REVISION",
@@ -80,7 +88,8 @@ cat > "$TARGET/manifest.json" <<EOF
   }
 }
 EOF
-gzip -9 -k -f "$TARGET/manifest.json"
+gzip -9 -c "$TARGET/manifest.json.part" > "$TARGET/manifest.json.gz"
+mv "$TARGET/manifest.json.part" "$TARGET/manifest.json"
 
 echo "Done: $TARGET"
-du -ch "$TARGET"/*.gz | tail -1 | sed 's/total/transfer size (gzip)/'
+echo "Transfer size per device (gzip): $(cat "$TARGET"/*.gz | wc -c | awk '{printf "%.0f MB", $1 / 1000000}')"

@@ -346,10 +346,10 @@ class Settings(BaseSettings):
     Whether on-device transcription is offered to visitors at all. Each project can still opt
     out with its own "stt_browser_enabled" checkbox (see features/projects/models.py).
 
-    Needs the model files to be present at browser_stt_model_url (run
-    scripts/fetch-stt-model.sh once per deployment). If they're missing, every visitor's browser
-    falls back to server transcription after a failed load — set this to false instead to skip
-    that wasted attempt.
+    Needs the model files to be present at browser_stt_model_url (Docker Compose's stt-model
+    service downloads them; in development, run scripts/fetch-stt-model.sh). If they're missing,
+    every visitor's browser falls back to server transcription after a failed load — set this to
+    false instead to skip that wasted attempt.
     """
 
     browser_stt_model_url: str = "/models/parakeet-redux/v1/"

@@ -53,21 +53,18 @@ This assumes the repo is checked out on the host (e.g. at `/opt/eduavatars`) —
 [README](../README.md#deployment) for the shared `.env` setup (`cp .env.example .env` at the repo
 root, then fill in the required secrets).
 
-1. Download the on-device speech recognition model into the data directory (once per deployment,
-   and again after a model version bump in the script):
-   ```bash
-   scripts/fetch-stt-model.sh /path/to/your/EDUAVATARS_DATA_DIR/models
-   ```
-   It fetches a pinned revision from Hugging Face, checks every file's SHA-256 hash, and stores a
-   gzipped copy next to each file, which Caddy serves to browsers (`/models/*` in `Caddyfile`):
-   ~170 MB per device instead of ~380 MB. Visitors' browsers then run speech recognition
-   themselves, with live text while they speak. Skipping this step doesn't break voice input:
-   the browser fails to load the model and falls back to the backend's Whisper — but every visitor
-   waits for that failed attempt first, so set `BROWSER_STT_ENABLED=false` instead if you don't
-   want on-device recognition at all.
+1. Nothing to do for the on-device speech recognition model: the one-off `stt-model` service in
+   `docker-compose.yml` downloads it into `<EDUAVATARS_DATA_DIR>/models` on every `up` and then
+   exits. The first run fetches ~380 MB from Hugging Face (a pinned revision, every file checked
+   against its SHA-256 hash) and stores a gzipped copy next to each file, which Caddy serves to
+   browsers (`/models/*` in `Caddyfile`): ~175 MB per device instead of ~380 MB. Later runs only
+   re-download missing or damaged files and finish in seconds. The site doesn't wait for it —
+   until the download is complete, browsers use server transcription. Follow its progress with
+   `docker compose -f docker/docker-compose.yml --env-file .env logs stt-model`. To skip on-device
+   recognition entirely, set `BROWSER_STT_ENABLED=false`.
 
-   After starting the stack (next step), check that compression actually reaches browsers — this
-   also catches a proxy in front that strips it:
+   After the first run, check that compression actually reaches browsers — this also catches a
+   proxy in front that strips it:
    ```bash
    curl -sI -H 'Accept-Encoding: gzip' https://<your-site>/models/parakeet-redux/v1/encoder-model.onnx \
      | grep -i -E 'content-encoding|content-length'
@@ -123,7 +120,7 @@ to:
   visitor address (see `FORWARDED_ALLOW_IPS` below) or scheme.
 - **Pass compressed model files through unchanged** — `/models/*` responses are already gzipped
   (see step 1 under [Deploying](#deploying)); a proxy that decompresses or re-encodes them sends
-  every student ~380 MB instead of ~170 MB.
+  every student ~380 MB instead of ~175 MB.
 - **Not buffer the streamed chat reply** — `backend/app/features/chat/public_router.py`'s chat endpoint streams
   its reply as `text/event-stream` so a student hears the first words as soon as they're ready.
   A proxy that buffers the whole response before forwarding it defeats that.

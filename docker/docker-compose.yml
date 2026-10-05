@@ -20,9 +20,24 @@ services:
       retries: 3
       start_period: 10s
     volumes:
-      # On-device speech recognition model, served by Caddy at /models/ (see Caddyfile). Filled
-      # once by `scripts/fetch-stt-model.sh "$EDUAVATARS_DATA_DIR/models"` — see docker/README.md.
+      # On-device speech recognition model, served by Caddy at /models/ (see Caddyfile). Filled by
+      # the stt-model service below.
       - ${EDUAVATARS_DATA_DIR}/models:/models:ro
+
+  # Downloads the on-device speech recognition model into the data directory, then exits (see
+  # scripts/fetch-stt-model.sh). Runs on every `up`, but only downloads what's missing or damaged,
+  # so after the first run it finishes in seconds. `web` deliberately doesn't wait for it: the
+  # site is up right away, and browsers use server transcription until the model is complete.
+  stt-model:
+    image: chsiegel/eduavatars:frontend
+    pull_policy: always
+    entrypoint: ["fetch-stt-model", "/models"]
+    # Root, so it can write into a models/ folder Docker created on the host as root. The files it
+    # writes are world-readable, which is all the web container needs.
+    user: root
+    volumes:
+      - ${EDUAVATARS_DATA_DIR}/models:/models
+    restart: "no"
 
   backend:
     image: chsiegel/eduavatars:backend
