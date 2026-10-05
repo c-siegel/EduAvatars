@@ -14,7 +14,7 @@ from app.features.api_keys import providers_router
 from app.features.api_keys import router as api_keys_router
 from app.features.auth import router as auth_router
 from app.features.chat import preview_router, public_router
-from app.features.media import avatars_router, backgrounds_router
+from app.features.media import avatars_router, backgrounds_router, voices_router
 from app.features.projects import publication_router, start_audio_router, transfer_router
 from app.features.projects import router as projects_router
 from app.features.site_settings import admin_router as site_settings_admin_router
@@ -37,6 +37,7 @@ api_router.include_router(preview_router.router)  # /projects/{id}/chat/messages
 # Libraries and keys
 api_router.include_router(avatars_router.router)  # /avatars
 api_router.include_router(backgrounds_router.router)  # /backgrounds
+api_router.include_router(voices_router.router)  # /voice-clips: voice library for local TTS
 api_router.include_router(providers_router.router)  # /providers: provider registry
 api_router.include_router(api_keys_router.router)  # /api-keys: the user's stored keys
 

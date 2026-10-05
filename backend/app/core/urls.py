@@ -35,6 +35,10 @@ def background_file_url(background_id: str) -> str:
     return api_url(f"/backgrounds/{background_id}/file")
 
 
+def voice_clip_file_url(clip_id: str) -> str:
+    return api_url(f"/voice-clips/{clip_id}/file")
+
+
 def start_audio_url(project_id: str) -> str:
     return api_url(f"/projects/{project_id}/start-audio")
 

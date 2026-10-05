@@ -7,18 +7,12 @@ server or cloud service needed. Used whenever a project has no STT key configure
 
 import io
 import os
-import threading
 from functools import lru_cache
 
 from faster_whisper import WhisperModel
 
 from app.core.config import settings
-
-# Bounds how many transcriptions run at once (see Settings.stt_max_concurrent_transcriptions) —
-# Whisper is CPU-bound, so running several at once just makes each one slower rather than
-# finishing more work sooner. A BoundedSemaphore (not a plain lock) so a size > 1 is possible
-# without code changes here.
-_transcription_slots = threading.BoundedSemaphore(max(1, settings.stt_max_concurrent_transcriptions))
+from app.features.ai.stt.capacity import transcription_slot
 
 
 @lru_cache(maxsize=1)
@@ -47,15 +41,9 @@ class LocalWhisperClient:
         makes the model snap the audio onto plausible-sounding words in the wrong language
         entirely, rather than just mishearing a word or two.
 
-        Raises TimeoutError if no transcription slot frees up within
-        stt_transcription_queue_timeout_seconds (see _transcription_slots above) — callers should
-        treat that the same as any other transcription failure (a 503 to the caller, not a 500),
-        since it means the server is legitimately at capacity, not broken.
+        Raises TimeoutError if the server is at capacity (see capacity.py::transcription_slot).
         """
-        acquired = _transcription_slots.acquire(timeout=settings.stt_transcription_queue_timeout_seconds)
-        if not acquired:
-            raise TimeoutError("Transcription queue is full — no free slot within the timeout.")
-        try:
+        with transcription_slot():
             # faster-whisper decodes the audio format itself (WebM/Opus from the browser) via its
             # bundled PyAV library; no filename or content type is needed for that.
             # vad_filter (voice activity detection) trims silence padding, which a segmented
@@ -64,5 +52,3 @@ class LocalWhisperClient:
                 io.BytesIO(audio_bytes), language=language, vad_filter=True, initial_prompt=initial_prompt
             )
             return " ".join(segment.text.strip() for segment in segments).strip()
-        finally:
-            _transcription_slots.release()

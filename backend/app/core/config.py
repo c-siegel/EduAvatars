@@ -25,6 +25,7 @@ How to use:
 """
 
 from pathlib import Path
+from typing import Literal
 
 from cryptography.fernet import Fernet
 from pydantic import field_validator
@@ -183,6 +184,19 @@ class Settings(BaseSettings):
     start-audio routes) is stored, so it doesn't need to be re-synthesized on every chat load.
     """
 
+    voice_clip_upload_dir: str = "uploads/voice-clips"
+    """
+    Directory where teachers' voice clips for local voice cloning are stored (see
+    features/media/voices_router.py), always as normalized WAV files.
+    """
+
+    voice_preview_timeout_seconds: float = 120.0
+    """
+    How long a voice preview (see POST /voice-clips/{id}/preview) may wait for the local-TTS
+    sidecar. Longer than local_tts_request_timeout_seconds because the first request after the
+    sidecar starts also loads its model, which takes over a minute on a typical CPU.
+    """
+
     # ==================== EMAIL & PASSWORD RESET SETTINGS ====================
     
     # For password reset flow (link in email text) and SMTP sending.
@@ -246,9 +260,29 @@ class Settings(BaseSettings):
 
     # ==================== SPEECH-TO-TEXT (STT) SETTINGS ====================
     
-    # Speech recognition runs directly in the backend process using the
-    # faster-whisper library (see features/ai/stt) — no separate
-    # Whisper container or cloud service needed.
+    # Speech recognition for voice messages that aren't transcribed on the visitor's device (see
+    # the browser settings further down) runs directly in the backend process — no separate
+    # container or cloud service needed (see features/ai/stt). A project's own cloud STT key, if
+    # set, takes priority over both engines below.
+
+    stt_engine: Literal["whisper", "parakeet"] = "whisper"
+    """
+    Which local engine transcribes on the server.
+
+    - "whisper": faster-whisper with stt_model below (default).
+    - "parakeet": the Parakeet Redux model from stt_parakeet_model_dir — about twice as fast as
+      Whisper "small" on a CPU and at least as accurate on German, but it detects the language
+      itself (no spoken_language hint) and gets no text context between the segments of one
+      recording. Falls back to Whisper while its model files are missing.
+    """
+
+    stt_parakeet_model_dir: str = "../models/parakeet-redux/v1"
+    """
+    Folder with the Parakeet model files (manifest.json and the files it lists), as written by
+    scripts/fetch-stt-model.sh — the same files the browsers load. Relative to the backend's
+    working directory; docker/docker-compose.yml points it at the data volume.
+    """
+
     # stt_model is either a short name ("small", "medium", …) or a Hugging Face
     # repository (like the default) — both are accepted directly by faster-whisper.
     
@@ -280,9 +314,10 @@ class Settings(BaseSettings):
 
     stt_max_concurrent_transcriptions: int = 2
     """
-    How many Whisper transcriptions may run at the same time, in this one process.
+    How many local transcriptions (Whisper or Parakeet) may run at the same time, in this one
+    process (see features/ai/stt/capacity.py).
 
-    Whisper is CPU-bound and (with stt_cpu_threads below) each transcription is written to use
+    Both engines are CPU-bound and (with stt_cpu_threads below) each transcription is written to use
     most of the machine's cores — running several at once wouldn't finish any of them faster,
     just make every one slower. Requests beyond this limit wait in line (see
     stt_transcription_queue_timeout_seconds) instead of piling onto the CPU together.
@@ -299,7 +334,7 @@ class Settings(BaseSettings):
 
     stt_cpu_threads: int = 0
     """
-    CPU threads faster-whisper's model may use per transcription.
+    CPU threads the local STT model (Whisper or Parakeet) may use per transcription.
 
     0 (the default) means "let faster-whisper pick its own default", which uses most of the
     machine's cores per call — fine for a single transcription, but worth capping (e.g. to a

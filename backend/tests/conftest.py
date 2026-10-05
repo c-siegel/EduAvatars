@@ -45,6 +45,7 @@ UPLOAD_DIR_SETTINGS = [
     "background_upload_dir",
     "profile_picture_upload_dir",
     "start_audio_upload_dir",
+    "voice_clip_upload_dir",
 ]
 
 # Every request path in the route tests is relative to the API prefix, like the frontend's client.

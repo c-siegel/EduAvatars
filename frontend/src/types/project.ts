@@ -41,6 +41,9 @@ export interface Project {
   // Referenz auf einen Key vom Typ TTS (analog llmApiKeyId).
   ttsApiKeyId: string | null;
   ttsVoice: string | null;
+  // A clip from the owner's voice library (Dashboard → Voices) that local TTS clones the voice
+  // from — only used while ttsApiKeyId is null. null speaks with the default local voice.
+  ttsVoiceClipId: string | null;
   spokenLanguage: SpokenLanguage;
   // Reference to a key of type STT (mirrors ttsApiKeyId) — null keeps transcribing locally
   // (see backend features/ai/stt).

@@ -21,7 +21,7 @@ import yaml
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from app.features.media.models import AvatarModel, BackgroundImage
+from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
 from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectExportData
 
@@ -98,7 +98,9 @@ def _upgrade_v1(fields: dict) -> dict:
     return fields
 
 
-def _owned(session: Session, model: type[AvatarModel] | type[BackgroundImage], user_id: str, item_id: str | None) -> str | None:
+def _owned(
+    session: Session, model: type[AvatarModel | BackgroundImage | VoiceClip], user_id: str, item_id: str | None
+) -> str | None:
     """Keep a library reference only if it still points at one of this user's own uploads —
     dropped instead of failing the import, e.g. when importing a colleague's export whose avatar
     isn't in this account's library, so the project just falls back to the default look."""
@@ -118,6 +120,7 @@ def import_project(session: Session, user_id: str, data: ProjectExportData) -> P
     fields = data.model_dump()
     fields["avatar_model_id"] = _owned(session, AvatarModel, user_id, fields["avatar_model_id"])
     fields["avatar_background_id"] = _owned(session, BackgroundImage, user_id, fields["avatar_background_id"])
+    fields["tts_voice_clip_id"] = _owned(session, VoiceClip, user_id, fields["tts_voice_clip_id"])
     project = Project(user_id=user_id, **fields)
     session.add(project)
     session.commit()

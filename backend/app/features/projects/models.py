@@ -86,6 +86,10 @@ class Project(SQLModel, table=True):
     # See features/api_keys/resolve.py::resolve_tts_key.
     tts_api_key_id: str | None = Field(default=None, foreign_key="userapikey.id", index=True)
     tts_voice: str | None = None
+    # A clip from the owner's voice library to clone the voice from — only used by local TTS
+    # (no tts_api_key_id set), see features/media/service.py::voice_reference_for_project. None
+    # speaks with the sidecar's default voice for spoken_language.
+    tts_voice_clip_id: str | None = Field(default=None, foreign_key="voiceclip.id", index=True)
     # Does NOT control lip-sync quality (that's now audio-driven via HeadAudio, independent of
     # language) — instead it's the language hint for STT (features/ai/stt) and a short
     # preprompt instruction, so text replies actually come back in this language.

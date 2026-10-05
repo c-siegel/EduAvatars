@@ -26,7 +26,8 @@ from sqlmodel import Session, select
 from app.features.api_keys.models import UserApiKey
 from app.features.auth.models import PasswordResetToken
 from app.features.chat.models import Conversation, ProjectAccess
-from app.features.media.models import AvatarModel, BackgroundImage
+from app.features.ai.tts.local import forget_voice
+from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
 from app.features.projects.models import Project
 from app.features.users.models import User
 from app.storage.files import unlink_quietly
@@ -57,6 +58,13 @@ def delete_user_account(session: Session, user: User) -> None:
     for background in session.exec(select(BackgroundImage).where(BackgroundImage.user_id == user.id)):
         unlink_quietly(background.file_path)
         session.delete(background)
+    # A voice clip is a recording of a real person — it must not outlive the account, neither
+    # here nor in the local-TTS sidecar's cache of it.
+    forgotten_voices = []
+    for clip in session.exec(select(VoiceClip).where(VoiceClip.user_id == user.id)):
+        unlink_quietly(clip.file_path)
+        forgotten_voices.append(clip.sha256)
+        session.delete(clip)
 
     # The stored provider secrets. Encrypted at rest, but leaving them behind would mean an
     # account deletion never actually retires the key it was entrusted with.
@@ -68,3 +76,5 @@ def delete_user_account(session: Session, user: User) -> None:
     unlink_quietly(user.avatar_path)
     session.delete(user)
     session.commit()
+    for sha256 in forgotten_voices:
+        forget_voice(sha256)

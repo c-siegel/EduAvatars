@@ -70,6 +70,10 @@ jobs:
             dockerfile: docker/backend.Dockerfile
           - component: frontend
             dockerfile: docker/frontend.Dockerfile
+          # The optional local text-to-speech sidecar (see local-tts/) — a large image (CPU
+          # PyTorch), only pulled by deployments that enable the "local-tts" Compose profile.
+          - component: local-tts
+            dockerfile: docker/local-tts.Dockerfile
       fail-fast: false
     steps:
       - name: Checkout repository

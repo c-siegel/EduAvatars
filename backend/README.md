@@ -13,7 +13,8 @@ file only covers backend-specific details.
 - **litellm** — a single client that talks to different LLM/TTS providers, so the app isn't
   locked to one vendor.
 - **faster-whisper** — runs speech-to-text directly inside the backend process (no separate
-  service needed).
+  service needed). Optionally replaced by **Parakeet Redux** on ONNX Runtime (`STT_ENGINE=parakeet`),
+  the same model the browsers use for on-device recognition.
 - **JWT (JSON Web Tokens) + bcrypt** — authentication and password hashing.
 
 ## Folder map
@@ -177,6 +178,20 @@ content-sniffing validation as the avatar library.
 | `GET /backgrounds/{background_id}/file` | Owner, or public if used by a published project | Serve the background image file. |
 | `DELETE /backgrounds/{background_id}` | Login required, own resource | Delete a background image. |
 
+### Voice library — `app/features/media/voices_router.py` (prefix `/voice-clips`)
+
+Each teacher's private voice clips for local voice cloning (local TTS only — a project picks one
+via `ttsVoiceClipId`). Uploads are content-sniffed, need a consent confirmation, must be 3–30 s
+long, and are stored as normalized 24 kHz mono WAV whatever format came in.
+
+| Method & path | Auth | Description |
+|---|---|---|
+| `GET /voice-clips` | Login required | List the current user's voice clips. |
+| `POST /voice-clips` | Login required | Add a clip (multipart: `file`, `name`, `consent=true`) — an uploaded file or a browser recording. |
+| `GET /voice-clips/{clip_id}/file` | Login required, own resource | Serve the clip's WAV file (never public). |
+| `POST /voice-clips/{clip_id}/preview` | Login required, own resource | Speak `{text, language}` in the clip's cloned voice via the local-TTS sidecar; returns WAV. |
+| `DELETE /voice-clips/{clip_id}` | Login required, own resource | Delete a clip; projects using it go back to the default voice and lose their start audio. |
+
 ### Analytics — `app/features/analytics/stats_router.py` (prefix `/analytics`)
 
 Read-only numbers for the teacher-facing dashboards, scoped to the current user's own projects.
@@ -251,7 +266,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 |---|---|---|
 | `features/ai/llm/` | LLM chat completion (litellm, plus a direct integration for GWDG Arcana) | `get_llm_client(api_key_record)` → `.complete(request)`, `.stream(request)`, `.test()`.<br>`complete(api_key_record, ChatRequest(...))` — one-shot reply.<br>`stream(api_key_record, ChatRequest(...))` — text deltas, falling back to a plain call if streaming fails before the first delta. |
 | `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language)` — routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
-| `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — via faster-whisper locally, or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`. |
+| `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — locally via faster-whisper or Parakeet (`Settings.stt_engine`), or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`.<br>`capacity.transcription_slot()` — limits concurrent local transcriptions. |
 | `features/chat/pipeline.py` | One chat turn for the public and preview chat | `prepare_chat(session, project)` — resolve keys and snapshot the project.<br>`reply_turn(context, turn)` — LLM → save → TTS.<br>`stream_turn(context, turn)` — `(event, data)` pairs for the SSE stream. |
 | `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_url_for(project)`, `effective_api_base(key)`. |
 | `features/api_keys/service.py` | Managing stored keys | `list_keys_with_usage(session, user_id)`, `create_key(...)`, `update_key(...)`, `delete_key(...)`, `run_key_test(session, key)`. |
@@ -262,7 +277,8 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | `features/projects/publish.py` | Publishing projects | `publish_project(session, project)` — assigns a fresh share-link slug.<br>`unpublish_project(session, project)` — the old slug is never reused. |
 | `features/projects/start_audio.py` | Cached start-prompt audio | `generate_start_audio(session, project)`, `servable_start_audio(session, project_id, user)`. |
 | `features/projects/export.py` | Project YAML export/import | `export_project_yaml(project)`, `parse_project_yaml(raw)`, `import_project(session, user_id, data)`. |
-| `features/media/service.py` | Avatar and background libraries | `create_avatar(...)`, `set_avatar_thumbnail(...)`, `delete_avatar(...)`, the background equivalents, and `is_used_by_published_project(session, column, item_id, owner_id)`. |
+| `features/media/service.py` | Avatar, background and voice libraries | `create_avatar(...)`, `set_avatar_thumbnail(...)`, `delete_avatar(...)`, the background equivalents, and `is_used_by_published_project(session, column, item_id, owner_id)`.<br>`list_voice_clips(...)`, `get_owned_voice_clip(...)`, `create_voice_clip(...)`, `delete_voice_clip(session, clip)`, `voice_reference_for_project(session, project)`. |
+| `features/media/voice_audio.py` | Voice clip validation | `normalize_voice_clip(content)` → (WAV bytes, duration) — sniffs, decodes and resamples an upload, enforcing 3–30 s. |
 | `features/analytics/service.py` | Analytics queries behind the dashboard | `get_stats(...)`, `get_project_overview(...)`, `get_sessions_paginated(...)`, `get_session_ids(...)`, `get_timeseries_data(...)`.<br>`get_conversation_detail(...)`, `get_conversations_for_export(...)`, `delete_conversations(...)`. |
 | `features/analytics/csv_export.py` | Conversation CSV/ZIP export | `build_export(rows)`, `build_conversation_csv(conversation, project)`, `conversation_export_filename(...)`. |
 | `features/users/service.py` | Own profile and admin account management | `update_profile(...)`, `change_password(...)`, `set_profile_picture(...)`.<br>`create_user_as_admin(...)`, `admin_reset_password(...)`, `admin_update_user(session, admin, target, data)` — guards against self-lockout and removing the last admin. |
@@ -327,7 +343,7 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
-| `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text, via faster-whisper) call. |
+| `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text) call — local Whisper or Parakeet, or the cloud provider. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio

@@ -21,6 +21,10 @@ dependencies = [
     # av.open(..., metadata_errors=...), which PyAV 19 removed — every server transcription then
     # fails with a TypeError. Remove this cap once a faster-whisper release drops that argument.
     "av>=11,<19",
+    # Imported directly by the optional Parakeet engine (features/ai/stt/parakeet_local.py) —
+    # both already come in through faster-whisper, listed here so that doesn't stay implicit.
+    "onnxruntime>=1.17,<2",
+    "numpy>=1.24",
     "anyio>=4.0",
     "pyyaml>=6.0",
 ]
