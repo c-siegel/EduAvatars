@@ -19,6 +19,10 @@
 # and BusyBox-compatible, since it also runs inside the Alpine-based frontend image.
 
 set -eu
+# Caddy reads these files as a different, unprivileged user than whoever runs this script (root in
+# the stt-model service, see docker/docker-compose.yml) — a restrictive umask would make every
+# download answer 403.
+umask 022
 
 TARGET_ROOT="${1:-$(dirname "$0")/../models}"
 # Bump VERSION together with REVISION — the version is part of every URL, and Caddy and the
@@ -62,9 +66,14 @@ echo "$FILES" | while read -r name sha; do
     mv "$file.part" "$file"
     rm -f "$file.gz"
   fi
-  if [ ! -f "$file.gz" ]; then
+  # Checked by decompressing, not just by existence: an interrupted earlier run can leave a
+  # truncated .gz behind, and Caddy would keep serving it — browsers then stall partway through.
+  if [ ! -f "$file.gz" ] || ! gzip -t "$file.gz" 2>/dev/null; then
     echo "gzip      $name"
-    gzip -9 -k -f "$file"
+    # Written to .part first and renamed when complete, so an interruption never leaves a
+    # broken .gz under the name Caddy serves.
+    gzip -9 -c "$file" > "$file.gz.part"
+    mv "$file.gz.part" "$file.gz"
   fi
 done
 
@@ -88,8 +97,13 @@ cat > "$TARGET/manifest.json.part" <<EOF
   }
 }
 EOF
-gzip -9 -c "$TARGET/manifest.json.part" > "$TARGET/manifest.json.gz"
+gzip -9 -c "$TARGET/manifest.json.part" > "$TARGET/manifest.json.gz.part"
+mv "$TARGET/manifest.json.gz.part" "$TARGET/manifest.json.gz"
 mv "$TARGET/manifest.json.part" "$TARGET/manifest.json"
+
+# Also repairs files from an earlier run under a stricter umask. On storage with its own ACLs
+# (e.g. a TrueNAS dataset) chmod can be refused — then grant read access in the ACL instead.
+chmod -R a+rX "$TARGET_ROOT" 2>/dev/null || echo "Warning: could not make $TARGET_ROOT world-readable — the web server may answer 403." >&2
 
 echo "Done: $TARGET"
 echo "Transfer size per device (gzip): $(cat "$TARGET"/*.gz | wc -c | awk '{printf "%.0f MB", $1 / 1000000}')"
