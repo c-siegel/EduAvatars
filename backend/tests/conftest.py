@@ -34,7 +34,7 @@ from app.models.user import User  # noqa: E402
 
 # Module attributes holding the process-wide `engine` that code opens its own Session(engine)
 # with (outside the request-scoped get_session dependency) — redirected to the test engine.
-ENGINE_TARGETS = ["app.api.public_chat.engine"]
+ENGINE_TARGETS = ["app.features.chat.conversation_store.engine"]
 # Where the local Whisper model is loaded (patched so no model is ever downloaded).
 STT_MODEL_TARGET = "app.features.ai.stt.whisper_local._model"
 

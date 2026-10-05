@@ -5,7 +5,7 @@ Records that an anonymous visitor loaded a published project's public chat page,
 (see app/services/analytics_service.py).
 
 How to use:
-    from app.services.visitor_service import log_access
+    from app.features.chat.visitor_log import log_access
 
     log_access(session, project.id, visitor_id)
 """

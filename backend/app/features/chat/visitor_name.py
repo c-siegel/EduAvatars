@@ -8,7 +8,7 @@ value just becomes a label on the visitor's saved Conversation, so a teacher can
 apart when downloading the chat protocol (app/api/analytics.py).
 
 How to use:
-    from app.services.visitor_name_service import assert_visitor_name_provided, clean_visitor_name
+    from app.features.chat.visitor_name import assert_visitor_name_provided, clean_visitor_name
 
     visitor_name = clean_visitor_name(x_visitor_name)
     assert_visitor_name_provided(project, visitor_name)

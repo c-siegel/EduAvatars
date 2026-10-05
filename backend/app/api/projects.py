@@ -2,8 +2,8 @@
 Project Routes
 
 CRUD (create/read/update/delete) for a user's projects, plus publishing, YAML export/import,
-a live preview chat used while configuring a project, and voice-message transcription for
-that preview.
+and the cached start-prompt audio. The configurator's preview chat lives in
+app/features/chat/preview_router.py.
 
 What is a "project" here?
 A project is one configured AI persona: an avatar, a system prompt, an LLM (large language
@@ -16,7 +16,6 @@ How to use:
     app.include_router(projects.router)
 """
 
-import base64
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -28,24 +27,10 @@ from app.core.deps import get_current_user, get_current_user_optional, get_owned
 from app.core.error_codes import ErrorCode
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_TTS
 from app.models.project import Project
-from app.models.schemas.project import (
-    PreviewMessageRequest,
-    PreviewMessageResponse,
-    ProjectOut,
-    ProjectStats,
-    ProjectUpdate,
-)
-from app.models.schemas.speech import TranscriptionOut
+from app.models.schemas.project import ProjectOut, ProjectStats, ProjectUpdate
 from app.models.user import User
 from app.services.analytics_service import get_stats as get_analytics_stats
-from app.features.api_keys.resolve import (
-    get_owned_key_of_type,
-    resolve_llm_key,
-    resolve_stt_key,
-    resolve_tts_key,
-)
-from app.features.ai import llm
-from app.features.ai.stt import transcribe_audio
+from app.features.api_keys.resolve import get_owned_key_of_type, resolve_tts_key
 from app.features.ai.tts import synthesize_speech
 from app.services.project_export_service import (
     MAX_IMPORT_UPLOAD_BYTES,
@@ -71,9 +56,6 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 # null" (clear/disable) in put_project below — both look like a missing key otherwise.
 _NO_CHAT_PASSWORD_SENT = object()
 
-_MAX_AUDIO_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB — individual chat voice messages are short
-_ALLOWED_AUDIO_CONTENT_TYPES = {"audio/webm", "audio/ogg", "audio/mp4", "audio/wav", "audio/mpeg"}
-
 
 def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_type: str) -> None:
     """Raise HTTP 400 unless `key_id` is one of `user_id`'s own API keys of the given type."""
@@ -82,22 +64,6 @@ def _require_owned_key_of_type(session: Session, user_id: str, key_id: str, key_
     # llm_api_key_id (both fields point at the same table).
     if get_owned_key_of_type(session, user_id, key_id, key_type) is None:
         raise HTTPException(status_code=400, detail=ErrorCode.UNKNOWN_API_KEY)
-
-
-def _synthesize_if_enabled(session: Session, project: Project, text: str) -> tuple[str | None, str | None]:
-    """Generate speech for `text` if the project has TTS enabled and a usable key; never raises."""
-    # Speech output is an addition to the text reply — if it fails (no key, provider error), the
-    # user still gets the text back, instead of a 500/502 just because of the audio generation.
-    if not project.tts_enabled:
-        return None, None
-    api_key = resolve_tts_key(session, project)
-    if api_key is None:
-        return None, None
-    try:
-        audio_bytes, content_type = synthesize_speech(text, project.tts_voice, api_key, project.spoken_language)
-    except Exception:
-        return None, None
-    return base64.b64encode(audio_bytes).decode(), content_type
 
 
 @router.post("", response_model=ProjectOut)
@@ -225,48 +191,6 @@ def unpublish(project: Project = Depends(get_owned_project), session: Session = 
     return unpublish_project(session, project)
 
 
-@router.post("/{project_id}/preview-message", response_model=PreviewMessageResponse)
-def preview_message(
-    data: PreviewMessageRequest,
-    project: Project = Depends(get_owned_project),
-    session: Session = Depends(get_session),
-):
-    """Send a message to the project's configured LLM and return the reply, for the in-app preview chat."""
-    # Live preview chat in the configurator (Screen 1e) — uses the user's own API key.
-    api_key = resolve_llm_key(session, project)
-    if api_key is None:
-        raise HTTPException(status_code=400, detail=ErrorCode.NO_LLM_MODEL_SELECTED)
-    try:
-        history = [{"role": h.role, "content": h.content} for h in data.history]
-        reply = llm.complete(
-            api_key,
-            llm.ChatRequest(
-                project.preprompt or "",
-                data.message,
-                project.temperature,
-                project.top_p,
-                project.start_prompt,
-                history,
-            ),
-        )
-    except Exception as exc:
-        # This is the user's own context (the configurator) — the concrete error message helps
-        # with debugging (wrong/expired key, wrong model, ...), unlike in the public chat. `code`
-        # gets translated on the frontend (see errorMessage() in api/client.ts); `message` is the
-        # raw provider exception, appended untranslated since it's already technical/English.
-        # Scrubbed in case the provider embeds the key itself in the failing request (e.g. Gemini
-        # puts it in the URL) — see services/crypto_service.py::scrub_key_from_text.
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "code": ErrorCode.LLM_REQUEST_FAILED,
-                "message": scrub_key_from_text(str(exc), api_key.encrypted_api_key),
-            },
-        ) from exc
-    audio_base64, content_type = _synthesize_if_enabled(session, project, reply)
-    return PreviewMessageResponse(reply=reply, audio_base64=audio_base64, content_type=content_type)
-
-
 @router.post("/{project_id}/start-audio", response_model=ProjectOut)
 def generate_start_audio(
     project: Project = Depends(get_owned_project),
@@ -324,32 +248,3 @@ def get_start_audio(
         raise HTTPException(status_code=404, detail=ErrorCode.START_AUDIO_NOT_FOUND)
 
     return FileResponse(project.start_audio_path, media_type="audio/mpeg")
-
-
-@router.post("/{project_id}/transcribe", response_model=TranscriptionOut)
-def transcribe(
-    audio: UploadFile,
-    project: Project = Depends(get_owned_project),
-    session: Session = Depends(get_session),
-):
-    """Transcribe a voice message for the in-app preview chat.
-
-    Plain `def`, not `async def` — see the matching public_chat.py::transcribe for why: this
-    runs the same synchronous, CPU-bound transcription and must not block the event loop.
-    """
-    if not project.stt_enabled:
-        raise HTTPException(status_code=400, detail=ErrorCode.VOICE_INPUT_DISABLED)
-    if audio.content_type not in _ALLOWED_AUDIO_CONTENT_TYPES:
-        raise HTTPException(status_code=400, detail=ErrorCode.UNSUPPORTED_AUDIO_FORMAT)
-    content = audio.file.read(_MAX_AUDIO_UPLOAD_BYTES + 1)
-    if len(content) > _MAX_AUDIO_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail=ErrorCode.AUDIO_FILE_TOO_LARGE)
-
-    stt_key = resolve_stt_key(session, project)
-    try:
-        text = transcribe_audio(content, project.spoken_language, api_key_record=stt_key)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502, detail={"code": ErrorCode.STT_REQUEST_FAILED, "message": str(exc)}
-        ) from exc
-    return TranscriptionOut(text=text)

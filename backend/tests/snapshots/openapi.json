@@ -2332,7 +2332,6 @@
   "paths": {
     "/admin/settings": {
       "get": {
-        "description": "The instance-wide site settings (contact email, self-registration toggle).",
         "responses": {
           "200": {
             "content": {
@@ -2344,11 +2343,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Settings"
+        }
       },
       "put": {
-        "description": "Update the instance-wide site settings.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2380,13 +2377,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Put Settings"
+        }
       }
     },
     "/admin/users": {
       "get": {
-        "description": "List every account on this instance.",
         "responses": {
           "200": {
             "content": {
@@ -2402,11 +2397,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "List Users"
+        }
       },
       "post": {
-        "description": "Create a new account with a temporary password the new user must change on first login.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2438,13 +2431,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Create User"
+        }
       }
     },
     "/admin/users/{user_id}": {
       "put": {
-        "description": "Promote/demote or enable/disable an account.",
         "parameters": [
           {
             "in": "path",
@@ -2487,13 +2478,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Update User"
+        }
       }
     },
     "/admin/users/{user_id}/reset-password": {
       "post": {
-        "description": "Set a user's password on their behalf; they must change it on next login.",
         "parameters": [
           {
             "in": "path",
@@ -2534,13 +2523,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Reset Password"
+        }
       }
     },
     "/analytics/delete": {
       "post": {
-        "description": "Permanently delete the saved conversations checked off in the analytics table. Unlike\nexport_conversations, an empty or already-gone selection is not an error (deleting something\nthat's no longer there is a no-op, not a failure) — ids that don't belong to current_user's\nown projects are silently skipped, same as export.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2565,13 +2552,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Delete Conversations Route"
+        }
       }
     },
     "/analytics/export": {
       "post": {
-        "description": "Export one or more saved conversations, checked off in the analytics table, as CSV.\n\nA single conversation comes back as a plain .csv; more than one is bundled into a .zip (one\n.csv per conversation) — browsers don't let a page trigger several file downloads at once\nwithout extra prompts, so a bulk export has to be one file. Ids that don't exist or don't\nbelong to current_user's own projects are silently skipped, same as read_session_detail.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2601,13 +2586,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Export Conversations"
+        }
       }
     },
     "/analytics/sessions": {
       "get": {
-        "description": "Paginated list of individual chat sessions, optionally filtered by project/period/model.",
         "parameters": [
           {
             "in": "query",
@@ -2689,13 +2672,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Read Sessions"
+        }
       }
     },
     "/analytics/sessions/ids": {
       "get": {
-        "description": "Every conversation id matching the given filters, ignoring pagination — what the \"select\nall\" button in the analytics table calls before a bulk export, since the table itself only\never has the current page's ids loaded. Registered before /sessions/{conversation_id} so\n\"ids\" isn't swallowed as a conversation id.",
         "parameters": [
           {
             "in": "query",
@@ -2771,13 +2752,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Read Session Ids"
+        }
       }
     },
     "/analytics/sessions/{conversation_id}": {
       "get": {
-        "description": "Full message-by-message transcript of one saved conversation — what the \"view\" action on\na session row (frontend Analytics page) opens, since the table/CSV only ever show a\ntruncated last question.",
         "parameters": [
           {
             "in": "path",
@@ -2810,13 +2789,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Read Session Detail"
+        }
       }
     },
     "/analytics/stats": {
       "get": {
-        "description": "Aggregate stats (session/message counts, ...) for the current user's projects.",
         "parameters": [
           {
             "in": "query",
@@ -2882,13 +2859,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Read Stats"
+        }
       }
     },
     "/analytics/timeseries": {
       "get": {
-        "description": "Session/message counts over time, bucketed by day/week/month, for charting.",
         "parameters": [
           {
             "in": "query",
@@ -2968,13 +2943,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Read Timeseries"
+        }
       }
     },
     "/api-keys": {
       "get": {
-        "description": "List the current user's stored API keys, including how many projects use each one.",
         "responses": {
           "200": {
             "content": {
@@ -2990,11 +2963,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "List Keys"
+        }
       },
       "post": {
-        "description": "Store a new API key for the current user.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3026,13 +2997,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Create Key"
+        }
       }
     },
     "/api-keys/providers": {
       "get": {
-        "description": "List all supported providers and their config, for building the API-key form.",
         "responses": {
           "200": {
             "content": {
@@ -3048,13 +3017,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "List Providers"
+        }
       }
     },
     "/api-keys/{key_id}": {
       "delete": {
-        "description": "Delete a stored API key; projects using it fall back to \"no key configured\".",
         "parameters": [
           {
             "in": "path",
@@ -3085,11 +3052,9 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Delete Key"
+        }
       },
       "put": {
-        "description": "Update a stored API key; re-syncs any projects that use it as their LLM source.",
         "parameters": [
           {
             "in": "path",
@@ -3132,13 +3097,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Update Key"
+        }
       }
     },
     "/api-keys/{key_id}/test": {
       "post": {
-        "description": "Try the stored key against its provider and record whether it works.",
         "parameters": [
           {
             "in": "path",
@@ -3171,13 +3134,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Test Key"
+        }
       }
     },
     "/auth/forgot-password": {
       "post": {
-        "description": "Start a password reset for the given email, if an account with it exists.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3207,13 +3168,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Forgot Password"
+        }
       }
     },
     "/auth/login": {
       "post": {
-        "description": "Authenticate with email + password and set the auth cookie.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3245,13 +3204,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Login"
+        }
       }
     },
     "/auth/logout": {
       "post": {
-        "description": "Clear the auth cookie.",
         "responses": {
           "200": {
             "content": {
@@ -3261,13 +3218,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Logout"
+        }
       }
     },
     "/auth/me": {
       "get": {
-        "description": "The currently authenticated user.",
         "responses": {
           "200": {
             "content": {
@@ -3279,13 +3234,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Me"
+        }
       }
     },
     "/auth/register": {
       "post": {
-        "description": "Create a new account and log the user in, unless registration is disabled.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3317,13 +3270,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Register"
+        }
       }
     },
     "/auth/registration-status": {
       "get": {
-        "description": "Whether self-registration is currently enabled.",
         "responses": {
           "200": {
             "content": {
@@ -3335,13 +3286,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Registration Status"
+        }
       }
     },
     "/auth/reset-password": {
       "post": {
-        "description": "Complete a password reset using the token from the reset email.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3371,13 +3320,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Reset Password Route"
+        }
       }
     },
     "/avatar-models": {
       "get": {
-        "description": "List the current user's uploaded avatar models.",
         "responses": {
           "200": {
             "content": {
@@ -3393,11 +3340,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "List Avatar Models"
+        }
       },
       "post": {
-        "description": "Upload a new .glb avatar model file.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -3429,13 +3374,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Upload Avatar Model"
+        }
       }
     },
     "/avatar-models/{avatar_id}": {
       "delete": {
-        "description": "Delete an avatar model and its thumbnail file.",
         "parameters": [
           {
             "in": "path",
@@ -3461,13 +3404,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Delete Avatar Model"
+        }
       }
     },
     "/avatar-models/{avatar_id}/file": {
       "get": {
-        "description": "Serve an avatar's .glb file — to its owner, or anonymously if used in a published project.",
         "parameters": [
           {
             "in": "path",
@@ -3498,13 +3439,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Get Avatar File"
+        }
       }
     },
     "/avatar-models/{avatar_id}/thumbnail": {
       "get": {
-        "description": "Serve an avatar's thumbnail image.",
         "parameters": [
           {
             "in": "path",
@@ -3535,11 +3474,9 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Get Avatar Thumbnail"
+        }
       },
       "post": {
-        "description": "Attach a thumbnail image to an avatar model.",
         "parameters": [
           {
             "in": "path",
@@ -3582,13 +3519,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Set Avatar Thumbnail"
+        }
       }
     },
     "/backgrounds": {
       "get": {
-        "description": "List the current user's uploaded background images.",
         "responses": {
           "200": {
             "content": {
@@ -3604,11 +3539,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "List Backgrounds"
+        }
       },
       "post": {
-        "description": "Upload a new background image.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -3640,13 +3573,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Upload Background"
+        }
       }
     },
     "/backgrounds/{background_id}": {
       "delete": {
-        "description": "Delete a background image.",
         "parameters": [
           {
             "in": "path",
@@ -3672,13 +3603,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Delete Background"
+        }
       }
     },
     "/backgrounds/{background_id}/file": {
       "get": {
-        "description": "Serve a background image — to its owner, or anonymously if used in a published project.",
         "parameters": [
           {
             "in": "path",
@@ -3709,13 +3638,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Get Background File"
+        }
       }
     },
     "/health": {
       "get": {
-        "description": "Health check endpoint.\n\nThis endpoint is used to check if the server is running and responding.\nIt's commonly used by:\n- Load balancers to check server health\n- Monitoring systems to detect outages\n- Deployment scripts to verify the server started successfully",
         "responses": {
           "200": {
             "content": {
@@ -3725,13 +3652,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Health"
+        }
       }
     },
     "/profile": {
       "delete": {
-        "description": "Permanently delete the current user's account and everything belonging to it.",
         "responses": {
           "200": {
             "content": {
@@ -3741,11 +3666,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Delete Account"
+        }
       },
       "get": {
-        "description": "The current user's profile.",
         "responses": {
           "200": {
             "content": {
@@ -3757,11 +3680,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Profile"
+        }
       },
       "put": {
-        "description": "Update profile fields (only the ones actually provided).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3793,13 +3714,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Update Profile"
+        }
       }
     },
     "/profile/logout-everywhere": {
       "post": {
-        "description": "Sign out of every session (e.g. after a suspected compromise), while keeping this one signed in.",
         "responses": {
           "200": {
             "content": {
@@ -3809,13 +3728,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Logout Everywhere"
+        }
       }
     },
     "/profile/password": {
       "put": {
-        "description": "Change the current user's password; other sessions are signed out, this one stays signed in.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3845,13 +3762,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Change Password"
+        }
       }
     },
     "/profile/picture": {
       "delete": {
-        "description": "Remove the current user's profile picture.",
         "responses": {
           "200": {
             "content": {
@@ -3863,11 +3778,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Delete Profile Picture"
+        }
       },
       "get": {
-        "description": "Serve the current user's own profile picture.",
         "responses": {
           "200": {
             "content": {
@@ -3877,11 +3790,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Profile Picture"
+        }
       },
       "post": {
-        "description": "Upload or replace the current user's profile picture.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -3913,13 +3824,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Upload Profile Picture"
+        }
       }
     },
     "/projects": {
       "get": {
-        "description": "List the current user's projects.",
         "responses": {
           "200": {
             "content": {
@@ -3935,11 +3844,9 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Projects"
+        }
       },
       "post": {
-        "description": "Create a new project for the current user.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3971,13 +3878,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Create Project"
+        }
       }
     },
     "/projects/import": {
       "post": {
-        "description": "Create a new (draft) project from a previously exported YAML file.\n\nRegistered before GET /{project_id} so \"import\" is never swallowed as a project id.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -4009,13 +3914,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Import Project Route"
+        }
       }
     },
     "/projects/stats": {
       "get": {
-        "description": "Summary stats (project count, published count, sessions/messages this week) for the current user.",
         "responses": {
           "200": {
             "content": {
@@ -4027,13 +3930,11 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Stats"
+        }
       }
     },
     "/projects/{project_id}": {
       "delete": {
-        "description": "Permanently delete a project, including every saved conversation and access log for it.",
         "parameters": [
           {
             "in": "path",
@@ -4059,11 +3960,9 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Remove Project"
+        }
       },
       "get": {
-        "description": "A single project owned by the current user.",
         "parameters": [
           {
             "in": "path",
@@ -4096,11 +3995,9 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Get Project"
+        }
       },
       "put": {
-        "description": "Update a project owned by the current user.",
         "parameters": [
           {
             "in": "path",
@@ -4143,13 +4040,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Put Project"
+        }
       }
     },
     "/projects/{project_id}/export": {
       "get": {
-        "description": "Download a project's configuration as a YAML file, for backup or moving it to another\neduavatars account. Never includes API keys, the publish state, or the chat password.",
         "parameters": [
           {
             "in": "path",
@@ -4180,13 +4075,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Export Project"
+        }
       }
     },
     "/projects/{project_id}/preview-message": {
       "post": {
-        "description": "Send a message to the project's configured LLM and return the reply, for the in-app preview chat.",
         "parameters": [
           {
             "in": "path",
@@ -4229,13 +4122,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Preview Message"
+        }
       }
     },
     "/projects/{project_id}/publish": {
       "post": {
-        "description": "Publish a project, making it reachable via its public share link.",
         "parameters": [
           {
             "in": "path",
@@ -4268,13 +4159,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Publish"
+        }
       }
     },
     "/projects/{project_id}/start-audio": {
       "get": {
-        "description": "Serve a project's pre-generated start-prompt audio — to its owner, or anonymously if published.",
         "parameters": [
           {
             "in": "path",
@@ -4305,11 +4194,9 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Get Start Audio"
+        }
       },
       "post": {
-        "description": "Synthesize the project's start_prompt once and store it, so it doesn't need to be\nre-synthesized on every visitor's chat load (see public_chat.py::load_tutor).",
         "parameters": [
           {
             "in": "path",
@@ -4342,13 +4229,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Generate Start Audio"
+        }
       }
     },
     "/projects/{project_id}/transcribe": {
       "post": {
-        "description": "Transcribe a voice message for the in-app preview chat.\n\nPlain `def`, not `async def` — see the matching public_chat.py::transcribe for why: this\nruns the same synchronous, CPU-bound transcription and must not block the event loop.",
         "parameters": [
           {
             "in": "path",
@@ -4391,13 +4276,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Transcribe"
+        }
       }
     },
     "/projects/{project_id}/unpublish": {
       "post": {
-        "description": "Unpublish a project, removing public access.",
         "parameters": [
           {
             "in": "path",
@@ -4430,13 +4313,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Unpublish"
+        }
       }
     },
     "/public/{slug}": {
       "get": {
-        "description": "Load a published project's public info (for the public chat page) and record the visit.",
         "parameters": [
           {
             "in": "path",
@@ -4485,13 +4366,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Load Tutor"
+        }
       }
     },
     "/public/{slug}/message": {
       "post": {
-        "description": "Send a visitor's chat message to the project's LLM and return the reply, saving history if enabled.",
         "parameters": [
           {
             "in": "path",
@@ -4566,13 +4445,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Send Message"
+        }
       }
     },
     "/public/{slug}/message/stream": {
       "post": {
-        "description": "Streamed variant of send_message: the LLM reply is split into sentence-sized chunks (see\nservices/text_chunk_service.py), each synthesized and sent to the client as soon as it's\nready — so the avatar can start speaking well before the full reply exists. Falls back to\nthe plain /message endpoint on the frontend if this fails; see pages/PublicChat/index.tsx.",
         "parameters": [
           {
             "in": "path",
@@ -4645,13 +4522,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Send Message Stream"
+        }
       }
     },
     "/public/{slug}/transcribe": {
       "post": {
-        "description": "Transcribe a visitor's voice message for the public chat.\n\nDeliberately a plain `def`, not `async def`: transcription is synchronous and CPU-bound\n(see services/stt_service.py), and FastAPI runs a sync `def` route in its worker thread\npool instead of on the event loop. An `async def` here would block every other request in\nthe process — page loads, other visitors' chats, SSE streams — for the whole transcription.",
         "parameters": [
           {
             "in": "path",
@@ -4726,13 +4601,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Transcribe"
+        }
       }
     },
     "/public/{slug}/unlock": {
       "post": {
-        "description": "Verify a visitor-entered chat password and issue an unlock token for this project+visitor.",
         "parameters": [
           {
             "in": "path",
@@ -4775,13 +4648,11 @@
             },
             "description": "Validation Error"
           }
-        },
-        "summary": "Unlock"
+        }
       }
     },
     "/settings/public": {
       "get": {
-        "description": "The public-facing site settings: imprint details and whether self-registration is open.",
         "responses": {
           "200": {
             "content": {
@@ -4793,8 +4664,7 @@
             },
             "description": "Successful Response"
           }
-        },
-        "summary": "Get Public Settings"
+        }
       }
     }
   }

@@ -5,7 +5,7 @@ Checks a public chat's optional teacher-set password (see Project.chat_password_
 short-lived unlock token a visitor gets after entering it correctly.
 
 How to use:
-    from app.services.chat_password_service import assert_unlocked
+    from app.features.chat.unlock import assert_unlocked
 
     assert_unlocked(project, visitor_id, unlock_token)
     # raises HTTP 401 if the project is password-protected and the token doesn't check out

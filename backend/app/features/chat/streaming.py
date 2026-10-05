@@ -1,13 +1,13 @@
 """
-Sentence Chunker For Streamed Replies
+Streamed Replies: Sentence Chunking And SSE Framing
 
 Splits an incrementally-arriving LLM (large language model) reply into speakable chunks at
 sentence boundaries, so each chunk can be sent to TTS (text-to-speech) as soon as it is ready
-instead of waiting for the whole reply. Used by the streaming public chat endpoint (see
-app/api/public_chat.py).
+instead of waiting for the whole reply, and formats the server-sent events (SSE) those chunks
+are delivered in. Used by the streaming chat (see app/features/chat/pipeline.py::stream_turn).
 
 How to use:
-    from app.services.text_chunk_service import SentenceChunker, chunk_text
+    from app.features.chat.streaming import SentenceChunker, chunk_text
 
     chunker = SentenceChunker()
     for delta in llm_token_stream:
@@ -20,6 +20,8 @@ How to use:
     # Or, for an already-complete string:
     chunks = chunk_text(full_reply)
 """
+
+import json
 
 _SENTENCE_MARKS = ".?!:…"
 _MIN_CHUNK_CHARS = 80  # below this, keep accumulating past the boundary
@@ -142,3 +144,8 @@ def chunk_text(text: str) -> list[str]:
     if tail:
         chunks.append(tail)
     return chunks
+
+
+def sse_event(event: str, data: dict) -> str:
+    """Format one server-sent-event (SSE) frame — an "event: <name>\\ndata: <json>\\n\\n" block."""
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
