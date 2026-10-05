@@ -172,3 +172,25 @@ def test_llm_reply_without_content_is_reported_as_unavailable_not_a_crash(client
     assert preview.status_code == 502
     assert preview.json()["detail"]["code"] == "LLM_REQUEST_FAILED"
     assert client.get("/conversations").json()["total"] == 0
+
+
+# ==================== Preview transcription errors don't echo the API key ====================
+
+
+def test_preview_transcription_error_scrubs_the_stt_key(client, chat_project, monkeypatch):
+    from app.features.ai.stt.saia import SaiaClient
+
+    def failing_transcribe(self, *args, **kwargs):
+        raise RuntimeError("401 for https://saia.example/v1/audio?key=sk-test-secret-1234")
+
+    monkeypatch.setattr(SaiaClient, "transcribe", failing_transcribe)
+    stt_key = create_key(client, key_type="stt", provider="gwdg_saia")
+    client.put(f"/projects/{chat_project['id']}", json={"sttEnabled": True, "sttApiKeyId": stt_key["id"]})
+
+    files = {"audio": ("rec.webm", b"fake-audio", "audio/webm")}
+    response = client.post(f"/projects/{chat_project['id']}/chat/transcriptions", files=files)
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert detail["code"] == "STT_REQUEST_FAILED"
+    assert "401 for" in detail["message"]
+    assert "sk-test-secret-1234" not in detail["message"]

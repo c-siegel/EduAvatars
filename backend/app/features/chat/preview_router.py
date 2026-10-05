@@ -73,7 +73,10 @@ def transcribe(
     try:
         text = transcribe_audio(content, project.spoken_language, api_key_record=stt_key)
     except Exception as exc:
+        # Scrubbed like preview_message's error above; without a key, local Whisper ran and
+        # there's nothing to redact.
+        message = scrub_key_from_text(str(exc), stt_key.encrypted_api_key) if stt_key else str(exc)
         raise HTTPException(
-            status_code=502, detail={"code": ErrorCode.STT_REQUEST_FAILED, "message": str(exc)}
+            status_code=502, detail={"code": ErrorCode.STT_REQUEST_FAILED, "message": message}
         ) from exc
     return TranscriptionOut(text=text)
