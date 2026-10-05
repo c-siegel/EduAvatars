@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  AudioLines,
   LayoutDashboard,
   BarChart3,
   KeyRound,
@@ -45,6 +46,12 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
     href: "/dashboard/api",
     icon: KeyRound,
     isActive: (p) => p.startsWith("/dashboard/api"),
+  },
+  {
+    labelKey: "nav.voices",
+    href: "/dashboard/voices",
+    icon: AudioLines,
+    isActive: (p) => p.startsWith("/dashboard/voices"),
   },
   {
     labelKey: "nav.profile",

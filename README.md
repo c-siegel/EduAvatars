@@ -194,8 +194,9 @@ By default, projects that leave the TTS key unset simply get no speech output (u
 of no-key-needed fallback for speech *output*: a small self-hosted TTS engine running as its own
 process, so nobody needs a cloud API key just to hear an avatar speak.
 
-It's opt-in and currently a Deploy A (local dev) addition only — not yet wired into
-`docker/docker-compose.yml` for Deploy B. To try it:
+It's opt-in. Each teacher can also clone voices from their own short recordings (Dashboard →
+Voices) and pick one per project. In Docker it's an optional service — see
+[docker/README.md](docker/README.md#local-text-to-speech-optional). To try it locally:
 
 ```bash
 cd local-tts
@@ -214,8 +215,9 @@ LOCAL_TTS_ENABLED=true
 LOCAL_TTS_URL=http://127.0.0.1:8080
 ```
 
-You'll also need at least one reference voice clip — see
-[`local-tts/voices/README.md`](local-tts/voices/README.md) — the repo ships none by default.
+Projects speak either with a teacher's own voice clip (Dashboard → Voices) or with a default
+clip per language — see [`local-tts/voices/README.md`](local-tts/voices/README.md); the repo ships
+none by default.
 Full details, including the model's resource footprint and API: [local-tts/README.md](local-tts/README.md).
 
 ### Deploy B: Docker (production)

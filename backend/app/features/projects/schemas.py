@@ -70,6 +70,7 @@ class ProjectOut(CamelModel):
     tts_enabled: bool
     tts_api_key_id: str | None
     tts_voice: str | None
+    tts_voice_clip_id: str | None
     spoken_language: str
     stt_api_key_id: str | None
     stt_enabled: bool
@@ -108,6 +109,7 @@ class ProjectUpdate(CamelModel):
     tts_enabled: bool | None = None
     tts_api_key_id: str | None = None
     tts_voice: str | None = None
+    tts_voice_clip_id: str | None = None
     spoken_language: str | None = None
     stt_api_key_id: str | None = None
     stt_enabled: bool | None = None
@@ -192,6 +194,8 @@ class ProjectExportData(BaseModel):
     survey_after_enabled: bool = False
     tts_enabled: bool = False
     tts_voice: str | None = None
+    # Like avatar_model_id: only kept on import into the account that owns the clip.
+    tts_voice_clip_id: str | None = None
     spoken_language: str = "de"
     stt_enabled: bool = True
     stt_browser_enabled: bool = True

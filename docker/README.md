@@ -14,9 +14,10 @@ See the [root README](../README.md) for what the app does and for the shared `.e
 | File | Purpose |
 |---|---|
 | `backend.Dockerfile` / `frontend.Dockerfile` | Build the backend and frontend images. Both run as a non-root user; the backend's adapts its UID/GID at container start to match the bind-mounted data directory (see below), the frontend's is a fixed user since it has no data directory to adapt to |
+| `local-tts.Dockerfile` + `local-tts-entrypoint.sh` | Image for the optional local text-to-speech service (see [Local text-to-speech](#local-text-to-speech-optional)) |
 | `backend-entrypoint.sh` | Container startup: creates upload/cache folders, runs database migrations, then starts the API |
 | `Caddyfile` | Reverse-proxy config — routes `/api/*` to the backend, serves the speech recognition model under `/models/*` (pre-gzipped, from the data directory) and the frontend's static files otherwise (with SPA fallback so client-side routes work on page reload); also sets baseline security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) on every response |
-| `docker-compose.yml` | The two-container stack (`web` = frontend+Caddy, `backend` = the API) |
+| `docker-compose.yml` | The stack: `web` (frontend + Caddy), `backend` (the API), `stt-model` (one-off: downloads the speech recognition model), and the optional `tts-local` (local text-to-speech) |
 | `eduavatars.service` | systemd unit to start/stop the stack on boot |
 
 The `.env` file itself lives one level up, at the repo root — see [Deploying](#deploying) below.
@@ -103,6 +104,25 @@ every start (see `backend-entrypoint.sh`), so the image itself doesn't need rebu
 different host. The `web` and `stt-model` containers run as the same UID/GID, so they can read and
 write the speech recognition model in `<EDUAVATARS_DATA_DIR>/models` even where only that
 user/group has access (as on a TrueNAS dataset).
+
+## Local text-to-speech (optional)
+
+The `tts-local` service runs the local text-to-speech engine (see [local-tts/](../local-tts/)):
+speech output for projects without a cloud TTS key, including voices cloned from teachers' own
+clips (Dashboard → Voices). It's off unless you switch it on, because it needs a few GB of RAM
+and keeps CPU cores busy while it speaks. To enable it, add to the root `.env`:
+
+```bash
+COMPOSE_PROFILES=local-tts   # makes `docker compose up` also start the tts-local service
+LOCAL_TTS_ENABLED=true       # makes the backend use it
+```
+
+and run the usual `docker compose -f docker/docker-compose.yml --env-file .env up -d`. Its data
+lives in `<EDUAVATARS_DATA_DIR>/local-tts/`: the downloaded model (~600 MB, fetched on first use),
+optional default voices in `voices/<language>.wav` (see
+[local-tts/voices/README.md](../local-tts/voices/README.md)), and a cache of teachers' clips. The
+very first speech request after a start also loads the model, which can take over a minute;
+after that, a sentence takes a second or two.
 
 ## Deploying behind another reverse proxy
 

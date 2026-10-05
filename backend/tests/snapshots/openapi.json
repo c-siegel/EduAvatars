@@ -599,6 +599,30 @@
         "title": "Body_upload_profile_picture_api_v1_me_picture_post",
         "type": "object"
       },
+      "Body_upload_voice_clip_api_v1_voice_clips_post": {
+        "properties": {
+          "consent": {
+            "default": false,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "name"
+        ],
+        "title": "Body_upload_voice_clip_api_v1_voice_clips_post",
+        "type": "object"
+      },
       "BrowserSttStatusOut": {
         "properties": {
           "available": {
@@ -1253,6 +1277,17 @@
               }
             ],
             "title": "Ttsvoice"
+          },
+          "ttsVoiceClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsvoiceclipid"
           }
         },
         "required": [
@@ -1282,6 +1317,7 @@
           "ttsEnabled",
           "ttsApiKeyId",
           "ttsVoice",
+          "ttsVoiceClipId",
           "spokenLanguage",
           "sttApiKeyId",
           "sttEnabled",
@@ -1622,6 +1658,17 @@
               }
             ],
             "title": "Ttsvoice"
+          },
+          "ttsVoiceClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsvoiceclipid"
           }
         },
         "title": "ProjectUpdate",
@@ -2421,6 +2468,70 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VoiceClipOut": {
+        "properties": {
+          "consentConfirmedAt": {
+            "format": "date-time",
+            "title": "Consentconfirmedat",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "durationSeconds": {
+            "title": "Durationseconds",
+            "type": "number"
+          },
+          "fileUrl": {
+            "title": "Fileurl",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "fileUrl",
+          "durationSeconds",
+          "consentConfirmedAt",
+          "createdAt"
+        ],
+        "title": "VoiceClipOut",
+        "type": "object"
+      },
+      "VoicePreviewIn": {
+        "properties": {
+          "language": {
+            "default": "de",
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "VoicePreviewIn",
         "type": "object"
       }
     }
@@ -4764,6 +4875,170 @@
               }
             },
             "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/voice-clips": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VoiceClipOut"
+                  },
+                  "title": "Response List Voice Clips Api V1 Voice Clips Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_voice_clip_api_v1_voice_clips_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceClipOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/voice-clips/{clip_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/voice-clips/{clip_id}/file": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/voice-clips/{clip_id}/preview": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "title": "Clip Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoicePreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         }
       }

@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     operator supplies their own clip(s) here before enabling local TTS.
     """
 
+    custom_voices_dir: str = "/data/custom-voices"
+    """
+    Where reference clips sent by the backend are kept (see PUT /voices in app/main.py), named by
+    their SHA-256 hash. The backend owns these clips (teachers upload them in the dashboard) and
+    re-sends one whenever it's missing here, so this directory is only a cache — safe to clear.
+    """
+
+    max_voice_bytes: int = 10 * 1024 * 1024
+    """Upper bound for one reference clip; the backend already limits clips to 30 s of WAV."""
+
     quantization: str | None = None
     """
     None (default, full precision) or "int8" for lower CPU/RAM use at some quality cost.

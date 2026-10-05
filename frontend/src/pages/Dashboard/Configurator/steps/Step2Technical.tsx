@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
 import { apiKeysApi } from "@/api/apiKeys";
+import { voiceClipsApi } from "@/api/voiceClips";
 import {
   findProvider,
   keyDisplayName,
@@ -36,6 +37,15 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
   const localTtsStatusQuery = useLocalTtsStatus();
   const localTtsAvailable = localTtsStatusQuery.data?.available ?? false;
+  // The teacher's own voice clips (Dashboard → Voices) — only offered when local TTS speaks, since
+  // a cloud TTS provider uses its own voices.
+  const voiceClipsQuery = useQuery({
+    queryKey: ["voice-clips"],
+    queryFn: voiceClipsApi.list,
+    enabled: localTtsAvailable,
+  });
+  const voiceClips = voiceClipsQuery.data ?? [];
+  const usesLocalTts = localTtsAvailable && draft.ttsApiKeyId === null;
   const browserSttStatusQuery = useBrowserSttStatus();
   const browserSttAvailable = browserSttStatusQuery.data?.available ?? false;
   const specs = providersQuery.data ?? [];
@@ -196,13 +206,40 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                   when the account has no TTS keys at all (this account may have keys for OTHER
                   projects and still leave this one on the local fallback). */}
               {localTtsAvailable && <p className={styles.hint}>{t("configurator.step2.ttsKeyHint")}</p>}
-              <Input
-                label={t("configurator.step2.voiceOptional")}
-                placeholder={t("configurator.step2.voicePlaceholder")}
-                value={draft.ttsVoice}
-                onChange={(e) => onChange({ ttsVoice: e.target.value })}
-              />
-              <p className={styles.hint}>{t("configurator.step2.voiceHint")}</p>
+              {usesLocalTts ? (
+                <>
+                  <label className={styles.label} htmlFor="tts-voice-clip">
+                    {t("configurator.step2.voiceClip")}
+                  </label>
+                  <select
+                    id="tts-voice-clip"
+                    className={styles.select}
+                    value={draft.ttsVoiceClipId ?? ""}
+                    onChange={(e) => onChange({ ttsVoiceClipId: e.target.value || null })}
+                  >
+                    <option value="">{t("configurator.step2.voiceClipDefault")}</option>
+                    {voiceClips.map((clip) => (
+                      <option key={clip.id} value={clip.id}>
+                        {clip.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className={styles.hint}>
+                    {t("configurator.step2.voiceClipHint")}{" "}
+                    <Link to="/dashboard/voices">{t("nav.voices")}</Link>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Input
+                    label={t("configurator.step2.voiceOptional")}
+                    placeholder={t("configurator.step2.voicePlaceholder")}
+                    value={draft.ttsVoice}
+                    onChange={(e) => onChange({ ttsVoice: e.target.value })}
+                  />
+                  <p className={styles.hint}>{t("configurator.step2.voiceHint")}</p>
+                </>
+              )}
             </>
           )}
 

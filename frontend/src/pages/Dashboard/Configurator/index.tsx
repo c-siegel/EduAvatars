@@ -54,6 +54,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     ttsEnabled: project.ttsEnabled,
     ttsApiKeyId: project.ttsApiKeyId,
     ttsVoice: project.ttsVoice ?? "",
+    ttsVoiceClipId: project.ttsVoiceClipId,
     sttApiKeyId: project.sttApiKeyId,
     sttEnabled: project.sttEnabled,
     sttBrowserEnabled: project.sttBrowserEnabled,
@@ -87,6 +88,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.ttsEnabled !== project.ttsEnabled ||
     draft.ttsApiKeyId !== project.ttsApiKeyId ||
     draft.ttsVoice !== (project.ttsVoice ?? "") ||
+    draft.ttsVoiceClipId !== project.ttsVoiceClipId ||
     draft.sttApiKeyId !== project.sttApiKeyId ||
     draft.sttEnabled !== project.sttEnabled ||
     draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
@@ -145,6 +147,7 @@ export function ConfiguratorPage() {
         ttsEnabled: data.ttsEnabled,
         ttsApiKeyId: data.ttsApiKeyId,
         ttsVoice: data.ttsVoice || null,
+        ttsVoiceClipId: data.ttsVoiceClipId,
         sttApiKeyId: data.sttApiKeyId,
         sttEnabled: data.sttEnabled,
         sttBrowserEnabled: data.sttBrowserEnabled,

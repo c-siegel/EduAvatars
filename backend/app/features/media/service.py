@@ -1,18 +1,22 @@
 """
-Avatar And Background Libraries
+Avatar, Background And Voice Libraries
 
 Each user's reusable uploads: 3D avatar models (.glb, with an optional client-rendered PNG
-thumbnail) and background images shown behind the avatar. Stores the files (see
-app/storage/files.py) and their DB rows, and decides who may download them.
+thumbnail), background images shown behind the avatar, and voice clips that local TTS clones a
+project's voice from. Stores the files (see app/storage/files.py) and their DB rows, and decides
+who may download them.
 """
 
+import hashlib
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.features.media.models import AvatarModel, BackgroundImage
+from app.features.ai.tts.local import VoiceReference, forget_voice
+from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
 from app.features.projects.models import Project
 from app.storage.files import save_file, unlink_quietly
 
@@ -119,3 +123,70 @@ def delete_background(session: Session, background: BackgroundImage) -> None:
     unlink_quietly(background.file_path)
     session.delete(background)
     session.commit()
+
+
+# ==================== VOICE CLIPS ====================
+
+
+def list_voice_clips(session: Session, user_id: str) -> list[VoiceClip]:
+    query = select(VoiceClip).where(VoiceClip.user_id == user_id).order_by(VoiceClip.created_at)
+    return list(session.exec(query).all())
+
+
+def get_owned_voice_clip(session: Session, user_id: str, clip_id: str) -> VoiceClip | None:
+    """The clip if it exists and belongs to `user_id`, else None."""
+    clip = session.get(VoiceClip, clip_id)
+    if clip is None or clip.user_id != user_id:
+        return None
+    return clip
+
+
+def create_voice_clip(session: Session, user_id: str, name: str, wav: bytes, duration_seconds: float) -> VoiceClip:
+    """Store an already-normalized WAV clip (see voice_audio.py) and its library entry.
+
+    Only reachable after the uploader confirmed consent (see voices_router.py), hence the
+    timestamp is simply "now".
+    """
+    file_path = save_file(Path(settings.voice_clip_upload_dir) / user_id, f"{uuid.uuid4()}.wav", wav)
+    clip = VoiceClip(
+        user_id=user_id,
+        name=name,
+        file_path=str(file_path),
+        sha256=hashlib.sha256(wav).hexdigest(),
+        duration_seconds=duration_seconds,
+        consent_confirmed_at=datetime.now(timezone.utc),
+    )
+    session.add(clip)
+    session.commit()
+    session.refresh(clip)
+    return clip
+
+
+def delete_voice_clip(session: Session, clip: VoiceClip) -> None:
+    """Delete a clip's file, its library entry, and every use of it.
+
+    Unlike a deleted avatar (which a project just fails to load), a deleted voice must not keep
+    speaking: projects using it go back to the default voice, and a start-prompt audio already
+    generated with it is dropped, since it would still play the deleted voice.
+    """
+    for project in session.exec(select(Project).where(Project.tts_voice_clip_id == clip.id)).all():
+        project.tts_voice_clip_id = None
+        unlink_quietly(project.start_audio_path)
+        project.start_audio_path = None
+        session.add(project)
+    unlink_quietly(clip.file_path)
+    session.delete(clip)
+    session.commit()
+    forget_voice(clip.sha256)
+
+
+def voice_reference_for_project(session: Session, project: Project) -> VoiceReference | None:
+    """The voice clip a project's local TTS should clone, or None for the default voice.
+
+    Only one of the project owner's own clips counts — a project row pointing at someone else's
+    clip (e.g. a hand-edited import) must never make that person's voice speak.
+    """
+    if not project.tts_voice_clip_id:
+        return None
+    clip = get_owned_voice_clip(session, project.user_id, project.tts_voice_clip_id)
+    return VoiceReference(sha256=clip.sha256, path=clip.file_path) if clip else None

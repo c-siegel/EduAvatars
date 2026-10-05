@@ -184,6 +184,19 @@ class Settings(BaseSettings):
     start-audio routes) is stored, so it doesn't need to be re-synthesized on every chat load.
     """
 
+    voice_clip_upload_dir: str = "uploads/voice-clips"
+    """
+    Directory where teachers' voice clips for local voice cloning are stored (see
+    features/media/voices_router.py), always as normalized WAV files.
+    """
+
+    voice_preview_timeout_seconds: float = 120.0
+    """
+    How long a voice preview (see POST /voice-clips/{id}/preview) may wait for the local-TTS
+    sidecar. Longer than local_tts_request_timeout_seconds because the first request after the
+    sidecar starts also loads its model, which takes over a minute on a typical CPU.
+    """
+
     # ==================== EMAIL & PASSWORD RESET SETTINGS ====================
     
     # For password reset flow (link in email text) and SMTP sending.

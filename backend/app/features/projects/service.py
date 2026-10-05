@@ -76,13 +76,14 @@ _CLEARABLE_FIELDS = {
     "avatar_background_id",
     "grade_level",
     "tts_voice",
+    "tts_voice_clip_id",
     "tts_api_key_id",
     "stt_api_key_id",
 }
 
 # Changing any of these makes a previously generated start-prompt audio file (see
 # features/projects/start_audio.py) no longer match what it should say/sound like — see update_project below.
-_START_AUDIO_INVALIDATING_FIELDS = {"start_prompt", "tts_voice", "tts_api_key_id"}
+_START_AUDIO_INVALIDATING_FIELDS = {"start_prompt", "tts_voice", "tts_voice_clip_id", "tts_api_key_id"}
 
 
 def delete_project(session: Session, project: Project) -> None:

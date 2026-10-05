@@ -17,9 +17,10 @@ container) so a deployment that doesn't want the extra CPU/RAM/disk footprint ne
 the backend only calls out to this service over HTTP, and only when `TTS_LOCAL_ENABLED` (backend
 setting; see root README) is turned on.
 
-**Current status**: works today as a manually-run companion process for local development
-(Deploy A). It is not yet wired into `docker/docker-compose.yml` as a Deploy B service — that's
-tracked as follow-up work, not yet available.
+In production it runs as the optional `tts-local` service in `docker/docker-compose.yml` (image
+`chsiegel/eduavatars:local-tts`, enabled with the `local-tts` Compose profile — see
+[docker/README.md](../docker/README.md#local-text-to-speech-optional)); in development, run it by
+hand as below.
 
 ## Running it
 
@@ -50,6 +51,12 @@ export LOCAL_TTS_URL=http://127.0.0.1:8080
 
 ## Reference voices
 
+Two kinds of reference clip:
+
+- **Teachers' own clips** (Dashboard → Voices): the backend stores them and sends one here the
+  first time a project or preview needs it — see "API" below. Nothing to set up on this side.
+- **Default voices**, for projects that haven't picked a clip:
+
 `voices/` ships empty on purpose — see [`voices/README.md`](voices/README.md). Sopro clones a
 voice from a short reference clip rather than having voices baked into the model, and picking
 whose voice becomes a deployment's default is a licensing/content decision for a human, not
@@ -59,9 +66,15 @@ speech) for each language you want available; a language with no file simply isn
 ## API
 
 - `GET /health` — liveness check, always fast (doesn't force the model to load).
-- `POST /synthesize` — `{"text": "...", "language": "de"}` → WAV audio bytes. Returns `400` for a
-  language with no reference voice, `503` if the concurrency limit (`TTS_MAX_CONCURRENT_SYNTHESIS`)
-  is hit and no slot frees up in time.
+- `POST /synthesize` — `{"text": "...", "language": "de", "voice_sha256": null}` → WAV audio
+  bytes. With `voice_sha256`, the voice is cloned from that stored clip; without it, from the
+  default clip for `language`. Returns `404 VOICE_NOT_STORED` for a clip this service doesn't
+  have (yet), `400` for a language with no default voice, `503` if the concurrency limit
+  (`TTS_MAX_CONCURRENT_SYNTHESIS`) is hit and no slot frees up in time.
+- `PUT /voices/{sha256}` — raw WAV body; stores a clip under its SHA-256 hash (checked). The
+  backend calls this after a `404 VOICE_NOT_STORED` and retries, so the two services share no
+  files and this one can run on another machine.
+- `DELETE /voices/{sha256}` — forgets a stored clip (sent when a teacher deletes it).
 
 ## Settings
 
@@ -69,4 +82,5 @@ All read from environment variables prefixed `TTS_` (see `app/config.py` for the
 defaults): `TTS_MODEL_REPO`, `TTS_MODEL_CACHE_DIR`, `TTS_VOICES_DIR`, `TTS_QUANTIZATION`
 (`int8` trades quality for lower CPU/RAM use — untested here, the default full-precision mode is
 what's actually been measured), `TTS_MAX_CONCURRENT_SYNTHESIS`,
-`TTS_SYNTHESIS_QUEUE_TIMEOUT_SECONDS`.
+`TTS_SYNTHESIS_QUEUE_TIMEOUT_SECONDS`, `TTS_CUSTOM_VOICES_DIR` (where teachers' clips are cached —
+safe to clear), `TTS_MAX_VOICE_BYTES`.
