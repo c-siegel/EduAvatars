@@ -36,9 +36,6 @@ const KEEP_SILENCE_FRAMES = 2; // left at the end of a committed segment, so no 
 const MAX_SEGMENT_SECONDS = 20;
 const MIN_DECODE_SECONDS = 0.3;
 const SILENT_SEGMENT_KEEP_SECONDS = 0.5;
-// A short recording that spans several segments is decoded once more as a whole on stop, which
-// fixes the occasional word that gets mangled right at a segment boundary.
-const FINAL_REDECODE_MAX_SECONDS = 28;
 
 const MODEL_CACHE = "eduavatars-stt-models";
 // A download that receives nothing for this long counts as failed, so the chat falls back to
@@ -357,8 +354,6 @@ class Session {
   downsampler: Downsampler | null = null;
   // The open segment: everything since the last committed pause.
   segment = new AudioBuffer16k();
-  // The whole recording, kept only while short enough for the final re-decode.
-  whole: AudioBuffer16k | null = new AudioBuffer16k();
   committed: string[] = [];
   // How much of `segment` the last decode already covered.
   decodedLength = 0;
@@ -378,10 +373,6 @@ function onAudio(session: Session, samples: Float32Array, sampleRate: number) {
   session.downsampler ??= new Downsampler(sampleRate);
   const audio = session.downsampler.process(samples);
   session.segment.push(audio);
-  if (session.whole) {
-    session.whole.push(audio);
-    if (session.whole.length > FINAL_REDECODE_MAX_SECONDS * SAMPLE_RATE) session.whole = null;
-  }
   scheduleDecode(session);
 }
 
@@ -455,11 +446,7 @@ async function finish(session: Session) {
       session.committed.push(await transcribeFeatures(features));
     }
   }
-  let text = joinText(session.committed);
-  if (session.committed.length > 1 && session.whole) {
-    text = await transcribe(session.whole.copy());
-  }
-  post({ type: "final", text, finalizeMs: performance.now() - started });
+  post({ type: "final", text: joinText(session.committed), finalizeMs: performance.now() - started });
 }
 
 function errorText(error: unknown): string {
