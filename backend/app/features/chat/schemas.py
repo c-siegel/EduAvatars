@@ -67,10 +67,8 @@ class PublicProjectOut(CamelModel):
     # features/chat/pipeline.py::stream_turn. Meaningless (and always False here) without
     # tts_enabled, since the whole point is audio starting before the full reply is ready.
     streaming_enabled: bool = False
-    # Controls whether the chat should start open or collapsed-but-expandable — configurable from
-    # the Configurator (see features/projects/models.py), but the frontend doesn't render a collapsed state
-    # yet, so this currently has no visible effect.
-    chat_default_open: bool = True
+    # Avatar and/or chat, see features/projects/models.py::Project.chat_layout.
+    chat_layout: str = "avatar_chat"
     # Already combined server-side with the respective checkbox (see
     # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.

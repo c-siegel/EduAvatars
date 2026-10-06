@@ -276,9 +276,26 @@
       "noBackgroundAriaLabel": "No background image (neutral light gray)",
       "default": "Default",
       "uploadBackground": "Upload background image",
-      "chatVisibleTitle": "Chat visible by default",
-      "chatVisibleText": "On: the chat is visible right away when the page opens. Off: the chat starts collapsed, but visitors can expand it any time.",
-      "chatVisibleNote": "This setting is already saved — how it shows on the public page follows in a later step.",
+      "chatLayoutTitle": "Chat page layout",
+      "chatLayouts": {
+        "avatar_chat": {
+          "title": "Avatar and chat",
+          "text": "The avatar with the chat next to it. Visitors can collapse the chat."
+        },
+        "avatar_chat_collapsed": {
+          "title": "Avatar, chat collapsed",
+          "text": "The chat starts collapsed and can be expanded any time."
+        },
+        "avatar_only": {
+          "title": "Avatar only",
+          "text": "No chat history and no text box — visitors talk through the microphone and the avatar answers out loud."
+        },
+        "chat_only": {
+          "title": "Chat only",
+          "text": "No 3D avatar: no model is loaded, so the page starts faster. Replies are still read aloud when text-to-speech is on."
+        }
+      },
+      "avatarOnlyNeedsVoice": "\"Avatar only\" needs voice input and text-to-speech (step 2). While either is off, the chat page shows avatar and chat.",
       "avatarActionError": "That didn't work. Please try again.",
       "backgroundActionError": "That didn't work. Please try again."
     },

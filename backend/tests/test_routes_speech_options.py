@@ -82,6 +82,17 @@ def test_project_picks_its_own_server_stt_engine(client, anon, keyless_tts_proje
     assert client.get(f"/projects/{project_id}").json()["sttServerEngine"] is None
 
 
+def test_chat_layout_is_saved_validated_and_public(client, anon, keyless_tts_project):
+    project_id = keyless_tts_project["id"]
+    slug = keyless_tts_project["shareSlug"]
+    assert client.get(f"/projects/{project_id}").json()["chatLayout"] == "avatar_chat"
+    assert anon.get(f"/public/{slug}").json()["chatLayout"] == "avatar_chat"
+    assert client.put(f"/projects/{project_id}", json={"chatLayout": "sideways"}).status_code == 422
+    client.put(f"/projects/{project_id}", json={"chatLayout": "chat_only"})
+    assert client.get(f"/projects/{project_id}").json()["chatLayout"] == "chat_only"
+    assert anon.get(f"/public/{slug}").json()["chatLayout"] == "chat_only"
+
+
 def test_without_sidecar_a_keyless_tts_project_replies_text_only(anon, keyless_tts_project):
     body = anon.post(f"/public/{keyless_tts_project['shareSlug']}/messages", json={"message": "Hi"}).json()
     assert body["audioBase64"] is None

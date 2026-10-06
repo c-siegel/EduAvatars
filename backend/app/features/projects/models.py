@@ -111,10 +111,10 @@ class Project(SQLModel, table=True):
     # enabled (see Settings.browser_stt_enabled), see
     # features/api_keys/resolve.py::browser_stt_model_url_for. On by default; False opts out.
     stt_browser_enabled: bool = True
-    # Whether the public chat should start open (True) or collapsed-but-expandable (False). The
-    # value is configurable and persisted from the Configurator, but features/chat/public_router.py/PublicChat
-    # frontend don't yet render a collapsed state — that's still to be implemented.
-    chat_default_open: bool = True
+    # What the public chat page shows (see schemas.py::ChatLayout): "avatar_chat" (avatar + open
+    # chat), "avatar_chat_collapsed" (chat starts collapsed but can be expanded), "avatar_only"
+    # (voice only, no chat column) or "chat_only" (no 3D avatar is loaded at all).
+    chat_layout: str = "avatar_chat"
     # Optional teacher-set access gate for the public chat link (see
     # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.

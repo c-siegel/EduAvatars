@@ -276,9 +276,26 @@
       "noBackgroundAriaLabel": "Kein Hintergrundbild (neutral hellgrau)",
       "default": "Standard",
       "uploadBackground": "Hintergrundbild hochladen",
-      "chatVisibleTitle": "Chat standardmäßig sichtbar",
-      "chatVisibleText": "Aktiv: Der Chat ist beim Öffnen der Seite direkt sichtbar. Inaktiv: Der Chat startet eingeklappt, kann von Besucher:innen aber jederzeit ausgeklappt werden.",
-      "chatVisibleNote": "Diese Einstellung wird bereits gespeichert — die Anzeige auf der öffentlichen Seite folgt in einem späteren Schritt.",
+      "chatLayoutTitle": "Darstellung der Chat-Seite",
+      "chatLayouts": {
+        "avatar_chat": {
+          "title": "Avatar und Chat",
+          "text": "Der Avatar mit dem Chat daneben. Besucher:innen können den Chat einklappen."
+        },
+        "avatar_chat_collapsed": {
+          "title": "Avatar, Chat eingeklappt",
+          "text": "Der Chat startet eingeklappt und kann jederzeit ausgeklappt werden."
+        },
+        "avatar_only": {
+          "title": "Nur Avatar",
+          "text": "Kein Chatverlauf und kein Textfeld — Besucher:innen sprechen per Mikrofon, der Avatar antwortet gesprochen."
+        },
+        "chat_only": {
+          "title": "Nur Chat",
+          "text": "Ohne 3D-Avatar: Es wird kein Modell geladen, die Seite startet dadurch schneller. Antworten werden trotzdem vorgelesen, wenn die Sprachausgabe an ist."
+        }
+      },
+      "avatarOnlyNeedsVoice": "„Nur Avatar“ braucht Spracheingabe und Sprachausgabe (Schritt 2). Solange eins davon aus ist, zeigt die Chat-Seite Avatar und Chat.",
       "avatarActionError": "Das hat nicht funktioniert. Bitte erneut versuchen.",
       "backgroundActionError": "Das hat nicht funktioniert. Bitte erneut versuchen."
     },

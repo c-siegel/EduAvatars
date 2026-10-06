@@ -10,7 +10,12 @@ import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
 import { Input } from "@/components/Input";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SurveyEmbed } from "@/components/SurveyEmbed";
-import { TalkingHeadAvatar, type TalkingHeadAvatarHandle, type FpsTrackingResult } from "@/components/TalkingHeadAvatar";
+import {
+  AudioOnlySpeaker,
+  TalkingHeadAvatar,
+  type TalkingHeadAvatarHandle,
+  type FpsTrackingResult,
+} from "@/components/TalkingHeadAvatar";
 import { PublicChatLayout } from "@/layouts/PublicChatLayout";
 import { publicChatApi, type StreamChunkEvent, type StreamDoneEvent } from "@/api/publicChat";
 import { ParakeetSttEngine, type LoadProgress, type StreamingSession } from "@/lib/parakeetStt";
@@ -20,6 +25,7 @@ import { setUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import type { ChatMessage } from "@/types/chat";
+import type { ChatLayout } from "@/types/project";
 import styles from "./PublicChat.module.css";
 
 type Stage = "locked" | "name-gate" | "before-survey" | "chat" | "after-survey" | "done";
@@ -1001,9 +1007,11 @@ export function PublicChatPage() {
 
   // Einmalige Übernahme des im Konfigurator gesetzten Anfangszustands, sobald das Projekt geladen
   // ist — danach bestimmt nur noch setChatOpen (Klick auf den Griff) den Zustand.
+  // Not while password-locked: that response carries no layout yet (it'd always read as the default).
   useEffect(() => {
-    if (tutorQuery.data && chatOpen === null) {
-      setChatOpen(tutorQuery.data.chatDefaultOpen);
+    const tutor = tutorQuery.data;
+    if (tutor && chatOpen === null && !(tutor.passwordProtected && !tutor.unlocked)) {
+      setChatOpen(tutor.chatLayout !== "avatar_chat_collapsed");
     }
   }, [tutorQuery.data, chatOpen]);
 
@@ -1092,8 +1100,14 @@ export function PublicChatPage() {
         ? "name-gate"
         : (manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat"));
   inChatStageRef.current = stage === "chat";
+  // "Avatar only" needs voice both ways — without either there'd be no way to ask or no way to hear
+  // the answer, so such a project falls back to avatar + chat (the Configurator warns about it).
+  const chatLayout: ChatLayout =
+    tutor.chatLayout === "avatar_only" && !(tutor.ttsEnabled && tutor.sttEnabled) ? "avatar_chat" : tutor.chatLayout;
+  const showAvatar = chatLayout !== "chat_only";
+  const hasChat = chatLayout !== "avatar_only";
   // Fallback nur für den allerersten Render, bevor der Initialisierungs-Effekt oben gelaufen ist.
-  const isChatOpen = chatOpen ?? tutor.chatDefaultOpen;
+  const isChatOpen = hasChat && (!showAvatar || (chatOpen ?? chatLayout !== "avatar_chat_collapsed"));
 
   function endChat() {
     setManualStage(tutor.surveyAfterUrl ? "after-survey" : "done");
@@ -1169,6 +1183,46 @@ export function PublicChatPage() {
       ? t("publicChat.privacySavedWithName")
       : t("publicChat.privacySaved")
     : t("publicChat.privacyNotSaved");
+
+  // On the avatar stage normally, in the composer on a chat-only page.
+  const micButton = tutor.sttEnabled && (
+    <button
+      type="button"
+      className={`${styles.roundButton} ${isRecording ? styles.recording : ""}`}
+      onClick={toggleRecording}
+      disabled={isFinalizingRecording || (!isRecording && sendMutation.isPending)}
+      aria-label={
+        isFinalizingRecording
+          ? t("publicChat.transcribing")
+          : isRecording
+            ? t("publicChat.stopRecording")
+            : t("publicChat.voiceInput")
+      }
+      aria-pressed={isRecording}
+    >
+      {isFinalizingRecording ? (
+        <Loader2 size={22} className={styles.spinIcon} />
+      ) : isRecording ? (
+        <Square size={20} fill="currentColor" />
+      ) : (
+        <Mic size={22} />
+      )}
+    </button>
+  );
+  const greetingPlayable = avatarReady && tutor.ttsEnabled && tutor.startAudioUrl && !playButtonDismissed;
+  // Without a chat column, notices that would otherwise land in the thread (a failed recording, the
+  // on-device fallback, ...) show over the avatar instead — only the latest, if it's the last thing
+  // that happened.
+  const lastMessage = messages[messages.length - 1];
+  const stageNotice = !hasChat
+    ? micErrorKey
+      ? t(micErrorKey)
+      : rateLimited
+        ? t("errors.RATE_LIMIT_CHAT")
+        : lastMessage?.role === "system"
+          ? lastMessage.content
+          : null
+    : null;
 
   return (
     <PublicChatLayout showLanguageSwitcher={false}>
@@ -1269,106 +1323,109 @@ export function PublicChatPage() {
             <SttLoadingScreen progress={sttLoadProgress} onStart={chatStartPending ? startChat : undefined} />
           )}
           <div className={styles.body} ref={chatBodyRef}>
-            <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
-              <TalkingHeadAvatar
-                avatarUrl={tutor.avatarModelUrl ?? undefined}
-                backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
-                speechEnabled={tutor.ttsEnabled}
-                fallback={<Avatar name={tutor.title} size="lg" />}
-                onReady={handleAvatarReady}
-                // Stays behind the static fallback until the greeting has actually started, instead
-                // of idling in the background behind the play button — nothing to wait for (no
-                // greeting configured) reveals it immediately, as before. greetingGraceExpired is the
-                // escape hatch once autoplay is confirmed blocked instead of just still pending (see
-                // its own comment) — without it, a browser that never allows autoplay (essentially
-                // every iOS/iPadOS Safari visit) would hide a fully-loaded avatar indefinitely.
-                revealed={!(tutor.ttsEnabled && tutor.startAudioUrl) || greetingStarted || greetingGraceExpired}
-                ref={avatarRef}
-              />
-              {/* Dismissed two ways: immediately (synchronously) on its own click — since clicking
-                  IS the gesture that guarantees audio actually plays — or by playGreeting's async
-                  result, once an autoplay attempt confirms the audio was actually audible (not
-                  silently suspended). Never tied to the mere ATTEMPT, or a blocked autoplay would
-                  hide the only control that could still make it audible. */}
-              {avatarReady && tutor.ttsEnabled && tutor.startAudioUrl && !playButtonDismissed && (
-                <button
-                  type="button"
-                  className={styles.playGreetingButton}
-                  onClick={() => {
-                    setPlayButtonDismissed(true);
-                    playGreeting();
-                  }}
-                  aria-label={t("publicChat.playGreeting")}
-                  title={t("publicChat.playGreeting")}
-                >
-                  <Play size={24} fill="currentColor" />
-                </button>
-              )}
-              {/* Mikro (Eingabe) + Stopp (Unterbrechen der Antwort) liegen bewusst hier, nicht im
-                  Composer der Chat-Spalte — wie die Steuerleiste unter dem Video in einer
-                  Videokonferenz bleiben sie so unabhängig vom Ein-/Ausklapp-Zustand des Chats immer
-                  erreichbar. */}
-              {(tutor.sttEnabled || sendMutation.isPending) && (
-                <div className={styles.stageControls}>
-                  {tutor.sttEnabled && (
-                    <button
-                      type="button"
-                      className={`${styles.roundButton} ${isRecording ? styles.recording : ""}`}
-                      onClick={toggleRecording}
-                      disabled={isFinalizingRecording || (!isRecording && sendMutation.isPending)}
-                      aria-label={
-                        isFinalizingRecording
-                          ? t("publicChat.transcribing")
-                          : isRecording
-                            ? t("publicChat.stopRecording")
-                            : t("publicChat.voiceInput")
-                      }
-                      aria-pressed={isRecording}
-                    >
-                      {isFinalizingRecording ? (
-                        <Loader2 size={22} className={styles.spinIcon} />
-                      ) : isRecording ? (
+            {showAvatar ? (
+              <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
+                <TalkingHeadAvatar
+                  avatarUrl={tutor.avatarModelUrl ?? undefined}
+                  backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
+                  speechEnabled={tutor.ttsEnabled}
+                  fallback={<Avatar name={tutor.title} size="lg" />}
+                  onReady={handleAvatarReady}
+                  // Stays behind the static fallback until the greeting has actually started, instead
+                  // of idling in the background behind the play button — nothing to wait for (no
+                  // greeting configured) reveals it immediately, as before. greetingGraceExpired is the
+                  // escape hatch once autoplay is confirmed blocked instead of just still pending (see
+                  // its own comment) — without it, a browser that never allows autoplay (essentially
+                  // every iOS/iPadOS Safari visit) would hide a fully-loaded avatar indefinitely.
+                  revealed={!(tutor.ttsEnabled && tutor.startAudioUrl) || greetingStarted || greetingGraceExpired}
+                  ref={avatarRef}
+                />
+                {/* Dismissed two ways: immediately (synchronously) on its own click — since clicking
+                    IS the gesture that guarantees audio actually plays — or by playGreeting's async
+                    result, once an autoplay attempt confirms the audio was actually audible (not
+                    silently suspended). Never tied to the mere ATTEMPT, or a blocked autoplay would
+                    hide the only control that could still make it audible. */}
+                {greetingPlayable && (
+                  <button
+                    type="button"
+                    className={styles.playGreetingButton}
+                    onClick={() => {
+                      setPlayButtonDismissed(true);
+                      playGreeting();
+                    }}
+                    aria-label={t("publicChat.playGreeting")}
+                    title={t("publicChat.playGreeting")}
+                  >
+                    <Play size={24} fill="currentColor" />
+                  </button>
+                )}
+                {/* Avatar only: the privacy notice and any notices normally sit in the chat column. */}
+                {!hasChat && (
+                  <div className={styles.stageTop}>
+                    <p className={styles.stageNote}>{privacyNotice}</p>
+                    {stageNotice && (
+                      <p className={`${styles.stageNote} ${styles.stageNotice}`} role="status">
+                        {stageNotice}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {/* No composer on an avatar-only page — what's being recognized shows here instead. */}
+                {!hasChat && (isRecording || isFinalizingRecording) && input && (
+                  <p className={styles.liveCaption} aria-live="polite">
+                    {input}
+                  </p>
+                )}
+                {/* Mikro (Eingabe) + Stopp (Unterbrechen der Antwort) liegen bewusst hier, nicht im
+                    Composer der Chat-Spalte — wie die Steuerleiste unter dem Video in einer
+                    Videokonferenz bleiben sie so unabhängig vom Ein-/Ausklapp-Zustand des Chats immer
+                    erreichbar. */}
+                {(tutor.sttEnabled || sendMutation.isPending) && (
+                  <div className={styles.stageControls}>
+                    {micButton}
+                    {/* Not gated on tutor.ttsEnabled: even a text-only (no TTS) reply can be slow enough
+                        to want stopping, since sendMutation.isPending already spans "waiting for the
+                        LLM" too, not just "the avatar is speaking". */}
+                    {sendMutation.isPending && (
+                      <button
+                        type="button"
+                        className={styles.roundButton}
+                        onClick={interruptResponse}
+                        aria-label={t("publicChat.stopResponse")}
+                        title={t("publicChat.stopResponse")}
+                      >
                         <Square size={20} fill="currentColor" />
-                      ) : (
-                        <Mic size={22} />
-                      )}
-                    </button>
-                  )}
-                  {/* Not gated on tutor.ttsEnabled: even a text-only (no TTS) reply can be slow enough
-                      to want stopping, since sendMutation.isPending already spans "waiting for the
-                      LLM" too, not just "the avatar is speaking". */}
-                  {sendMutation.isPending && (
-                    <button
-                      type="button"
-                      className={styles.roundButton}
-                      onClick={interruptResponse}
-                      aria-label={t("publicChat.stopResponse")}
-                      title={t("publicChat.stopResponse")}
-                    >
-                      <Square size={20} fill="currentColor" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Chat only: no 3D model at all — replies and the greeting are still spoken, through
+              // the same handle (see AudioOnlySpeaker).
+              tutor.ttsEnabled && <AudioOnlySpeaker onReady={handleAvatarReady} ref={avatarRef} />
+            )}
 
             {/* Ausziehbarer Griff am Rand der Chat-Spalte — horizontal unter dem Avatar auf Mobile,
                 vertikal neben der Spalte auf Desktop (siehe CSS-Media-Query). Sitzt als normales
                 Flex-Geschwister genau an der Nahtstelle zwischen Avatar und Chat-Spalte, in beiden
-                Layouts, ohne eigene Positionierungslogik pro Breakpoint. */}
-            <button
-              type="button"
-              className={styles.chatToggle}
-              onClick={() => setChatOpen((open) => !(open ?? tutor.chatDefaultOpen))}
-              aria-expanded={isChatOpen}
-              aria-label={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
-              title={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
-            >
-              {isChatOpen ? <X size={16} /> : <MessageCircle size={18} />}
-            </button>
+                Layouts, ohne eigene Positionierungslogik pro Breakpoint. Only when there's both an
+                avatar and a chat to trade space between. */}
+            {showAvatar && hasChat && (
+              <button
+                type="button"
+                className={styles.chatToggle}
+                onClick={() => setChatOpen(!isChatOpen)}
+                aria-expanded={isChatOpen}
+                aria-label={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
+                title={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
+              >
+                {isChatOpen ? <X size={16} /> : <MessageCircle size={18} />}
+              </button>
+            )}
 
             {isChatOpen && (
-              <div className={styles.chatColumn} ref={chatColumnRef}>
+              <div className={`${styles.chatColumn} ${!showAvatar ? styles.chatColumnSolo : ""}`} ref={chatColumnRef}>
                 <div className={styles.chatColumnHeader}>
                   <h2>{t("publicChat.chatTitle")}</h2>
                   <p className={styles.privacyNote}>{privacyNotice}</p>
@@ -1383,6 +1440,20 @@ export function PublicChatPage() {
                     role="assistant"
                     content={tutor.startPrompt || t("configurator.step4.defaultGreeting", { name: tutor.title })}
                   />
+                  {/* Chat only: the play button that normally sits on the avatar goes under the
+                      greeting it plays instead. */}
+                  {!showAvatar && greetingPlayable && (
+                    <button
+                      type="button"
+                      className={styles.inlineGreetingButton}
+                      onClick={() => {
+                        setPlayButtonDismissed(true);
+                        playGreeting();
+                      }}
+                    >
+                      <Play size={14} fill="currentColor" /> {t("publicChat.playGreeting")}
+                    </button>
+                  )}
                   {messages.map((message, index) =>
                     message.role === "system" ? (
                       <p key={index} className={styles.systemNotice}>
@@ -1418,6 +1489,8 @@ export function PublicChatPage() {
                 )}
 
                 <form className={styles.composer} onSubmit={handleSubmit}>
+                  {/* Chat only: no avatar stage to hold the mic (the send button doubles as stop). */}
+                  {!showAvatar && micButton}
                   <textarea
                     ref={composerTextareaRef}
                     className={styles.textInput}

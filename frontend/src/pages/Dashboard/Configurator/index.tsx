@@ -34,7 +34,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     avatarModelId: project.avatarModelId,
     builtinAvatar: project.builtinAvatar,
     avatarBackgroundId: project.avatarBackgroundId,
-    chatDefaultOpen: project.chatDefaultOpen,
+    chatLayout: project.chatLayout,
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
     startPrompt: project.startPrompt ?? "",
@@ -72,7 +72,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.avatarModelId !== project.avatarModelId ||
     draft.builtinAvatar !== project.builtinAvatar ||
     draft.avatarBackgroundId !== project.avatarBackgroundId ||
-    draft.chatDefaultOpen !== project.chatDefaultOpen ||
+    draft.chatLayout !== project.chatLayout ||
     (draft.gradeLevel || null) !== project.gradeLevel ||
     draft.preprompt !== (project.preprompt ?? "") ||
     draft.startPrompt !== (project.startPrompt ?? "") ||
@@ -132,7 +132,7 @@ export function ConfiguratorPage() {
         avatarModelId: data.avatarModelId,
         builtinAvatar: data.builtinAvatar,
         avatarBackgroundId: data.avatarBackgroundId,
-        chatDefaultOpen: data.chatDefaultOpen,
+        chatLayout: data.chatLayout,
         gradeLevel: data.gradeLevel || null,
         preprompt: data.preprompt,
         startPrompt: data.startPrompt,

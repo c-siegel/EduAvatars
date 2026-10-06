@@ -13,7 +13,7 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
@@ -33,6 +33,11 @@ MAX_TOP_P = 1.0
 # The local server STT engines a project may pick (see features/ai/stt/__init__.py::get_stt_client) —
 # None instead follows the deployment's Settings.stt_engine.
 SttServerEngine = Literal["whisper", "parakeet"]
+
+# What the public chat page shows, see features/projects/models.py::Project.chat_layout.
+# "avatar_only" needs voice in and out — the public page falls back to "avatar_chat" while TTS or
+# STT is off (see frontend pages/PublicChat/index.tsx).
+ChatLayout = Literal["avatar_chat", "avatar_chat_collapsed", "avatar_only", "chat_only"]
 
 # A bundled default avatar is addressed by its file name in frontend/public/avatars/ (e.g.
 # "julia" -> /avatars/julia.glb) — restricted to a plain slug so it can never point anywhere else.
@@ -82,7 +87,7 @@ class ProjectOut(CamelModel):
     stt_enabled: bool
     stt_browser_enabled: bool
     streaming_enabled: bool
-    chat_default_open: bool
+    chat_layout: ChatLayout
     password_protected: bool
     require_visitor_name: bool
     # URL of the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
@@ -122,7 +127,7 @@ class ProjectUpdate(CamelModel):
     stt_enabled: bool | None = None
     stt_browser_enabled: bool | None = None
     streaming_enabled: bool | None = None
-    chat_default_open: bool | None = None
+    chat_layout: ChatLayout | None = None
     require_visitor_name: bool | None = None
     # None = no change (field omitted); "" or explicit null clears/disables the password; a
     # non-empty string sets/changes it — handled separately in features/projects/service.py, never
@@ -208,8 +213,17 @@ class ProjectExportData(BaseModel):
     stt_enabled: bool = True
     stt_browser_enabled: bool = True
     streaming_enabled: bool = True
-    chat_default_open: bool = True
+    chat_layout: ChatLayout = "avatar_chat"
     require_visitor_name: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def upgrade_chat_default_open(cls, data):
+        # Exports written before chat_layout existed carry the old chat_default_open flag instead.
+        if isinstance(data, dict) and "chat_layout" not in data and "chat_default_open" in data:
+            data = dict(data)
+            data["chat_layout"] = "avatar_chat" if data.pop("chat_default_open") else "avatar_chat_collapsed"
+        return data
 
     @field_validator("builtin_avatar")
     @classmethod
