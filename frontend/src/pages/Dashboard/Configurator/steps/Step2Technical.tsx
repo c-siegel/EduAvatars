@@ -12,14 +12,22 @@ import {
   useBrowserSttStatus,
   useLocalTtsStatus,
   useProviders,
+  useServerSttStatus,
 } from "@/lib/providers";
 import { SPOKEN_LANGUAGE_VALUES } from "@/lib/speechOptions";
+import type { SttServerEngine } from "@/types/project";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
 
 // Platzhalter, solange noch kein Schlüssel gewählt wurde — ein <select> braucht immer einen
 // kontrollierten String-Wert, draft.llmApiKeyId ist aber null, bis die Lehrkraft wählt.
 const NO_MODEL_SELECTED = "";
+
+// The STT dropdown mixes two kinds of choices in one <select>: a server engine (stored in
+// draft.sttServerEngine) or an STT key (draft.sttApiKeyId). Engine options get this prefix so
+// their values can never collide with a key id.
+const STT_ENGINE_PREFIX = "engine:";
+const STT_SERVER_ENGINES: SttServerEngine[] = ["whisper", "parakeet"];
 
 // Obergrenzen der beiden Sampling-Parameter — dieselben Werte prüft das Backend nochmal
 // (MAX_TEMPERATURE/MAX_TOP_P in backend/app/features/projects/schemas.py), damit ein per API
@@ -61,7 +69,7 @@ export function Step2Technical({ draft, onChange }: StepProps) {
     return Boolean(findProvider(specs, key.provider)?.ttsModelFixed);
   });
   // STT (currently only GWDG SAIA) is optional — with no key selected, transcription keeps
-  // running through the built-in local Whisper engine (see backend features/ai/stt), so
+  // running through a built-in local engine (Whisper or Parakeet, see backend features/ai/stt), so
   // unlike LLM there's no "nothing set up" warning callout here. TTS below follows the same rule
   // once local TTS is available for this deployment (localTtsAvailable).
   const sttKeys = (keysQuery.data ?? []).filter((key) => {
@@ -69,6 +77,22 @@ export function Step2Technical({ draft, onChange }: StepProps) {
     if (key.modelId) return true;
     return Boolean(findProvider(specs, key.provider)?.sttModelFixed);
   });
+  const serverSttStatusQuery = useServerSttStatus();
+  const defaultSttEngine = serverSttStatusQuery.data?.defaultEngine ?? "whisper";
+  const parakeetAvailable = serverSttStatusQuery.data?.parakeetAvailable ?? false;
+  const sttSelectValue = draft.sttApiKeyId
+    ? draft.sttApiKeyId
+    : draft.sttServerEngine
+      ? STT_ENGINE_PREFIX + draft.sttServerEngine
+      : NO_MODEL_SELECTED;
+  function handleSttChoice(value: string) {
+    if (value.startsWith(STT_ENGINE_PREFIX)) {
+      onChange({ sttApiKeyId: null, sttServerEngine: value.slice(STT_ENGINE_PREFIX.length) as SttServerEngine });
+    } else {
+      // A key, or the deployment default — either way no engine of the project's own.
+      onChange({ sttApiKeyId: value || null, sttServerEngine: null });
+    }
+  }
   const keysLoaded = keysQuery.isSuccess && providersQuery.isSuccess;
   const hasNoModels = keysLoaded && llmKeys.length === 0;
   const hasNoTtsKeys = keysLoaded && ttsKeys.length === 0;
@@ -277,11 +301,29 @@ export function Step2Technical({ draft, onChange }: StepProps) {
           <select
             id="stt-key"
             className={styles.select}
-            value={draft.sttApiKeyId ?? NO_MODEL_SELECTED}
-            onChange={(e) => onChange({ sttApiKeyId: e.target.value || null })}
+            value={sttSelectValue}
+            onChange={(e) => handleSttChoice(e.target.value)}
             disabled={!keysLoaded}
           >
-            <option value={NO_MODEL_SELECTED}>{t("configurator.step2.sttKeyDefault")}</option>
+            <option value={NO_MODEL_SELECTED}>
+              {t("configurator.step2.sttKeyDefault", {
+                engine: t(`configurator.step2.sttServerEngines.${defaultSttEngine}`),
+              })}
+            </option>
+            {STT_SERVER_ENGINES.map((engine) => (
+              <option
+                key={engine}
+                value={STT_ENGINE_PREFIX + engine}
+                // Parakeet only runs once its model files are on the server — still listed (greyed
+                // out) so the option is discoverable, and kept selectable if already chosen.
+                disabled={engine === "parakeet" && !parakeetAvailable && draft.sttServerEngine !== "parakeet"}
+              >
+                {t("configurator.step2.sttServerEngineOption", {
+                  engine: t(`configurator.step2.sttServerEngines.${engine}`),
+                })}
+                {engine === "parakeet" && !parakeetAvailable ? ` ${t("configurator.step2.sttParakeetMissing")}` : ""}
+              </option>
+            ))}
             {sttKeys.map((key) => (
               <option key={key.id} value={key.id}>
                 {keyDisplayName(key, specs)} · {modelLabel(key, specs)}

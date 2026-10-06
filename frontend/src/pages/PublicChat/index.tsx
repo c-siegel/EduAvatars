@@ -203,34 +203,49 @@ function logLatency(
   });
 }
 
-/** Full-page loading screen shown instead of the chat while the on-device speech recognition
- * model loads. */
-function SttLoadingScreen({ progress }: { progress: LoadProgress }) {
+/** Loading screen covering the chat while the on-device speech recognition model loads (the
+ * chat and avatar already load underneath it). With `onStart`, loading is done and it shows a
+ * "Start chat" button instead of the progress bar — see chatStartPending in PublicChatPage. */
+function SttLoadingScreen({ progress, onStart }: { progress: LoadProgress | null; onStart?: () => void }) {
   const { t } = useTranslation();
-  const percent = progress.totalBytes > 0 ? Math.floor((progress.loadedBytes / progress.totalBytes) * 100) : 0;
+  const loadedBytes = progress?.loadedBytes ?? 0;
+  const totalBytes = progress?.totalBytes ?? 0;
+  const percent = totalBytes > 0 ? Math.floor((loadedBytes / totalBytes) * 100) : 0;
   // Once every byte is in, the model is still being set up on the GPU — that takes a few seconds,
   // and a bar stuck at 100% would look frozen.
-  const preparing = progress.totalBytes > 0 && progress.loadedBytes >= progress.totalBytes;
+  const preparing = totalBytes > 0 && loadedBytes >= totalBytes;
   return (
-    <div className={styles.centered}>
+    <div className={`${styles.centered} ${styles.sttLoadingOverlay}`}>
       <div className={styles.sttLoadingScreen}>
-        <Loader2 size={32} className={styles.spinIcon} />
-        <h2>{t("publicChat.sttLoading.title")}</h2>
-        <p className={styles.sttLoadingText}>{t("publicChat.sttLoading.description")}</p>
-        <div
-          className={styles.sttLoadingBar}
-          role="progressbar"
-          aria-valuenow={percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <span className={styles.sttLoadingLabel}>
-            {preparing ? t("publicChat.sttLoading.preparing") : t("publicChat.sttLoading.progress", { percent })}
-          </span>
-          <div className={styles.sttLoadingTrack}>
-            <div className={styles.sttLoadingFill} style={{ width: `${percent}%` }} />
-          </div>
-        </div>
+        {onStart ? (
+          <>
+            <h2>{t("publicChat.sttLoading.readyTitle")}</h2>
+            <p className={styles.sttLoadingText}>{t("publicChat.sttLoading.readyDescription")}</p>
+            <Button type="button" variant="accent" onClick={onStart} autoFocus>
+              {t("publicChat.sttLoading.start")}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Loader2 size={32} className={styles.spinIcon} />
+            <h2>{t("publicChat.sttLoading.title")}</h2>
+            <p className={styles.sttLoadingText}>{t("publicChat.sttLoading.description")}</p>
+            <div
+              className={styles.sttLoadingBar}
+              role="progressbar"
+              aria-valuenow={percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <span className={styles.sttLoadingLabel}>
+                {preparing ? t("publicChat.sttLoading.preparing") : t("publicChat.sttLoading.progress", { percent })}
+              </span>
+              <div className={styles.sttLoadingTrack}>
+                <div className={styles.sttLoadingFill} style={{ width: `${percent}%` }} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -335,6 +350,20 @@ export function PublicChatPage() {
   // behind a full-page loading screen until then (see the warm-up effect below). null once it's
   // not relevant (project transcribes on the server) or loading has finished or failed.
   const [sttLoadProgress, setSttLoadProgress] = useState<LoadProgress | null>(null);
+  // True once the model has loaded and a spoken greeting is waiting for the visitor's "Start chat"
+  // click. The download usually takes far longer than the browser treats the visitor's last click
+  // (password/name/survey) as permission to play audio — so an autoplayed greeting right after the
+  // loading screen stayed silent. The start button is a fresh user gesture that unlocks the audio
+  // (see startChat).
+  const [chatStartPending, setChatStartPending] = useState(false);
+  // Mirrors "the loading screen still covers the chat" for handleAvatarReady, which TalkingHeadAvatar
+  // calls through the closure of its first render (onReady isn't in its effect deps) — state would
+  // be stale there. While set, the avatar's own ready-autoplay is skipped; startChat plays it.
+  const greetingDeferredRef = useRef(false);
+  // Whether the chat stage is showing — read when the model finishes loading: if that happened
+  // during the pre-chat survey, its "continue" click is fresh enough to autoplay, no button needed.
+  const inChatStageRef = useRef(false);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const stopWatchingPausesRef = useRef<(() => void) | null>(null);
@@ -1000,17 +1029,33 @@ export function PublicChatPage() {
     sttEngineRef.current?.dispose();
     const engine = new ParakeetSttEngine(tutor.browserSttModelUrl);
     sttEngineRef.current = engine;
+    greetingDeferredRef.current = true;
     setSttLoadProgress({ loadedBytes: 0, totalBytes: 0 });
     void engine
       .ensureReady((progress) => setSttLoadProgress(progress))
       .then(() => {
         setSttLoadProgress(null);
+        // A greeting to speak and a real wait behind us (no WebGPU at all settles at once, still
+        // within the last click's autoplay permission): ask for a click first, see chatStartPending.
+        if (inChatStageRef.current && tutor.ttsEnabled && tutor.startAudioUrl && engine.status !== "unsupported") {
+          setChatStartPending(true);
+        } else {
+          greetingDeferredRef.current = false;
+        }
         // No WebGPU, or the model failed to load: voice input still works, through the server.
         if (engine.status !== "ready") {
           setMessages((prev) => [...prev, { role: "system", content: t("publicChat.sttFallbackNotice") }]);
         }
       });
   }, [tutorQuery.data, visitorNameProvided, t]);
+
+  // Keeps keyboard focus and screen readers out of the chat while the loading screen covers it —
+  // it's already rendered underneath so the avatar can load in parallel with the model. No deps:
+  // the chat body can also mount later (leaving the survey) while it's already covered.
+  const chatCovered = sttLoadProgress !== null || chatStartPending;
+  useEffect(() => {
+    if (chatBodyRef.current) chatBodyRef.current.inert = chatCovered;
+  });
 
   // Terminates the speech recognition worker on unmount — leaving it running would keep the
   // loaded model in memory for a tab that's no longer showing this chat at all.
@@ -1046,6 +1091,7 @@ export function PublicChatPage() {
       : tutor.requireVisitorName && !visitorNameProvided
         ? "name-gate"
         : (manualStage ?? (tutor.surveyBeforeUrl ? "before-survey" : "chat"));
+  inChatStageRef.current = stage === "chat";
   // Fallback nur für den allerersten Render, bevor der Initialisierungs-Effekt oben gelaufen ist.
   const isChatOpen = chatOpen ?? tutor.chatDefaultOpen;
 
@@ -1086,6 +1132,23 @@ export function PublicChatPage() {
 
   function handleAvatarReady() {
     setAvatarReady(true);
+    // Loaded behind the speech recognition loading screen — startChat plays the greeting instead.
+    if (greetingDeferredRef.current) return;
+    autoplayGreeting();
+  }
+
+  // Clicked on the loading screen once the model is ready (see chatStartPending). Unlocks the
+  // avatar's audio synchronously, inside this click — Safari only allows that during the gesture
+  // itself, and speakFromUrl only gets to resume() after fetching the audio.
+  function startChat() {
+    setChatStartPending(false);
+    greetingDeferredRef.current = false;
+    avatarRef.current?.unlockAudio();
+    // Avatar still loading: handleAvatarReady starts the greeting once it's there.
+    if (avatarReady) autoplayGreeting();
+  }
+
+  function autoplayGreeting() {
     // Autoplay is frequently blocked by the browser without a prior user gesture — that's expected
     // and silently falls through to the overlay play button below, not an error state.
     if (!autoplayedGreetingRef.current && tutor.ttsEnabled && tutor.startAudioUrl) {
@@ -1200,182 +1263,185 @@ export function PublicChatPage() {
         />
       )}
 
-      {stage === "chat" && sttLoadProgress && <SttLoadingScreen progress={sttLoadProgress} />}
-
-      {stage === "chat" && !sttLoadProgress && (
-        <div className={styles.body}>
-          <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
-            <TalkingHeadAvatar
-              avatarUrl={tutor.avatarModelUrl ?? undefined}
-              backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
-              speechEnabled={tutor.ttsEnabled}
-              fallback={<Avatar name={tutor.title} size="lg" />}
-              onReady={handleAvatarReady}
-              // Stays behind the static fallback until the greeting has actually started, instead
-              // of idling in the background behind the play button — nothing to wait for (no
-              // greeting configured) reveals it immediately, as before. greetingGraceExpired is the
-              // escape hatch once autoplay is confirmed blocked instead of just still pending (see
-              // its own comment) — without it, a browser that never allows autoplay (essentially
-              // every iOS/iPadOS Safari visit) would hide a fully-loaded avatar indefinitely.
-              revealed={!(tutor.ttsEnabled && tutor.startAudioUrl) || greetingStarted || greetingGraceExpired}
-              ref={avatarRef}
-            />
-            {/* Dismissed two ways: immediately (synchronously) on its own click — since clicking
-                IS the gesture that guarantees audio actually plays — or by playGreeting's async
-                result, once an autoplay attempt confirms the audio was actually audible (not
-                silently suspended). Never tied to the mere ATTEMPT, or a blocked autoplay would
-                hide the only control that could still make it audible. */}
-            {avatarReady && tutor.ttsEnabled && tutor.startAudioUrl && !playButtonDismissed && (
-              <button
-                type="button"
-                className={styles.playGreetingButton}
-                onClick={() => {
-                  setPlayButtonDismissed(true);
-                  playGreeting();
-                }}
-                aria-label={t("publicChat.playGreeting")}
-                title={t("publicChat.playGreeting")}
-              >
-                <Play size={24} fill="currentColor" />
-              </button>
-            )}
-            {/* Mikro (Eingabe) + Stopp (Unterbrechen der Antwort) liegen bewusst hier, nicht im
-                Composer der Chat-Spalte — wie die Steuerleiste unter dem Video in einer
-                Videokonferenz bleiben sie so unabhängig vom Ein-/Ausklapp-Zustand des Chats immer
-                erreichbar. */}
-            {(tutor.sttEnabled || sendMutation.isPending) && (
-              <div className={styles.stageControls}>
-                {tutor.sttEnabled && (
-                  <button
-                    type="button"
-                    className={`${styles.roundButton} ${isRecording ? styles.recording : ""}`}
-                    onClick={toggleRecording}
-                    disabled={isFinalizingRecording || (!isRecording && sendMutation.isPending)}
-                    aria-label={
-                      isFinalizingRecording
-                        ? t("publicChat.transcribing")
-                        : isRecording
-                          ? t("publicChat.stopRecording")
-                          : t("publicChat.voiceInput")
-                    }
-                    aria-pressed={isRecording}
-                  >
-                    {isFinalizingRecording ? (
-                      <Loader2 size={22} className={styles.spinIcon} />
-                    ) : isRecording ? (
+      {stage === "chat" && (
+        <div className={styles.chatArea}>
+          {chatCovered && (
+            <SttLoadingScreen progress={sttLoadProgress} onStart={chatStartPending ? startChat : undefined} />
+          )}
+          <div className={styles.body} ref={chatBodyRef}>
+            <div className={`${styles.avatarStage} ${!isChatOpen ? styles.avatarStageFull : ""}`}>
+              <TalkingHeadAvatar
+                avatarUrl={tutor.avatarModelUrl ?? undefined}
+                backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
+                speechEnabled={tutor.ttsEnabled}
+                fallback={<Avatar name={tutor.title} size="lg" />}
+                onReady={handleAvatarReady}
+                // Stays behind the static fallback until the greeting has actually started, instead
+                // of idling in the background behind the play button — nothing to wait for (no
+                // greeting configured) reveals it immediately, as before. greetingGraceExpired is the
+                // escape hatch once autoplay is confirmed blocked instead of just still pending (see
+                // its own comment) — without it, a browser that never allows autoplay (essentially
+                // every iOS/iPadOS Safari visit) would hide a fully-loaded avatar indefinitely.
+                revealed={!(tutor.ttsEnabled && tutor.startAudioUrl) || greetingStarted || greetingGraceExpired}
+                ref={avatarRef}
+              />
+              {/* Dismissed two ways: immediately (synchronously) on its own click — since clicking
+                  IS the gesture that guarantees audio actually plays — or by playGreeting's async
+                  result, once an autoplay attempt confirms the audio was actually audible (not
+                  silently suspended). Never tied to the mere ATTEMPT, or a blocked autoplay would
+                  hide the only control that could still make it audible. */}
+              {avatarReady && tutor.ttsEnabled && tutor.startAudioUrl && !playButtonDismissed && (
+                <button
+                  type="button"
+                  className={styles.playGreetingButton}
+                  onClick={() => {
+                    setPlayButtonDismissed(true);
+                    playGreeting();
+                  }}
+                  aria-label={t("publicChat.playGreeting")}
+                  title={t("publicChat.playGreeting")}
+                >
+                  <Play size={24} fill="currentColor" />
+                </button>
+              )}
+              {/* Mikro (Eingabe) + Stopp (Unterbrechen der Antwort) liegen bewusst hier, nicht im
+                  Composer der Chat-Spalte — wie die Steuerleiste unter dem Video in einer
+                  Videokonferenz bleiben sie so unabhängig vom Ein-/Ausklapp-Zustand des Chats immer
+                  erreichbar. */}
+              {(tutor.sttEnabled || sendMutation.isPending) && (
+                <div className={styles.stageControls}>
+                  {tutor.sttEnabled && (
+                    <button
+                      type="button"
+                      className={`${styles.roundButton} ${isRecording ? styles.recording : ""}`}
+                      onClick={toggleRecording}
+                      disabled={isFinalizingRecording || (!isRecording && sendMutation.isPending)}
+                      aria-label={
+                        isFinalizingRecording
+                          ? t("publicChat.transcribing")
+                          : isRecording
+                            ? t("publicChat.stopRecording")
+                            : t("publicChat.voiceInput")
+                      }
+                      aria-pressed={isRecording}
+                    >
+                      {isFinalizingRecording ? (
+                        <Loader2 size={22} className={styles.spinIcon} />
+                      ) : isRecording ? (
+                        <Square size={20} fill="currentColor" />
+                      ) : (
+                        <Mic size={22} />
+                      )}
+                    </button>
+                  )}
+                  {/* Not gated on tutor.ttsEnabled: even a text-only (no TTS) reply can be slow enough
+                      to want stopping, since sendMutation.isPending already spans "waiting for the
+                      LLM" too, not just "the avatar is speaking". */}
+                  {sendMutation.isPending && (
+                    <button
+                      type="button"
+                      className={styles.roundButton}
+                      onClick={interruptResponse}
+                      aria-label={t("publicChat.stopResponse")}
+                      title={t("publicChat.stopResponse")}
+                    >
                       <Square size={20} fill="currentColor" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Ausziehbarer Griff am Rand der Chat-Spalte — horizontal unter dem Avatar auf Mobile,
+                vertikal neben der Spalte auf Desktop (siehe CSS-Media-Query). Sitzt als normales
+                Flex-Geschwister genau an der Nahtstelle zwischen Avatar und Chat-Spalte, in beiden
+                Layouts, ohne eigene Positionierungslogik pro Breakpoint. */}
+            <button
+              type="button"
+              className={styles.chatToggle}
+              onClick={() => setChatOpen((open) => !(open ?? tutor.chatDefaultOpen))}
+              aria-expanded={isChatOpen}
+              aria-label={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
+              title={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
+            >
+              {isChatOpen ? <X size={16} /> : <MessageCircle size={18} />}
+            </button>
+
+            {isChatOpen && (
+              <div className={styles.chatColumn} ref={chatColumnRef}>
+                <div className={styles.chatColumnHeader}>
+                  <h2>{t("publicChat.chatTitle")}</h2>
+                  <p className={styles.privacyNote}>{privacyNotice}</p>
+                </div>
+
+                {/* Same sentence as the desktop subtitle above — only one of the two is ever visible
+                    (see the media query in PublicChat.module.css), so students get it either way. */}
+                <p className={`${styles.privacyNote} ${styles.privacyNoteMobile}`}>{privacyNotice}</p>
+
+                <div className={styles.thread} ref={threadRef}>
+                  <ChatBubble
+                    role="assistant"
+                    content={tutor.startPrompt || t("configurator.step4.defaultGreeting", { name: tutor.title })}
+                  />
+                  {messages.map((message, index) =>
+                    message.role === "system" ? (
+                      <p key={index} className={styles.systemNotice}>
+                        {message.content}
+                      </p>
                     ) : (
-                      <Mic size={22} />
-                    )}
-                  </button>
+                      <ChatBubble
+                        key={index}
+                        role={message.role}
+                        content={message.content}
+                        editable={message.role === "user"}
+                        disabled={sendMutation.isPending}
+                        onEdit={(text) => editMessage(index, text)}
+                        onRegenerate={() => regenerateFrom(index)}
+                        maxHeightPx={composerMaxHeight}
+                        maxLengthChars={MAX_CHAT_MESSAGE_CHARS}
+                      />
+                    ),
+                  )}
+                  {sendMutation.isPending && <TypingBubble />}
+                </div>
+
+                {rateLimited && (
+                  <div className={styles.notice}>
+                    <Callout variant="warning">{t("errors.RATE_LIMIT_CHAT")}</Callout>
+                  </div>
                 )}
-                {/* Not gated on tutor.ttsEnabled: even a text-only (no TTS) reply can be slow enough
-                    to want stopping, since sendMutation.isPending already spans "waiting for the
-                    LLM" too, not just "the avatar is speaking". */}
-                {sendMutation.isPending && (
+
+                {micErrorKey && (
+                  <div className={styles.notice}>
+                    <Callout variant="warning">{t(micErrorKey)}</Callout>
+                  </div>
+                )}
+
+                <form className={styles.composer} onSubmit={handleSubmit}>
+                  <textarea
+                    ref={composerTextareaRef}
+                    className={styles.textInput}
+                    rows={1}
+                    placeholder={t("publicChat.messagePlaceholder")}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleComposerKeyDown}
+                    aria-label={t("publicChat.messageAriaLabel")}
+                    maxLength={MAX_CHAT_MESSAGE_CHARS}
+                  />
                   <button
-                    type="button"
-                    className={styles.roundButton}
-                    onClick={interruptResponse}
-                    aria-label={t("publicChat.stopResponse")}
-                    title={t("publicChat.stopResponse")}
+                    type={sendMutation.isPending ? "button" : "submit"}
+                    className={`${styles.roundButton} ${styles.sendButton}`}
+                    onClick={sendMutation.isPending ? interruptResponse : undefined}
+                    disabled={!sendMutation.isPending && isFinalizingRecording}
+                    aria-label={sendMutation.isPending ? t("publicChat.stopResponse") : t("publicChat.send")}
                   >
-                    <Square size={20} fill="currentColor" />
+                    {sendMutation.isPending ? <Square size={20} fill="currentColor" /> : <Send size={22} />}
                   </button>
-                )}
+                </form>
               </div>
             )}
           </div>
-
-          {/* Ausziehbarer Griff am Rand der Chat-Spalte — horizontal unter dem Avatar auf Mobile,
-              vertikal neben der Spalte auf Desktop (siehe CSS-Media-Query). Sitzt als normales
-              Flex-Geschwister genau an der Nahtstelle zwischen Avatar und Chat-Spalte, in beiden
-              Layouts, ohne eigene Positionierungslogik pro Breakpoint. */}
-          <button
-            type="button"
-            className={styles.chatToggle}
-            onClick={() => setChatOpen((open) => !(open ?? tutor.chatDefaultOpen))}
-            aria-expanded={isChatOpen}
-            aria-label={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
-            title={isChatOpen ? t("publicChat.collapseChat") : t("publicChat.expandChat")}
-          >
-            {isChatOpen ? <X size={16} /> : <MessageCircle size={18} />}
-          </button>
-
-          {isChatOpen && (
-            <div className={styles.chatColumn} ref={chatColumnRef}>
-              <div className={styles.chatColumnHeader}>
-                <h2>{t("publicChat.chatTitle")}</h2>
-                <p className={styles.privacyNote}>{privacyNotice}</p>
-              </div>
-
-              {/* Same sentence as the desktop subtitle above — only one of the two is ever visible
-                  (see the media query in PublicChat.module.css), so students get it either way. */}
-              <p className={`${styles.privacyNote} ${styles.privacyNoteMobile}`}>{privacyNotice}</p>
-
-              <div className={styles.thread} ref={threadRef}>
-                <ChatBubble
-                  role="assistant"
-                  content={tutor.startPrompt || t("configurator.step4.defaultGreeting", { name: tutor.title })}
-                />
-                {messages.map((message, index) =>
-                  message.role === "system" ? (
-                    <p key={index} className={styles.systemNotice}>
-                      {message.content}
-                    </p>
-                  ) : (
-                    <ChatBubble
-                      key={index}
-                      role={message.role}
-                      content={message.content}
-                      editable={message.role === "user"}
-                      disabled={sendMutation.isPending}
-                      onEdit={(text) => editMessage(index, text)}
-                      onRegenerate={() => regenerateFrom(index)}
-                      maxHeightPx={composerMaxHeight}
-                      maxLengthChars={MAX_CHAT_MESSAGE_CHARS}
-                    />
-                  ),
-                )}
-                {sendMutation.isPending && <TypingBubble />}
-              </div>
-
-              {rateLimited && (
-                <div className={styles.notice}>
-                  <Callout variant="warning">{t("errors.RATE_LIMIT_CHAT")}</Callout>
-                </div>
-              )}
-
-              {micErrorKey && (
-                <div className={styles.notice}>
-                  <Callout variant="warning">{t(micErrorKey)}</Callout>
-                </div>
-              )}
-
-              <form className={styles.composer} onSubmit={handleSubmit}>
-                <textarea
-                  ref={composerTextareaRef}
-                  className={styles.textInput}
-                  rows={1}
-                  placeholder={t("publicChat.messagePlaceholder")}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleComposerKeyDown}
-                  aria-label={t("publicChat.messageAriaLabel")}
-                  maxLength={MAX_CHAT_MESSAGE_CHARS}
-                />
-                <button
-                  type={sendMutation.isPending ? "button" : "submit"}
-                  className={`${styles.roundButton} ${styles.sendButton}`}
-                  onClick={sendMutation.isPending ? interruptResponse : undefined}
-                  disabled={!sendMutation.isPending && isFinalizingRecording}
-                  aria-label={sendMutation.isPending ? t("publicChat.stopResponse") : t("publicChat.send")}
-                >
-                  {sendMutation.isPending ? <Square size={20} fill="currentColor" /> : <Send size={22} />}
-                </button>
-              </form>
-            </div>
-          )}
         </div>
       )}
 

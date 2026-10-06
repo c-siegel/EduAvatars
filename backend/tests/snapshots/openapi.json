@@ -1210,6 +1210,21 @@
             "title": "Sttenabled",
             "type": "boolean"
           },
+          "sttServerEngine": {
+            "anyOf": [
+              {
+                "enum": [
+                  "whisper",
+                  "parakeet"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttserverengine"
+          },
           "surveyAfterEnabled": {
             "title": "Surveyafterenabled",
             "type": "boolean"
@@ -1320,6 +1335,7 @@
           "ttsVoiceClipId",
           "spokenLanguage",
           "sttApiKeyId",
+          "sttServerEngine",
           "sttEnabled",
           "sttBrowserEnabled",
           "streamingEnabled",
@@ -1548,6 +1564,21 @@
               }
             ],
             "title": "Sttenabled"
+          },
+          "sttServerEngine": {
+            "anyOf": [
+              {
+                "enum": [
+                  "whisper",
+                  "parakeet"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sttserverengine"
           },
           "surveyAfterEnabled": {
             "anyOf": [
@@ -2068,6 +2099,28 @@
           "newPassword"
         ],
         "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "ServerSttStatusOut": {
+        "properties": {
+          "defaultEngine": {
+            "enum": [
+              "whisper",
+              "parakeet"
+            ],
+            "title": "Defaultengine",
+            "type": "string"
+          },
+          "parakeetAvailable": {
+            "title": "Parakeetavailable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "defaultEngine",
+          "parakeetAvailable"
+        ],
+        "title": "ServerSttStatusOut",
         "type": "object"
       },
       "SessionRowOut": {
@@ -4520,6 +4573,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LocalTtsStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/server-stt-status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerSttStatusOut"
                 }
               }
             },

@@ -91,6 +91,16 @@
   visibility: visible;
 }
 
+/* Holds the chat body plus, while the speech recognition model loads, the loading screen on top
+   of it — the body is already rendered underneath so the avatar loads in parallel. */
+.chatArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
 .body {
   flex: 1;
   display: flex;
@@ -331,6 +341,13 @@
 
 /* Full-page screen while the on-device speech recognition model loads (see SttLoadingScreen in
    PublicChat/index.tsx). */
+.sttLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--surface-page);
+}
+
 .sttLoadingScreen {
   display: flex;
   flex-direction: column;

@@ -90,7 +90,10 @@
       "title": "Spracherkennung wird vorbereitet",
       "description": "Deine Sprachnachrichten werden direkt auf diesem Gerät erkannt, deine Aufnahmen bleiben also hier. Das Modell wird einmal heruntergeladen und für den nächsten Besuch gespeichert.",
       "progress": "Wird heruntergeladen… {{percent}} %",
-      "preparing": "Gleich geht es los…"
+      "preparing": "Gleich geht es los…",
+      "readyTitle": "Alles bereit",
+      "readyDescription": "Die Spracherkennung ist geladen. Starte den Chat, um die Begrüßung zu hören.",
+      "start": "Chat starten"
     },
     "sttFallbackNotice": "Die Spracherkennung läuft auf diesem Gerät nicht, deine Sprachnachrichten werden deshalb auf dem Server verarbeitet.",
     "onDeviceSttFailed": "Die Spracherkennung auf diesem Gerät ist ausgefallen, diese Sprachnachricht ist deshalb verloren gegangen. Bitte nimm sie noch einmal auf — sie wird jetzt auf dem Server verarbeitet.",
@@ -305,9 +308,15 @@
       "voiceClipHint": "Klont eine Stimme aus einem deiner eigenen Stimmclips. Clips anlegen und anhören unter",
       "sttTitle": "Spracheingabe (STT)",
       "sttText": "Aktiviert den Mikrofon-Button im öffentlichen Chat. Standardmäßig aus.",
-      "sttKey": "STT-Schlüssel",
-      "sttKeyDefault": "Eingebaut (lokales Whisper)",
-      "sttKeyHint": "Optional — ohne Schlüssel werden Sprachnachrichten lokal auf diesem Server transkribiert. Lege unter API-Schlüsseln einen Schlüssel vom Typ STT an, um stattdessen GWDG SAIA zu nutzen.",
+      "sttKey": "Spracherkennung auf dem Server",
+      "sttKeyDefault": "Eingebaut — Server-Standard ({{engine}})",
+      "sttServerEngineOption": "Eingebaut — {{engine}}",
+      "sttServerEngines": {
+        "whisper": "Whisper",
+        "parakeet": "Parakeet"
+      },
+      "sttParakeetMissing": "(Modell auf dem Server nicht vorhanden)",
+      "sttKeyHint": "Ohne Schlüssel werden Sprachnachrichten lokal auf diesem Server transkribiert — mit Whisper oder Parakeet (schneller, erkennt die Sprache selbst). Lege unter API-Schlüsseln einen Schlüssel vom Typ STT an, um stattdessen GWDG SAIA zu nutzen.",
       "sttBrowserTitle": "Spracherkennung auf dem Gerät (empfohlen)",
       "sttBrowserText": "Sprachnachrichten werden auf dem Gerät der Besucherin erkannt, mit Live-Text schon während des Sprechens — die Aufnahmen verlassen das Gerät nicht. Jedes Gerät lädt das Modell einmal herunter (etwa 170 MB), bevor der Chat startet. Geräte ohne WebGPU nutzen automatisch den STT-Schlüssel bzw. das Whisper des Servers.",
       "streamingTitle": "Gestreamte Antworten",

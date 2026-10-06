@@ -11,6 +11,7 @@ round-trip.
 
 import re
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -28,6 +29,10 @@ MIN_CHAT_PASSWORD_LENGTH = 4
 # discovers later in a live chat.
 MAX_TEMPERATURE = 2.0
 MAX_TOP_P = 1.0
+
+# The local server STT engines a project may pick (see features/ai/stt/__init__.py::get_stt_client) —
+# None instead follows the deployment's Settings.stt_engine.
+SttServerEngine = Literal["whisper", "parakeet"]
 
 # A bundled default avatar is addressed by its file name in frontend/public/avatars/ (e.g.
 # "julia" -> /avatars/julia.glb) — restricted to a plain slug so it can never point anywhere else.
@@ -73,6 +78,7 @@ class ProjectOut(CamelModel):
     tts_voice_clip_id: str | None
     spoken_language: str
     stt_api_key_id: str | None
+    stt_server_engine: SttServerEngine | None
     stt_enabled: bool
     stt_browser_enabled: bool
     streaming_enabled: bool
@@ -112,6 +118,7 @@ class ProjectUpdate(CamelModel):
     tts_voice_clip_id: str | None = None
     spoken_language: str | None = None
     stt_api_key_id: str | None = None
+    stt_server_engine: SttServerEngine | None = None
     stt_enabled: bool | None = None
     stt_browser_enabled: bool | None = None
     streaming_enabled: bool | None = None
@@ -197,6 +204,7 @@ class ProjectExportData(BaseModel):
     # Like avatar_model_id: only kept on import into the account that owns the clip.
     tts_voice_clip_id: str | None = None
     spoken_language: str = "de"
+    stt_server_engine: SttServerEngine | None = None
     stt_enabled: bool = True
     stt_browser_enabled: bool = True
     streaming_enabled: bool = True

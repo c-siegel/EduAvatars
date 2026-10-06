@@ -99,6 +99,10 @@ class Project(SQLModel, table=True):
     # transcribing locally through the instance-wide Whisper server instead, see
     # features/ai/stt/__init__.py::transcribe_audio.
     stt_api_key_id: str | None = Field(default=None, foreign_key="userapikey.id", index=True)
+    # Which local engine transcribes on the server when no stt_api_key_id is set: "whisper" or
+    # "parakeet" (see features/ai/stt/__init__.py::get_stt_client). None (the default) follows
+    # the deployment's Settings.stt_engine.
+    stt_server_engine: str | None = None
     # Only unlocks the microphone button in the public chat — stt_api_key_id (above) decides which
     # engine actually transcribes.
     stt_enabled: bool = True

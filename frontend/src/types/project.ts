@@ -48,6 +48,9 @@ export interface Project {
   // Reference to a key of type STT (mirrors ttsApiKeyId) — null keeps transcribing locally
   // (see backend features/ai/stt).
   sttApiKeyId: string | null;
+  // Which local engine transcribes on the server when sttApiKeyId is null — null follows the
+  // deployment's STT_ENGINE (see useServerSttStatus in lib/providers.ts).
+  sttServerEngine: SttServerEngine | null;
   sttEnabled: boolean;
   // Whether this project prefers on-device (browser, WebGPU) transcription over sttApiKeyId/the
   // server's local Whisper — only shown/usable in the Configurator when the deployment also
@@ -79,6 +82,9 @@ export type ProjectUpdate = Partial<
 > & { chatPassword?: string | null };
 
 export type SpokenLanguage = "de" | "en";
+
+// The local server STT engines (backend Settings.stt_engine / Project.stt_server_engine).
+export type SttServerEngine = "whisper" | "parakeet";
 
 export interface ProjectStats {
   totalProjects: number;

@@ -90,7 +90,10 @@
       "title": "Preparing speech recognition",
       "description": "Your voice messages are recognized directly on this device, so your recordings stay here. The model is downloaded once and then stored for your next visit.",
       "progress": "Downloading… {{percent}}%",
-      "preparing": "Almost ready…"
+      "preparing": "Almost ready…",
+      "readyTitle": "All set",
+      "readyDescription": "Speech recognition is ready. Start the chat to hear the greeting.",
+      "start": "Start chat"
     },
     "sttFallbackNotice": "Speech recognition can't run on this device, so your voice messages are processed on the server instead.",
     "onDeviceSttFailed": "Speech recognition stopped working on this device, so this voice message was lost. Please record it again — it will now be processed on the server.",
@@ -305,9 +308,15 @@
       "voiceClipHint": "Clone a voice from one of your own voice clips. Add and test clips under",
       "sttTitle": "Voice input (STT)",
       "sttText": "Enables the microphone button in the public chat. Off by default.",
-      "sttKey": "STT key",
-      "sttKeyDefault": "Built-in (local Whisper)",
-      "sttKeyHint": "Optional — without a key, voice messages are transcribed locally on this server. Add a key of type STT under API keys to use GWDG SAIA instead.",
+      "sttKey": "Server speech recognition",
+      "sttKeyDefault": "Built-in — server default ({{engine}})",
+      "sttServerEngineOption": "Built-in — {{engine}}",
+      "sttServerEngines": {
+        "whisper": "Whisper",
+        "parakeet": "Parakeet"
+      },
+      "sttParakeetMissing": "(model not available on the server)",
+      "sttKeyHint": "Without a key, voice messages are transcribed locally on this server — with Whisper or Parakeet (faster, detects the language itself). Add a key of type STT under API keys to use GWDG SAIA instead.",
       "sttBrowserTitle": "On-device speech recognition (recommended)",
       "sttBrowserText": "Voice messages are recognized on the visitor's own device with live text while they speak, so recordings never leave it. Each device downloads the model once (about 170 MB) before the chat opens. Devices without WebGPU automatically use the STT key or the server's Whisper instead.",
       "streamingTitle": "Streamed replies",

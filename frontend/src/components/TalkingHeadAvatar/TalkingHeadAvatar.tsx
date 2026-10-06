@@ -73,6 +73,13 @@ export interface TalkingHeadAvatarHandle {
    * can't tell a caller apart from silent playback that never actually made a sound.
    */
   speakFromUrl: (url: string) => Promise<boolean>;
+  /**
+   * Resumes the avatar's suspended AudioContext right away. Call it synchronously from a click
+   * handler: some browsers (Safari) only allow that during the gesture itself, and speakFromUrl
+   * only gets to its own resume() after fetching and decoding the audio. A no-op before the avatar
+   * has loaded.
+   */
+  unlockAudio: () => void;
   /** Startet den "hört zu"-Blickkontakt-Modus der Bibliothek, gespeist vom Mikrofon-Stream. */
   startListening: (stream: MediaStream) => void;
   /** Beendet den Zuhör-Modus (z. B. wenn die Aufnahme gestoppt wird). */
@@ -206,6 +213,13 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             this.speakBuffer(audioBuffer);
           }
           return true;
+        },
+        unlockAudio() {
+          const audioCtx = headRef.current?.audioCtx;
+          if (audioCtx?.state === "suspended") {
+            // A refusal just leaves it suspended — speakFromUrl reports that as "not audible".
+            audioCtx.resume().catch(() => {});
+          }
         },
         startListening(stream: MediaStream) {
           const head = headRef.current;

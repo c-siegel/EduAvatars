@@ -35,6 +35,16 @@ export function useBrowserSttStatus() {
   });
 }
 
+/** The deployment's default server STT engine and whether Parakeet's model files are present —
+ * drives the Configurator's server-engine choice (see Step2Technical.tsx). */
+export function useServerSttStatus() {
+  return useQuery({
+    queryKey: ["server-stt-status"],
+    queryFn: apiKeysApi.serverSttStatus,
+    staleTime: Infinity,
+  });
+}
+
 export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
   return specs.find((spec) => spec.value === value);
 }

@@ -253,7 +253,13 @@ def transcribe(
     stt_key = resolve_stt_key(session, project)
     stt_start = time.perf_counter()
     try:
-        text = transcribe_audio(content, project.spoken_language, initial_prompt, api_key_record=stt_key)
+        text = transcribe_audio(
+            content,
+            project.spoken_language,
+            initial_prompt,
+            api_key_record=stt_key,
+            engine=project.stt_server_engine,
+        )
     except Exception as exc:
         # Generic message for visitors (no technical detail), consistent with send_message.
         logger.exception("Transkription fehlgeschlagen (project_id=%s)", project.id)
