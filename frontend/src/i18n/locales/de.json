@@ -339,7 +339,8 @@
       "listenToAudio": "Anhören",
       "audioGenerated": "Audio wurde erstellt und gespeichert.",
       "audioNotGenerated": "Noch kein Audio erstellt — die Startnachricht wird momentan nur als Text gezeigt, nicht gesprochen.",
-      "audioUnsavedHint": "Du hast die Startnachricht geändert. Speichere zuerst oben rechts, bevor du das Audio erstellst.",
+      "audioOutdated": "Du hast die Startnachricht geändert — das bisherige Audio passt nicht mehr dazu. Erstelle es neu.",
+      "saveAndGenerateAudio": "Speichern & Audio erstellen",
       "audioTtsDisabledHint": "Sprachausgabe ist für dieses Projekt nicht aktiviert (siehe Schritt 2).",
       "audioGenerateError": "Audio konnte nicht erstellt werden."
     },

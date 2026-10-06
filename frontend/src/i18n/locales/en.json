@@ -339,7 +339,8 @@
       "listenToAudio": "Listen",
       "audioGenerated": "Audio has been generated and stored.",
       "audioNotGenerated": "No audio generated yet — the start message is currently only shown as text, not spoken.",
-      "audioUnsavedHint": "You've changed the start message. Save in the top right first, before generating the audio.",
+      "audioOutdated": "You've changed the start message — the existing audio no longer matches it. Generate it again.",
+      "saveAndGenerateAudio": "Save & generate audio",
       "audioTtsDisabledHint": "Text-to-speech isn't enabled for this project (see Step 2).",
       "audioGenerateError": "The audio could not be generated."
     },

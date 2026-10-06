@@ -219,7 +219,8 @@ export function ConfiguratorPage() {
             projectId={projectId}
             savedStartPrompt={project.startPrompt ?? ""}
             startAudioUrl={project.startAudioUrl}
-            ttsEnabled={project.ttsEnabled}
+            hasUnsavedChanges={isDirty(draft, project)}
+            onSaveDraft={() => saveMutation.mutateAsync(draft)}
           />
         )}
         {step === 4 && (
