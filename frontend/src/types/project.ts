@@ -48,6 +48,9 @@ export interface Project {
   // Reference to a key of type STT (mirrors ttsApiKeyId) — null keeps transcribing locally
   // (see backend features/ai/stt).
   sttApiKeyId: string | null;
+  // Which local engine transcribes on the server when sttApiKeyId is null — null follows the
+  // deployment's STT_ENGINE (see useServerSttStatus in lib/providers.ts).
+  sttServerEngine: SttServerEngine | null;
   sttEnabled: boolean;
   // Whether this project prefers on-device (browser, WebGPU) transcription over sttApiKeyId/the
   // server's local Whisper — only shown/usable in the Configurator when the deployment also
@@ -57,10 +60,9 @@ export interface Project {
   // instead of waiting for the full reply — see backend features/chat/public_router.py's /messages/stream.
   // Meaningless without ttsEnabled, so the configurator only shows this toggle when TTS is on.
   streamingEnabled: boolean;
-  // Ob der öffentliche Chat standardmäßig offen (true) oder eingeklappt-aber-ausklappbar (false)
-  // startet. Wird im Konfigurator gesetzt/gespeichert; die Public-Chat-Seite rendert den
-  // eingeklappten Zustand aktuell noch nicht (folgt später).
-  chatDefaultOpen: boolean;
+  // What the public chat page shows: avatar + chat (open or starting collapsed), the avatar alone
+  // (voice only) or the chat alone (no 3D model loaded) — see pages/PublicChat/index.tsx.
+  chatLayout: ChatLayout;
   // Whether a visitor must enter a password before the public chat unlocks (see
   // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
   // projectsApi.update's separate `chatPassword` field, never read back here.
@@ -79,6 +81,12 @@ export type ProjectUpdate = Partial<
 > & { chatPassword?: string | null };
 
 export type SpokenLanguage = "de" | "en";
+
+// The local server STT engines (backend Settings.stt_engine / Project.stt_server_engine).
+export type SttServerEngine = "whisper" | "parakeet";
+
+export type ChatLayout = "avatar_chat" | "avatar_chat_collapsed" | "avatar_only" | "chat_only";
+export const CHAT_LAYOUTS: ChatLayout[] = ["avatar_chat", "avatar_chat_collapsed", "avatar_only", "chat_only"];
 
 export interface ProjectStats {
   totalProjects: number;

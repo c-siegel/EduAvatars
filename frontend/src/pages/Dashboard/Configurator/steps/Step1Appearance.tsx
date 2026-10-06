@@ -8,6 +8,7 @@ import { Callout } from "@/components/Callout";
 import { errorMessage } from "@/api/client";
 import { avatarLibraryApi, type AvatarModel } from "@/api/avatarLibrary";
 import { backgroundLibraryApi, type BackgroundImage } from "@/api/backgroundLibrary";
+import { CHAT_LAYOUTS } from "@/types/project";
 import type { ConfiguratorDraft, StepProps } from "../types";
 import styles from "./Step1Appearance.module.css";
 import sharedStyles from "./shared.module.css";
@@ -257,18 +258,28 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
         )}
       </div>
 
-      <label className={sharedStyles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.chatDefaultOpen}
-          onChange={(e) => onChange({ chatDefaultOpen: e.target.checked })}
-        />
-        <span className={sharedStyles.toggleCopy}>
-          <strong>{t("configurator.step1.chatVisibleTitle")}</strong>
-          <span>{t("configurator.step1.chatVisibleText")}</span>
-        </span>
-      </label>
-      <Callout variant="info">{t("configurator.step1.chatVisibleNote")}</Callout>
+      <fieldset className={sharedStyles.radioGroup}>
+        <legend className={sharedStyles.label}>{t("configurator.step1.chatLayoutTitle")}</legend>
+        {CHAT_LAYOUTS.map((layout) => (
+          <label key={layout} className={sharedStyles.toggleRow}>
+            <input
+              type="radio"
+              name="chat-layout"
+              checked={draft.chatLayout === layout}
+              onChange={() => onChange({ chatLayout: layout })}
+            />
+            <span className={sharedStyles.toggleCopy}>
+              <strong>{t(`configurator.step1.chatLayouts.${layout}.title`)}</strong>
+              <span>{t(`configurator.step1.chatLayouts.${layout}.text`)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {/* Without voice in and out there'd be no way to talk to an avatar without a chat — the public
+          page then falls back to avatar + chat (see effectiveChatLayout in pages/PublicChat). */}
+      {draft.chatLayout === "avatar_only" && !(draft.ttsEnabled && draft.sttEnabled) && (
+        <Callout variant="warning">{t("configurator.step1.avatarOnlyNeedsVoice")}</Callout>
+      )}
     </>
   );
 }

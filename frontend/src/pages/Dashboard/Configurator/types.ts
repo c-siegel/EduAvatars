@@ -1,4 +1,4 @@
-import type { SpokenLanguage } from "@/types/project";
+import type { ChatLayout, SpokenLanguage, SttServerEngine } from "@/types/project";
 
 // Lokaler Assistenten-Zustand für Screen 1e.
 export interface ConfiguratorDraft {
@@ -8,7 +8,7 @@ export interface ConfiguratorDraft {
   avatarModelId: string | null;
   builtinAvatar: string | null;
   avatarBackgroundId: string | null;
-  chatDefaultOpen: boolean;
+  chatLayout: ChatLayout;
   gradeLevel: string;
   preprompt: string;
   startPrompt: string;
@@ -28,6 +28,7 @@ export interface ConfiguratorDraft {
   ttsVoice: string;
   ttsVoiceClipId: string | null;
   sttApiKeyId: string | null;
+  sttServerEngine: SttServerEngine | null;
   sttEnabled: boolean;
   sttBrowserEnabled: boolean;
   streamingEnabled: boolean;

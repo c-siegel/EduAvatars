@@ -3,8 +3,8 @@ Provider Registry Route
 
 Exposes the provider registry (app/core/providers.py) so the frontend can build its API-key form
 — provider dropdown, endpoint defaults, curated models — without duplicating that data. Also
-reports the deployment-wide speech options that need no key at all: the local-TTS sidecar and
-browser-side (WebGPU) transcription.
+reports the deployment-wide speech options that need no key at all: the local-TTS sidecar,
+browser-side (WebGPU) transcription, and the local server STT engines.
 """
 
 from fastapi import APIRouter, Depends
@@ -12,7 +12,14 @@ from fastapi import APIRouter, Depends
 from app.core.config import settings
 from app.core.deps import get_current_user
 from app.core.providers import PROVIDERS
-from app.features.api_keys.schemas import BrowserSttStatusOut, LocalTtsStatusOut, ProviderModelOut, ProviderSpecOut
+from app.features.ai.stt import parakeet_local
+from app.features.api_keys.schemas import (
+    BrowserSttStatusOut,
+    LocalTtsStatusOut,
+    ProviderModelOut,
+    ProviderSpecOut,
+    ServerSttStatusOut,
+)
 from app.features.users.models import User
 
 router = APIRouter(prefix="/providers", tags=["providers"])
@@ -53,3 +60,13 @@ def browser_stt_status(_: User = Depends(get_current_user)):
     """Whether browser-side (WebGPU) transcription is enabled for this deployment (see
     Settings.browser_stt_enabled)."""
     return BrowserSttStatusOut(available=settings.browser_stt_enabled)
+
+
+@router.get("/server-stt-status", response_model=ServerSttStatusOut)
+def server_stt_status(_: User = Depends(get_current_user)):
+    """The deployment's default local server STT engine (Settings.stt_engine) and whether a
+    project may pick Parakeet instead (its model files are present)."""
+    return ServerSttStatusOut(
+        default_engine=settings.stt_engine,
+        parakeet_available=parakeet_local.model_available(),
+    )

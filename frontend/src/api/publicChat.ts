@@ -2,7 +2,7 @@ import { API_BASE_URL, apiClient, ApiError } from "./client";
 import { getUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName } from "@/lib/visitorNameStorage";
 import type { ChatMessage } from "@/types/chat";
-import type { SpokenLanguage } from "@/types/project";
+import type { ChatLayout, SpokenLanguage } from "@/types/project";
 
 export interface PublicProject {
   title: string;
@@ -25,8 +25,8 @@ export interface PublicProject {
   // See types/project.ts — the page only uses the streaming endpoint when this AND ttsEnabled
   // are both true (see pages/PublicChat/index.tsx).
   streamingEnabled: boolean;
-  // Siehe types/project.ts — noch ohne UI-Auswirkung auf dieser Seite.
-  chatDefaultOpen: boolean;
+  // See types/project.ts.
+  chatLayout: ChatLayout;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
   // Whether this chat requires a password, and whether this tab already unlocked it — see

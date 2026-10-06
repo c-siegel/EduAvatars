@@ -130,6 +130,25 @@ project:
     assert (unknown.avatar_model_id, unknown.builtin_avatar) == (None, None)
 
 
+def test_chat_layout_round_trips_and_older_exports_map_chat_default_open() -> None:
+    with _make_session() as session:
+        project = _make_project(chat_layout="chat_only")
+        session.add(project)
+        session.commit()
+        session.refresh(project)
+        imported = import_project(session, "owner", parse_project_yaml(export_project_yaml(project)))
+    assert imported.chat_layout == "chat_only"
+
+    collapsed = parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n  chat_default_open: false\n")
+    assert collapsed.chat_layout == "avatar_chat_collapsed"
+    opened = parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n  chat_default_open: true\n")
+    assert opened.chat_layout == "avatar_chat"
+    with_both = parse_project_yaml(
+        "eduavatars_export: 2\nproject:\n  title: x\n  chat_default_open: false\n  chat_layout: avatar_only\n"
+    )
+    assert with_both.chat_layout == "avatar_only"
+
+
 def test_parse_rejects_malformed_or_incomplete_input() -> None:
     for bad_input in ("not: [valid", "no_project_key: true", "project: {temperature: 99}", "project: {}",
                       "project: {title: x, builtin_avatar: ../../etc}"):

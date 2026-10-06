@@ -91,6 +91,16 @@
   visibility: visible;
 }
 
+/* Holds the chat body plus, while the speech recognition model loads, the loading screen on top
+   of it — the body is already rendered underneath so the avatar loads in parallel. */
+.chatArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
 .body {
   flex: 1;
   display: flex;
@@ -228,6 +238,74 @@
   display: block;
 }
 
+/* Chat only (no avatar next to it): the column takes the page, kept to a readable width. */
+.chatColumnSolo {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+/* Under the greeting bubble on a chat-only page — the avatar's play button, moved into the thread. */
+.inlineGreetingButton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+/* Avatar only: privacy notice and notices float over the top of the avatar, recognized speech
+   over its bottom (above .stageControls) — there's no chat column for either. */
+.stageTop {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: var(--space-3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.stageNote {
+  margin: 0;
+  max-width: 36rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.stageNotice {
+  font-size: 0.8125rem;
+}
+
+.liveCaption {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + 3.75rem);
+  z-index: 1;
+  margin: 0 auto;
+  max-width: 36rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.9375rem;
+}
+
 .thread {
   flex: 1;
   min-width: 0;
@@ -331,6 +409,13 @@
 
 /* Full-page screen while the on-device speech recognition model loads (see SttLoadingScreen in
    PublicChat/index.tsx). */
+.sttLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--surface-page);
+}
+
 .sttLoadingScreen {
   display: flex;
   flex-direction: column;
@@ -426,6 +511,10 @@
   .chatColumn {
     flex: 1;
     border-left: 1px solid var(--border-default);
+  }
+
+  .chatColumnSolo {
+    border-right: 1px solid var(--border-default);
   }
 
   .chatColumnHeader {

@@ -34,7 +34,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     avatarModelId: project.avatarModelId,
     builtinAvatar: project.builtinAvatar,
     avatarBackgroundId: project.avatarBackgroundId,
-    chatDefaultOpen: project.chatDefaultOpen,
+    chatLayout: project.chatLayout,
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
     startPrompt: project.startPrompt ?? "",
@@ -56,6 +56,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     ttsVoice: project.ttsVoice ?? "",
     ttsVoiceClipId: project.ttsVoiceClipId,
     sttApiKeyId: project.sttApiKeyId,
+    sttServerEngine: project.sttServerEngine,
     sttEnabled: project.sttEnabled,
     sttBrowserEnabled: project.sttBrowserEnabled,
     streamingEnabled: project.streamingEnabled,
@@ -71,7 +72,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.avatarModelId !== project.avatarModelId ||
     draft.builtinAvatar !== project.builtinAvatar ||
     draft.avatarBackgroundId !== project.avatarBackgroundId ||
-    draft.chatDefaultOpen !== project.chatDefaultOpen ||
+    draft.chatLayout !== project.chatLayout ||
     (draft.gradeLevel || null) !== project.gradeLevel ||
     draft.preprompt !== (project.preprompt ?? "") ||
     draft.startPrompt !== (project.startPrompt ?? "") ||
@@ -90,6 +91,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.ttsVoice !== (project.ttsVoice ?? "") ||
     draft.ttsVoiceClipId !== project.ttsVoiceClipId ||
     draft.sttApiKeyId !== project.sttApiKeyId ||
+    draft.sttServerEngine !== project.sttServerEngine ||
     draft.sttEnabled !== project.sttEnabled ||
     draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
     draft.streamingEnabled !== project.streamingEnabled
@@ -130,7 +132,7 @@ export function ConfiguratorPage() {
         avatarModelId: data.avatarModelId,
         builtinAvatar: data.builtinAvatar,
         avatarBackgroundId: data.avatarBackgroundId,
-        chatDefaultOpen: data.chatDefaultOpen,
+        chatLayout: data.chatLayout,
         gradeLevel: data.gradeLevel || null,
         preprompt: data.preprompt,
         startPrompt: data.startPrompt,
@@ -149,6 +151,7 @@ export function ConfiguratorPage() {
         ttsVoice: data.ttsVoice || null,
         ttsVoiceClipId: data.ttsVoiceClipId,
         sttApiKeyId: data.sttApiKeyId,
+        sttServerEngine: data.sttServerEngine,
         sttEnabled: data.sttEnabled,
         sttBrowserEnabled: data.sttBrowserEnabled,
         streamingEnabled: data.streamingEnabled,
@@ -216,7 +219,8 @@ export function ConfiguratorPage() {
             projectId={projectId}
             savedStartPrompt={project.startPrompt ?? ""}
             startAudioUrl={project.startAudioUrl}
-            ttsEnabled={project.ttsEnabled}
+            hasUnsavedChanges={isDirty(draft, project)}
+            onSaveDraft={() => saveMutation.mutateAsync(draft)}
           />
         )}
         {step === 4 && (

@@ -71,7 +71,9 @@ def transcribe(
 
     stt_key = resolve_stt_key(session, project)
     try:
-        text = transcribe_audio(content, project.spoken_language, api_key_record=stt_key)
+        text = transcribe_audio(
+            content, project.spoken_language, api_key_record=stt_key, engine=project.stt_server_engine
+        )
     except Exception as exc:
         # Scrubbed like preview_message's error above; without a key, local Whisper ran and
         # there's nothing to redact.

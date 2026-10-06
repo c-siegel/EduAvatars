@@ -90,7 +90,10 @@
       "title": "Preparing speech recognition",
       "description": "Your voice messages are recognized directly on this device, so your recordings stay here. The model is downloaded once and then stored for your next visit.",
       "progress": "Downloading… {{percent}}%",
-      "preparing": "Almost ready…"
+      "preparing": "Almost ready…",
+      "readyTitle": "All set",
+      "readyDescription": "Speech recognition is ready. Start the chat to hear the greeting.",
+      "start": "Start chat"
     },
     "sttFallbackNotice": "Speech recognition can't run on this device, so your voice messages are processed on the server instead.",
     "onDeviceSttFailed": "Speech recognition stopped working on this device, so this voice message was lost. Please record it again — it will now be processed on the server.",
@@ -273,9 +276,26 @@
       "noBackgroundAriaLabel": "No background image (neutral light gray)",
       "default": "Default",
       "uploadBackground": "Upload background image",
-      "chatVisibleTitle": "Chat visible by default",
-      "chatVisibleText": "On: the chat is visible right away when the page opens. Off: the chat starts collapsed, but visitors can expand it any time.",
-      "chatVisibleNote": "This setting is already saved — how it shows on the public page follows in a later step.",
+      "chatLayoutTitle": "Chat page layout",
+      "chatLayouts": {
+        "avatar_chat": {
+          "title": "Avatar and chat",
+          "text": "The avatar with the chat next to it. Visitors can collapse the chat."
+        },
+        "avatar_chat_collapsed": {
+          "title": "Avatar, chat collapsed",
+          "text": "The chat starts collapsed and can be expanded any time."
+        },
+        "avatar_only": {
+          "title": "Avatar only",
+          "text": "No chat history and no text box — visitors talk through the microphone and the avatar answers out loud."
+        },
+        "chat_only": {
+          "title": "Chat only",
+          "text": "No 3D avatar: no model is loaded, so the page starts faster. Replies are still read aloud when text-to-speech is on."
+        }
+      },
+      "avatarOnlyNeedsVoice": "\"Avatar only\" needs voice input and text-to-speech (step 2). While either is off, the chat page shows avatar and chat.",
       "avatarActionError": "That didn't work. Please try again.",
       "backgroundActionError": "That didn't work. Please try again."
     },
@@ -305,9 +325,15 @@
       "voiceClipHint": "Clone a voice from one of your own voice clips. Add and test clips under",
       "sttTitle": "Voice input (STT)",
       "sttText": "Enables the microphone button in the public chat. Off by default.",
-      "sttKey": "STT key",
-      "sttKeyDefault": "Built-in (local Whisper)",
-      "sttKeyHint": "Optional — without a key, voice messages are transcribed locally on this server. Add a key of type STT under API keys to use GWDG SAIA instead.",
+      "sttKey": "Server speech recognition",
+      "sttKeyDefault": "Built-in — server default ({{engine}})",
+      "sttServerEngineOption": "Built-in — {{engine}}",
+      "sttServerEngines": {
+        "whisper": "Whisper",
+        "parakeet": "Parakeet"
+      },
+      "sttParakeetMissing": "(model not available on the server)",
+      "sttKeyHint": "Without a key, voice messages are transcribed locally on this server — with Whisper or Parakeet (faster, detects the language itself). Add a key of type STT under API keys to use GWDG SAIA instead.",
       "sttBrowserTitle": "On-device speech recognition (recommended)",
       "sttBrowserText": "Voice messages are recognized on the visitor's own device with live text while they speak, so recordings never leave it. Each device downloads the model once (about 170 MB) before the chat opens. Devices without WebGPU automatically use the STT key or the server's Whisper instead.",
       "streamingTitle": "Streamed replies",
@@ -330,7 +356,8 @@
       "listenToAudio": "Listen",
       "audioGenerated": "Audio has been generated and stored.",
       "audioNotGenerated": "No audio generated yet — the start message is currently only shown as text, not spoken.",
-      "audioUnsavedHint": "You've changed the start message. Save in the top right first, before generating the audio.",
+      "audioOutdated": "You've changed the start message — the existing audio no longer matches it. Generate it again.",
+      "saveAndGenerateAudio": "Save & generate audio",
       "audioTtsDisabledHint": "Text-to-speech isn't enabled for this project (see Step 2).",
       "audioGenerateError": "The audio could not be generated."
     },

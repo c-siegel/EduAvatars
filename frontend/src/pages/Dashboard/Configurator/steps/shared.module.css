@@ -42,6 +42,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.radioGroup {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.radioGroup legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+}
+
 .toggleRow {
   display: flex;
   align-items: flex-start;

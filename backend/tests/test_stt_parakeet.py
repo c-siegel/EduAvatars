@@ -39,10 +39,26 @@ def test_engine_setting_picks_the_local_client(monkeypatch) -> None:
     assert isinstance(get_stt_client(None), LocalWhisperClient)
 
 
+def test_a_projects_own_engine_wins_over_the_setting(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "stt_engine", "whisper")
+    assert isinstance(get_stt_client(None, "parakeet"), LocalParakeetClient)
+    monkeypatch.setattr(settings, "stt_engine", "parakeet")
+    assert isinstance(get_stt_client(None, "whisper"), LocalWhisperClient)
+    assert isinstance(get_stt_client(None, None), LocalParakeetClient)
+
+
+def test_model_available_checks_for_the_manifest(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "stt_parakeet_model_dir", str(tmp_path))
+    assert not parakeet_local.model_available()
+    (tmp_path / "manifest.json").write_text("{}")
+    assert parakeet_local.model_available()
+
+
 def test_a_cloud_key_wins_over_the_engine_setting(monkeypatch) -> None:
     monkeypatch.setattr(settings, "stt_engine", "parakeet")
     key = UserApiKey(user_id="u", provider="gwdg_saia", encrypted_api_key="x", masked_key="x")
     assert isinstance(get_stt_client(key), SaiaClient)
+    assert isinstance(get_stt_client(key, "parakeet"), SaiaClient)
 
 
 def test_falls_back_to_whisper_while_the_model_is_missing(monkeypatch, tmp_path) -> None:

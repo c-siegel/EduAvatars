@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { projectsApi } from "@/api/projects";
 import { errorMessage } from "@/api/client";
+import type { Project } from "@/types/project";
 import type { StepProps } from "../types";
 import styles from "./Step3Behavior.module.css";
 
@@ -18,11 +19,14 @@ interface Step3Props extends StepProps {
   autoGenerate: boolean;
   onGenerated: () => void;
   projectId: string;
-  // Persisted values (not the draft) — the generate-audio endpoint synthesizes the SAVED
-  // start_prompt, same posture as Step4Preview's live test chat.
+  // Persisted value (not the draft) — the generate-audio endpoint synthesizes the SAVED
+  // start_prompt, so an audio file only matches the draft while the two are equal.
   savedStartPrompt: string;
   startAudioUrl: string | null;
-  ttsEnabled: boolean;
+  hasUnsavedChanges: boolean;
+  /** Persists the current draft — "Generate audio" calls this first, so it always speaks what's in
+   * the form (same pattern as Step5Publish). */
+  onSaveDraft: () => Promise<Project>;
 }
 
 // Schritt 3 — Verhalten: Zielgruppe, Preprompt (mit generischem Standardtext) und Startnachricht.
@@ -34,7 +38,8 @@ export function Step3Behavior({
   projectId,
   savedStartPrompt,
   startAudioUrl,
-  ttsEnabled,
+  hasUnsavedChanges,
+  onSaveDraft,
 }: Step3Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -56,15 +61,25 @@ export function Step3Behavior({
   }
 
   const generateAudioMutation = useMutation({
-    mutationFn: () => projectsApi.generateStartAudio(projectId),
+    mutationFn: async () => {
+      // Saving a changed start message (or voice) also discards the old audio server-side, see
+      // backend features/projects/service.py::_START_AUDIO_INVALIDATING_FIELDS.
+      if (hasUnsavedChanges) {
+        await onSaveDraft();
+      }
+      return projectsApi.generateStartAudio(projectId);
+    },
     onSuccess: (updated) => {
       queryClient.setQueryData(["projects", projectId], updated);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 
-  const startPromptDirty = draft.startPrompt !== savedStartPrompt;
-  const canGenerateAudio = Boolean(savedStartPrompt.trim()) && ttsEnabled && !startPromptDirty;
+  // Checked against the draft: generating saves it first.
+  const canGenerateAudio = Boolean(draft.startPrompt.trim()) && draft.ttsEnabled;
+  // An existing audio file still speaks the saved text — once the draft differs it's outdated
+  // (and gets discarded by the save that generating starts with).
+  const audioUpToDate = Boolean(startAudioUrl) && draft.startPrompt === savedStartPrompt;
 
   useEffect(() => {
     if (autoGenerate) {
@@ -143,13 +158,14 @@ export function Step3Behavior({
       <p className={styles.hint}>{t("configurator.step3.startMessageHint")}</p>
 
       <div className={styles.audioSection}>
-        {startAudioUrl ? (
+        {audioUpToDate ? (
           <Callout variant="success">{t("configurator.step3.audioGenerated")}</Callout>
         ) : (
-          <p className={styles.hint}>{t("configurator.step3.audioNotGenerated")}</p>
+          <p className={styles.hint}>
+            {startAudioUrl ? t("configurator.step3.audioOutdated") : t("configurator.step3.audioNotGenerated")}
+          </p>
         )}
-        {startPromptDirty && <Callout variant="warning">{t("configurator.step3.audioUnsavedHint")}</Callout>}
-        {!ttsEnabled && <Callout variant="warning">{t("configurator.step3.audioTtsDisabledHint")}</Callout>}
+        {!draft.ttsEnabled && <Callout variant="warning">{t("configurator.step3.audioTtsDisabledHint")}</Callout>}
         {generateAudioMutation.isError && (
           <Callout variant="danger">
             {errorMessage(generateAudioMutation.error, t("configurator.step3.audioGenerateError"))}
@@ -161,9 +177,10 @@ export function Step3Behavior({
             onClick={() => generateAudioMutation.mutate()}
             disabled={!canGenerateAudio || generateAudioMutation.isPending}
           >
-            <Volume2 size={14} /> {t("configurator.step3.generateAudio")}
+            <Volume2 size={14} />{" "}
+            {hasUnsavedChanges ? t("configurator.step3.saveAndGenerateAudio") : t("configurator.step3.generateAudio")}
           </Button>
-          {startAudioUrl && (
+          {audioUpToDate && (
             <Button size="sm" onClick={playAudioPreview}>
               <Play size={14} /> {t("configurator.step3.listenToAudio")}
             </Button>
