@@ -1,6 +1,6 @@
 # Knowledge (RAG) module: implementation plan
 
-Status: **Part A (knowledge base) implemented; Part B (Ragas evaluation) planned.** See
+Status: **Part A (knowledge base) and Part B (Ragas evaluation) implemented.** See
 §14 for where the implementation differs from this plan. This document describes how EduAvatars gets a built-in,
 provider-independent knowledge base: teachers upload their own material, and the avatar's answers
 are grounded in it, whatever LLM provider the project uses.
@@ -913,3 +913,31 @@ Where the code differs from the plan above, and why:
   with Docling (e.g. for a scan without a text layer). It's deleted after that, after a
   successful retry, or when the document is deleted. Indexed documents' originals are still
   deleted at once.
+
+## 15. Implementation notes (Part B)
+
+- **Own test-question drafting instead of Ragas' TestsetGenerator.** The generator builds a
+  knowledge graph over all documents first (many LLM and embedding calls before the first
+  question) and still runs on Ragas' legacy LangChain interface. Instead, one judge call per
+  sampled passage drafts a question with its reference answer (`rag-eval/app/testset.py`), at most
+  10 per click, and drafts need the teacher's approval before runs use them.
+- **Ragas 0.4 collections metrics** with an instructor/litellm judge in MD_JSON mode (works with
+  every provider, no function calling needed), one retry per unparsable reply. Context precision
+  uses the reference answer when there is one, the no-reference variant otherwise.
+  `langchain-community` is capped below 0.4 because Ragas 0.4.3 still imports a module 0.4
+  removed.
+- **Judge prompt translations are cached per judge model and endpoint**, not instance-wide: the
+  translated examples steer every later score, and a teacher can point a judge at an endpoint of
+  their own.
+- **Runs** run on one background worker per backend, one active run per teacher, rate-limited
+  together with drafting (20 per 10 minutes). A run stops when its judge or LLM key is deleted.
+  Runs are deleted with any knowledge base they hold passages from (not only the test set's),
+  with their project and with the account.
+- **Cost estimate** per question: 2 (faithfulness) + 3 (answer relevancy) + top_k (context
+  precision) + 1 (context recall) + 4 (factual correctness) judge calls, counted against Ragas
+  0.4.3, plus one LLM call for the answer.
+- **The rag-eval container gets only `RAG_SERVICE_TOKEN`** from `.env`, not the backend's
+  secrets. Instructor's own error logs (which quote the judge's replies) are silenced.
+- **Not verified in the development sandbox:** a real judge model. The end-to-end check used an
+  OpenAI-compatible stand-in that answers with schema-valid JSON.
+

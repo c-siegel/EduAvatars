@@ -171,7 +171,7 @@ exists ([releases](https://github.com/docling-project/docling-serve/releases)) o
 CDLA-Permissive-2.0.
 
 **Quality evaluation (optional, Ragas).** Lets teachers measure how well a project answers from
-its material (Dashboard → Evaluation; test sets on the knowledge page). Add the `rag-eval` profile
+its material (Dashboard → Answer quality; test sets on the knowledge page). Add the `rag-eval` profile
 next to `rag` and switch it on in the backend:
 
 ```bash

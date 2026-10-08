@@ -92,6 +92,11 @@ you, none of the setup below applies — just:
   work with every provider; transcripts and CSV exports record which document and page each reply
   was given, and the latency test times the lookup. The GWDG Arcana provider offers its own,
   separately hosted knowledge base too.
+- **Measure answer quality.** With the optional evaluation module, teachers keep test questions
+  per knowledge base (by hand, from CSV, or drafted from the material) and have a judge LLM score
+  a project's answers with [Ragas](https://github.com/explodinggradients/ragas): faithfulness to
+  the material, relevance, retrieval precision and recall, factual correctness. Runs can be
+  compared side by side, e.g. before and after changing the model or the knowledge settings.
 - **Measure latency.** Every response is timed server-side (LLM, TTS, STT stage-by-stage) and
   the frontend can log matching client-side timings — see
   [backend/README.md](backend/README.md#latency-monitoring) — useful if you're studying
@@ -122,6 +127,7 @@ The app is split into two independent apps plus a deployment folder:
 | [`frontend/`](frontend/) | React + TypeScript single-page app, 3D avatar rendering with three.js enabled by [TalkingHead](https://github.com/met4citizen/TalkingHead) by Mika Suominen | [frontend/README.md](frontend/README.md) |
 | [`local-tts/`](local-tts/) | Optional self-hosted text-to-speech sidecar, so no cloud key is needed for speech output | [local-tts/README.md](local-tts/README.md) |
 | [`rag/`](rag/) | Optional knowledge service: parses teachers' documents, indexes them and finds matching passages | [rag/README.md](rag/README.md) |
+| [`rag-eval/`](rag-eval/) | Optional evaluation service: scores answers to test questions with Ragas | [rag-eval/README.md](rag-eval/README.md) |
 | [`docker/`](docker/) | Docker images, Compose file, and reverse-proxy config for deployment | [docker/README.md](docker/README.md) |
 
 The frontend talks to the backend over HTTP; the backend optionally calls the local-TTS sidecar
@@ -280,6 +286,11 @@ RAG_SERVICE_TOKEN=<the same value>
 
 The first upload downloads the local embedding model (about 600 MB) from Hugging Face. Upload
 limits (file size, pages, quotas) are set by an admin under Admin → Settings.
+
+Answer-quality evaluation is a second optional service on top, [`rag-eval/`](rag-eval/) (see its
+README): run it on port 8091 with the same token and add `RAG_EVALUATION_ENABLED=true` and
+`RAG_EVAL_SERVICE_URL=http://127.0.0.1:8091` to the backend. Teachers then find test questions
+on the knowledge page and runs under Dashboard → Answer quality.
 
 ### Deploy B: Docker (production)
 
