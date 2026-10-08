@@ -174,3 +174,9 @@ def test_prompt_translations_are_not_shared_across_judge_endpoints(client, judge
     own_endpoint = {**JUDGE, "api_base": "https://judge.example.org/v1"}
     client.post("/score", json=score_body(metrics=["faithfulness"], language="de", judge=own_endpoint), headers=AUTH)
     assert [c for c in judge.calls if "Statements to translate:" in c["messages"][-1]["content"]]
+
+
+def test_failed_parses_dont_put_the_judges_reply_in_the_logs(client, judge, caplog):
+    judge.garbage = True
+    client.post("/score", json=score_body(metrics=["context_recall"]), headers=AUTH)
+    assert "I cannot do that" not in caplog.text

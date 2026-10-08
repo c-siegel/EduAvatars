@@ -9,3 +9,10 @@ handles teachers' material and their keys, and has no business reporting anythin
 import os
 
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
+
+import logging  # noqa: E402
+
+# Instructor logs every failed parse at ERROR with the judge's raw reply and the validation error,
+# which quotes it — fragments of teachers' material and answers. app/scoring.py and
+# app/testset.py already log each failure, by type only.
+logging.getLogger("instructor").setLevel(logging.CRITICAL)
