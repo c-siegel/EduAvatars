@@ -1,6 +1,7 @@
 # Knowledge (RAG) module: implementation plan
 
-Status: **plan, not implemented yet.** This document describes how EduAvatars gets a built-in,
+Status: **Part A (knowledge base) implemented; Part B (Ragas evaluation) planned.** See
+§14 for where the implementation differs from this plan. This document describes how EduAvatars gets a built-in,
 provider-independent knowledge base: teachers upload their own material, and the avatar's answers
 are grounded in it, whatever LLM provider the project uses.
 
@@ -725,10 +726,7 @@ Licences checked on PyPI on 2026-10-08; Docling's model licences confirmed by th
 | sqlite-vec 0.1.x | MIT / Apache-2.0 (dual) | vector search |
 | SQLite FTS5 | Public domain | keyword search |
 | pypdf 6.x | BSD-3-Clause | PDF text extraction |
-| python-docx 1.2 | MIT | DOCX text extraction |
-| lxml | BSD-3-Clause | XML parsing (via python-docx) |
-| defusedxml | PSF-2.0 | XML hardening |
-| charset-normalizer | MIT | encoding detection for .txt/.md |
+| lxml | BSD-3-Clause | DOCX XML parsing (hardened parser, see §14) |
 | litellm | MIT | API embeddings (already a backend dependency) |
 | numpy | BSD-3-Clause | vectors |
 
@@ -881,3 +879,33 @@ Open questions for the maintainer:
    yes: any of the teacher's projects.)
 2. Default judge recommendation: should the UI suggest a specific model per provider, or just say
    "use your strongest model"?
+
+## 14. Implementation notes (Part A)
+
+Where the code differs from the plan above, and why:
+
+- **No python-docx, defusedxml or charset-normalizer.** DOCX is read straight from the archive
+  with an explicitly hardened lxml parser, and any DTD is rejected, which rules out XXE and entity
+  expansion with less code than going through a library. Text files are decoded in a fixed order
+  (UTF-8, UTF-16 with a byte-order mark, Windows-1252, Latin-1): charset-normalizer misread short
+  German texts in testing ("Übung" became "㎾ung").
+- **Project ↔ knowledge base links** are a JSON list on the project
+  (`Project.knowledge_base_ids_json`) instead of a join table. It's a handful of IDs that are
+  only ever read whole; deleting a knowledge base removes its ID from the owner's projects.
+- **No retry route.** A failed document is deleted and uploaded again. The backend never keeps
+  originals, so a retry would have needed a re-upload anyway.
+- **Parser sandbox.** The child interpreter sets its own resource limits before reading any
+  input, instead of using `preexec_fn`, which isn't safe in a process with threads. pypdf's own
+  decompression limits stop PDF bombs before the memory limit is needed (covered by a test).
+- **Keyword search ignores German and English function words**, so small talk like "Was ist das?"
+  doesn't retrieve arbitrary passages. Vector hits beyond a cosine distance of 0.75
+  (`RAG_MAX_VECTOR_DISTANCE`) are dropped for the same reason. Both are heuristics to revisit
+  with real material.
+- **Requests to the knowledge service ignore `HTTP(S)_PROXY`**, so the shared token and documents
+  never go through an outbound proxy.
+- **Not verified in the development sandbox:** downloading and running the real local embedding
+  model, since Hugging Face wasn't reachable there (all tests and the end-to-end check used a
+  deterministic stand-in), and docling-serve itself (its API was taken from the published package;
+  the image tag in `docker-compose.yml` must be checked before deploying). Benchmark the embedding
+  latency (step 1 targets) on the first real deployment.
+

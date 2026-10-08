@@ -31,7 +31,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/core/` | Cross-cutting setup: settings (`config.py`), auth dependencies (`deps.py`), cookies, domain errors, middleware, public URLs (`urls.py`), the LLM/TTS/STT provider registry (`providers.py`), rate limiting, security helpers |
 | `app/db/` | Database session/engine setup; `base.py` imports every feature's models for Alembic |
 | `app/storage/` | Shared upload handling: content sniffing, saving/deleting files, cached file responses |
-| `app/tasks/` | Background work: the periodic data-retention purge |
+| `app/tasks/` | Background work: the periodic data-retention purge, and retrying deletes the knowledge service missed while it was down |
 | `app/features/auth/` | Register, login, logout, password reset |
 | `app/features/users/` | Own profile (`/me`), account deletion, admin account management (`/admin/users`) |
 | `app/features/site_settings/` | Instance-wide settings: public (`/settings/public`) and admin (`/admin/settings`) |
@@ -41,6 +41,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/api_keys/` | The user's stored provider keys (`/api-keys`), the provider registry and speech-option status routes (`/providers`), key resolution and encryption |
 | `app/features/media/` | Avatar model and background image libraries |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
+| `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
 
@@ -219,7 +220,7 @@ one visitor's chat with a published project, not an HTTP/login session.
 
 ### API keys and providers — `app/features/api_keys/` (prefixes `/api-keys`, `/providers`)
 
-Store, edit, test, and delete a user's own LLM/TTS/STT provider API keys — the "bring your own
+Store, edit, test, and delete a user's own LLM/TTS/STT/embedding provider API keys — the "bring your own
 key" feature — plus the provider registry so the frontend can build its key form without
 duplicating that data. Keys are encrypted at rest.
 
@@ -234,6 +235,26 @@ duplicating that data. Keys are encrypted at rest.
 | `DELETE /api-keys/{key_id}` | `router.py` | Login required, own resource | Delete a key; projects using it fall back to "no key configured". |
 | `POST /api-keys/{key_id}/test` | `router.py` | Login required, own resource | Try the stored key against its provider and record whether it works. |
 
+### Knowledge bases — `app/features/knowledge/router.py` (prefixes `/knowledge-bases`, `/knowledge-documents`)
+
+A teacher's knowledge bases (RAG) and their documents. Every route answers `404
+KNOWLEDGE_DISABLED` unless `RAG_ENABLED` is set; the work behind them happens in the optional
+knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
+[docs/rag-plan.md](../docs/rag-plan.md)). Projects attach knowledge bases through `PUT
+/projects/{id}` (`knowledgeMode`, `knowledgeTopK`, `knowledgeBaseIds`).
+
+| Method & path | Auth | Description |
+|---|---|---|
+| `GET /providers/rag-status` | Login required | Whether this deployment offers knowledge bases, the service's state, the upload limits and the user's storage use. |
+| `GET /knowledge-bases` | Login required | The user's knowledge bases with document counts and how many projects use each. |
+| `POST /knowledge-bases` | Login required | Create one, embedded with the local model or one of the user's embedding keys (fixed afterwards). |
+| `PATCH /knowledge-bases/{kb_id}` | Login required, own resource | Rename or re-describe it. |
+| `DELETE /knowledge-bases/{kb_id}` | Login required, own resource | Delete it with all documents, including their indexed text in the knowledge service. |
+| `GET /knowledge-bases/{kb_id}/documents` | Login required, own resource | Its documents with their current indexing status. |
+| `POST /knowledge-bases/{kb_id}/documents` | Login required, own resource | Upload one document (multipart `file`, `parser`, `consent`); indexed in the background. Rate-limited, size- and quota-checked. |
+| `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
+| `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
+
 ### Admin — `app/features/users/admin_users_router.py` and `app/features/site_settings/admin_router.py` (prefix `/admin`)
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
@@ -246,8 +267,9 @@ only way an account is actually deleted is the self-service `DELETE /me` above.
 | `POST /admin/users` | Admin only | Create an account with a temporary password the new user must change on first login. |
 | `PUT /admin/users/{user_id}` | Admin only | Promote/demote or enable/disable an account. |
 | `POST /admin/users/{user_id}/reset-password` | Admin only | Set a user's password on their behalf; they must change it on next login. |
-| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention). |
-| `PUT /admin/settings` | Admin only | Update the instance-wide site settings. |
+| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention, knowledge-base limits). |
+| `PUT /admin/settings` | Admin only | Update the instance-wide site settings; knowledge limits are checked against the knowledge service's ceilings. |
+| `GET /admin/settings/knowledge-ceilings` | Admin only | The highest values the knowledge limits may be set to. |
 
 ### Site settings — `app/features/site_settings/public_router.py` (prefix `/settings`)
 

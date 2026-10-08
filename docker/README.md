@@ -133,6 +133,43 @@ optional default voices in `voices/<language>.wav` (see
 very first speech request after a start also loads the model, which can take over a minute;
 after that, a sentence takes a second or two.
 
+## Knowledge bases (optional)
+
+The `rag` service runs the knowledge service (see [rag/](../rag/)): teachers upload documents
+(Dashboard → Knowledge), and projects answer from them with any LLM provider. Off unless you
+switch it on. To enable it, add to the root `.env`:
+
+```bash
+COMPOSE_PROFILES=rag            # or e.g. local-tts,rag — starts the rag service
+RAG_ENABLED=true                # makes the backend use it
+RAG_SERVICE_TOKEN=<random>      # python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Both containers read the same `RAG_SERVICE_TOKEN` from `.env`. The service publishes no port —
+only the backend reaches it, on the Compose network. It runs as `PUID:PGID` with a read-only root
+filesystem and no capabilities, because it parses untrusted uploads (each file additionally in a
+resource-limited subprocess). Its data lives in `<EDUAVATARS_DATA_DIR>/rag/`: the index
+(`rag.db`), in-flight uploads (deleted once parsed) and the local embedding model (about 600 MB,
+downloaded from Hugging Face on the first upload). Plan on about 1–2 GB of RAM for it.
+
+Upload limits (file size, pages, documents, storage per teacher, uploads per 10 minutes) are site
+settings an admin changes under Admin → Settings. The ceilings they can't exceed are env settings
+of the `rag` service (`RAG_HARD_MAX_UPLOAD_MB` etc., see [rag/README.md](../rag/README.md#settings)).
+
+**Docling (optional, better parsing).** For tables, multi-column layouts and scanned PDFs (text
+recognition), add the `docling` profile and point the knowledge service at it:
+
+```bash
+COMPOSE_PROFILES=rag,docling
+DOCLING_URL=http://docling:5001
+```
+
+Teachers then get a "Docling" choice when uploading. The image is large (several GB, includes
+PyTorch) and needs a few GB of RAM. Check that the default image tag in `docker-compose.yml`
+exists ([releases](https://github.com/docling-project/docling-serve/releases)) or set
+`DOCLING_SERVE_IMAGE`. Docling's code is MIT-licensed and its models Apache-2.0 /
+CDLA-Permissive-2.0.
+
 ## Deploying behind another reverse proxy
 
 Some hosts (e.g. a university's own infrastructure) put another reverse proxy — commonly nginx —
