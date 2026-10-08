@@ -156,3 +156,8 @@ def query(knowledge_base_ids: list[str], text: str, top_k: int, embedding: dict,
 
 def embedding_test(embedding: dict) -> int:
     return _request("POST", "/embedding-test", json={"embedding": embedding}).json()["dimensions"]
+
+
+def sample_chunks(knowledge_base_id: str, sample: int) -> list[dict]:
+    """A random sample of the KB's passages, to draft test questions from (features/evaluation/)."""
+    return _request("GET", f"/knowledge-bases/{knowledge_base_id}/chunks", params={"sample": sample}).json()

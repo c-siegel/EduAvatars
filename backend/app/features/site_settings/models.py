@@ -51,3 +51,6 @@ class SiteSettings(SQLModel, table=True):
     rag_max_kb_per_user: int = 20
     rag_user_quota_mb: int = 200
     rag_upload_rate_per_10min: int = 30
+    # Quality evaluation (Settings.rag_evaluation_enabled): the most test questions one run may
+    # answer and score. Each costs the teacher several judge LLM calls per metric.
+    rag_eval_max_cases_per_run: int = 50

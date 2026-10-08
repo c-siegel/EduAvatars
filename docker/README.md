@@ -170,6 +170,21 @@ exists ([releases](https://github.com/docling-project/docling-serve/releases)) o
 `DOCLING_SERVE_IMAGE`. Docling's code is MIT-licensed and its models Apache-2.0 /
 CDLA-Permissive-2.0.
 
+**Quality evaluation (optional, Ragas).** Lets teachers measure how well a project answers from
+its material (Dashboard → Evaluation; test sets on the knowledge page). Add the `rag-eval` profile
+next to `rag` and switch it on in the backend:
+
+```bash
+COMPOSE_PROFILES=rag,rag-eval
+RAG_EVALUATION_ENABLED=true
+```
+
+The `rag-eval` service gets only `RAG_SERVICE_TOKEN` from `.env`, not the other secrets; the judge
+LLM's key (one of the teacher's own) arrives with each request. It runs like `rag` (no port,
+read-only root filesystem, no capabilities, about 1 GB of RAM) and keeps only cached prompt
+translations in `<EDUAVATARS_DATA_DIR>/rag-eval/`. Its Ragas telemetry is switched off. Runs cost
+the teacher judge calls on their own key; admins cap the questions per run under Admin → Settings.
+
 ## Deploying behind another reverse proxy
 
 Some hosts (e.g. a university's own infrastructure) put another reverse proxy — commonly nginx —

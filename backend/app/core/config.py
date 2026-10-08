@@ -491,6 +491,25 @@ class Settings(BaseSettings):
     rag_request_timeout_seconds: float = 30.0
     """Timeout for the knowledge service's other calls (uploads, status, deletes, key tests)."""
 
+    rag_evaluation_enabled: bool = False
+    """
+    Whether teachers can measure answer quality with Ragas (test sets on the knowledge page, the
+    evaluation page). Needs rag_enabled too, and the "rag-eval" Compose profile running.
+    """
+
+    rag_eval_service_url: str = "http://rag-eval:8091"
+    """Base URL of the evaluation service container (rag-eval/). Uses the same RAG_SERVICE_TOKEN."""
+
+    rag_eval_request_timeout_seconds: float = 600.0
+    """
+    Timeout for one call to the evaluation service. Long: scoring a batch of ten answers takes
+    dozens of judge LLM calls. Runs happen in the background, so nobody waits on a request.
+    """
+
+    @property
+    def evaluation_enabled(self) -> bool:
+        return self.rag_enabled and self.rag_evaluation_enabled
+
     @model_validator(mode="after")
     def _require_rag_token(self) -> "Settings":
         if self.rag_enabled and self.rag_service_token.strip().lower() in {"", "change-me", "changeme"}:

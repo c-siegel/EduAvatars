@@ -209,3 +209,15 @@ def enforce_knowledge_upload_rate_limit(user_id: str, max_per_10_minutes: int) -
         window_seconds=600,
         message=ErrorCode.RATE_LIMIT_KNOWLEDGE_UPLOAD,
     )
+
+
+def enforce_evaluation_rate_limit(user_id: str) -> None:
+    """Limit drafting test questions and starting evaluation runs per teacher. The judge calls
+    are on the teacher's own key, but each request also holds a backend thread and the shared
+    evaluation service, so a burst could slow everyone's chats."""
+    _enforce(
+        f"evaluation:{user_id}",
+        max_requests=20,
+        window_seconds=600,
+        message=ErrorCode.RATE_LIMIT_EVALUATION,
+    )

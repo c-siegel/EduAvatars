@@ -20,6 +20,7 @@ from app.features.api_keys.crypto import mask_key, scrub_key_from_text, store_ap
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_key_by_id
 from app.features.api_keys.schemas import ApiKeyCreate, ApiKeyUpdate
+from app.features.evaluation.cleanup import detach_judge_key
 from app.features.knowledge.models import KnowledgeBase
 from app.features.knowledge.service import detach_embedding_key, test_embedding_key
 from app.features.projects.models import Project
@@ -140,6 +141,8 @@ def delete_key(session: Session, key: UserApiKey) -> None:
     # Knowledge bases embedded with this key keep their documents but can't be searched until
     # they're re-created with another model (see features/knowledge/service.py).
     detach_embedding_key(session, key.id)
+    # Evaluation runs judged with it stay readable (the judge model is in their snapshot).
+    detach_judge_key(session, key.id)
 
     session.delete(key)
     session.commit()

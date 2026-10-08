@@ -31,6 +31,7 @@ How to use:
 from app.features.api_keys.models import UserApiKey  # noqa: F401
 from app.features.auth.models import PasswordResetToken  # noqa: F401
 from app.features.chat.models import Conversation, ProjectAccess  # noqa: F401
+from app.features.evaluation.models import EvalRun, EvalRunItem, EvalTestCase, EvalTestSet  # noqa: F401
 from app.features.knowledge.models import KnowledgeBase, KnowledgeDocument, RagPendingDeletion  # noqa: F401
 from app.features.media.models import AvatarModel, BackgroundImage  # noqa: F401
 from app.features.projects.models import Project  # noqa: F401

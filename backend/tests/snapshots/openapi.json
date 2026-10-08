@@ -490,6 +490,20 @@
         "title": "BackgroundImageOut",
         "type": "object"
       },
+      "Body_import_cases_api_v1_test_sets__test_set_id__cases_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_cases_api_v1_test_sets__test_set_id__cases_import_post",
+        "type": "object"
+      },
       "Body_import_project_route_api_v1_projects_import_post": {
         "properties": {
           "file": {
@@ -880,6 +894,91 @@
         "title": "ConversationIdsIn",
         "type": "object"
       },
+      "CsvImportOut": {
+        "properties": {
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "imported",
+          "skipped"
+        ],
+        "title": "CsvImportOut",
+        "type": "object"
+      },
+      "EvaluationStatusOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "judgeCallsPerMetric": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Judgecallspermetric",
+            "type": "object"
+          },
+          "maxCasesPerRun": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxcasesperrun"
+          },
+          "maxDraftsPerRequest": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxdraftsperrequest"
+          },
+          "metrics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "ragasVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragasversion"
+          },
+          "reachable": {
+            "default": false,
+            "title": "Reachable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "EvaluationStatusOut",
+        "type": "object"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -892,6 +991,26 @@
           "email"
         ],
         "title": "ForgotPasswordRequest",
+        "type": "object"
+      },
+      "GenerateIn": {
+        "properties": {
+          "judgeApiKeyId": {
+            "title": "Judgeapikeyid",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "judgeApiKeyId"
+        ],
+        "title": "GenerateIn",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1365,6 +1484,38 @@
         "title": "KnowledgeStatusOut",
         "type": "object"
       },
+      "LatencyOut": {
+        "properties": {
+          "p50": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P50"
+          },
+          "p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P90"
+          }
+        },
+        "required": [
+          "p50",
+          "p90"
+        ],
+        "title": "LatencyOut",
+        "type": "object"
+      },
       "LatencyTestMessageIn": {
         "properties": {
           "history": {
@@ -1465,6 +1616,74 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "MetricScoreOut": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "MetricScoreOut",
+        "type": "object"
+      },
+      "MetricSummaryOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          }
+        },
+        "required": [
+          "mean",
+          "median",
+          "count"
+        ],
+        "title": "MetricSummaryOut",
         "type": "object"
       },
       "PasswordChange": {
@@ -2764,6 +2983,561 @@
         "title": "ResetPasswordRequest",
         "type": "object"
       },
+      "RunConfigOut": {
+        "properties": {
+          "judge": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge"
+          },
+          "knowledgeBases": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RunKnowledgeBaseOut"
+            },
+            "title": "Knowledgebases",
+            "type": "array"
+          },
+          "knowledgeMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledgemode"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "llm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm"
+          },
+          "metrics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "projectTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projecttitle"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "testSetKnowledgeBase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Testsetknowledgebase"
+          },
+          "testSetName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Testsetname"
+          },
+          "topK": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topk"
+          }
+        },
+        "title": "RunConfigOut",
+        "type": "object"
+      },
+      "RunContextOut": {
+        "properties": {
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "RunContextOut",
+        "type": "object"
+      },
+      "RunCreate": {
+        "properties": {
+          "judgeApiKeyId": {
+            "title": "Judgeapikeyid",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "enum": [
+                "faithfulness",
+                "answer_relevancy",
+                "context_precision",
+                "context_recall",
+                "factual_correctness"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Metrics",
+            "type": "array"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "testSetId": {
+            "title": "Testsetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "testSetId",
+          "judgeApiKeyId",
+          "metrics"
+        ],
+        "title": "RunCreate",
+        "type": "object"
+      },
+      "RunDetailOut": {
+        "properties": {
+          "answeredCount": {
+            "title": "Answeredcount",
+            "type": "integer"
+          },
+          "caseCount": {
+            "title": "Casecount",
+            "type": "integer"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RunConfigOut"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "scoredCount": {
+            "title": "Scoredcount",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "testSetId": {
+            "title": "Testsetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "testSetId",
+          "status",
+          "errorCode",
+          "metrics",
+          "config",
+          "caseCount",
+          "answeredCount",
+          "scoredCount",
+          "summary",
+          "createdAt",
+          "finishedAt",
+          "items"
+        ],
+        "title": "RunDetailOut",
+        "type": "object"
+      },
+      "RunItemOut": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "contexts": {
+            "items": {
+              "$ref": "#/components/schemas/RunContextOut"
+            },
+            "title": "Contexts",
+            "type": "array"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "llmMs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmms"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "retrievalMs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrievalms"
+          },
+          "scores": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricScoreOut"
+            },
+            "title": "Scores",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "question",
+          "reference",
+          "answer",
+          "contexts",
+          "scores",
+          "retrievalMs",
+          "llmMs",
+          "errorCode"
+        ],
+        "title": "RunItemOut",
+        "type": "object"
+      },
+      "RunKnowledgeBaseOut": {
+        "properties": {
+          "embeddingModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddingmodel"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "RunKnowledgeBaseOut",
+        "type": "object"
+      },
+      "RunOut": {
+        "properties": {
+          "answeredCount": {
+            "title": "Answeredcount",
+            "type": "integer"
+          },
+          "caseCount": {
+            "title": "Casecount",
+            "type": "integer"
+          },
+          "config": {
+            "$ref": "#/components/schemas/RunConfigOut"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "scoredCount": {
+            "title": "Scoredcount",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "testSetId": {
+            "title": "Testsetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "testSetId",
+          "status",
+          "errorCode",
+          "metrics",
+          "config",
+          "caseCount",
+          "answeredCount",
+          "scoredCount",
+          "summary",
+          "createdAt",
+          "finishedAt"
+        ],
+        "title": "RunOut",
+        "type": "object"
+      },
+      "RunSummaryOut": {
+        "properties": {
+          "llmMs": {
+            "$ref": "#/components/schemas/LatencyOut"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "retrievalMs": {
+            "$ref": "#/components/schemas/LatencyOut"
+          }
+        },
+        "required": [
+          "metrics",
+          "retrievalMs",
+          "llmMs"
+        ],
+        "title": "RunSummaryOut",
+        "type": "object"
+      },
       "ServerSttStatusOut": {
         "properties": {
           "defaultEngine": {
@@ -2936,6 +3710,10 @@
             ],
             "title": "Providerstreet"
           },
+          "ragEvalMaxCasesPerRun": {
+            "title": "Ragevalmaxcasesperrun",
+            "type": "integer"
+          },
           "ragMaxCharsPerDocument": {
             "title": "Ragmaxcharsperdocument",
             "type": "integer"
@@ -2984,7 +3762,8 @@
           "ragMaxDocumentsPerKb",
           "ragMaxKbPerUser",
           "ragUserQuotaMb",
-          "ragUploadRatePer10Min"
+          "ragUploadRatePer10Min",
+          "ragEvalMaxCasesPerRun"
         ],
         "title": "SiteSettingsOut",
         "type": "object"
@@ -3067,6 +3846,19 @@
               }
             ],
             "title": "Providerstreet"
+          },
+          "ragEvalMaxCasesPerRun": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragevalmaxcasesperrun"
           },
           "ragMaxCharsPerDocument": {
             "anyOf": [
@@ -3169,6 +3961,224 @@
           }
         },
         "title": "SiteSettingsUpdate",
+        "type": "object"
+      },
+      "TestCaseCreate": {
+        "properties": {
+          "question": {
+            "maxLength": 4000,
+            "title": "Question",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "TestCaseCreate",
+        "type": "object"
+      },
+      "TestCaseOut": {
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "testSetId": {
+            "title": "Testsetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "testSetId",
+          "question",
+          "reference",
+          "origin",
+          "approved",
+          "createdAt"
+        ],
+        "title": "TestCaseOut",
+        "type": "object"
+      },
+      "TestCaseUpdate": {
+        "properties": {
+          "approved": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "title": "TestCaseUpdate",
+        "type": "object"
+      },
+      "TestSetCreate": {
+        "properties": {
+          "language": {
+            "default": "de",
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TestSetCreate",
+        "type": "object"
+      },
+      "TestSetOut": {
+        "properties": {
+          "approvedCount": {
+            "title": "Approvedcount",
+            "type": "integer"
+          },
+          "caseCount": {
+            "title": "Casecount",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "knowledgeBaseId": {
+            "title": "Knowledgebaseid",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "knowledgeBaseId",
+          "name",
+          "language",
+          "caseCount",
+          "approvedCount",
+          "createdAt"
+        ],
+        "title": "TestSetOut",
+        "type": "object"
+      },
+      "TestSetUpdate": {
+        "properties": {
+          "language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "de",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "TestSetUpdate",
         "type": "object"
       },
       "TimeseriesPointOut": {
@@ -4772,6 +5782,236 @@
         }
       }
     },
+    "/api/v1/evaluation/runs": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RunOut"
+                  },
+                  "title": "Response List Runs Api V1 Evaluation Runs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/evaluation/runs/{run_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/evaluation/runs/{run_id}/cancel": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/evaluation/runs/{run_id}/export": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "pattern": "^(csv|json)$",
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
     "/api/v1/knowledge-bases": {
       "get": {
         "responses": {
@@ -5020,6 +6260,92 @@
                   },
                   "title": "Response Search Knowledge Base Api V1 Knowledge Bases  Kb Id  Search Post",
                   "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-bases/{kb_id}/test-sets": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TestSetOut"
+                  },
+                  "title": "Response List Test Sets Api V1 Knowledge Bases  Kb Id  Test Sets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSetOut"
                 }
               }
             },
@@ -5886,6 +7212,22 @@
         }
       }
     },
+    "/api/v1/providers/evaluation-status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
     "/api/v1/providers/local-tts-status": {
       "get": {
         "responses": {
@@ -6281,6 +7623,425 @@
               }
             },
             "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/test-cases/{case_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestCaseUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestCaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TestSetOut"
+                  },
+                  "title": "Response List All Test Sets Api V1 Test Sets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSetUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}/cases": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TestCaseOut"
+                  },
+                  "title": "Response List Cases Api V1 Test Sets  Test Set Id  Cases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestCaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestCaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}/cases/export": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}/cases/import": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_cases_api_v1_test_sets__test_set_id__cases_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}/drafts": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/test-sets/{test_set_id}/generate": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "test_set_id",
+            "required": true,
+            "schema": {
+              "title": "Test Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TestCaseOut"
+                  },
+                  "title": "Response Generate Cases Api V1 Test Sets  Test Set Id  Generate Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         }
       }

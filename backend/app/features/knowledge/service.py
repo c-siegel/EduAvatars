@@ -31,6 +31,7 @@ from app.core.providers import KEY_TYPE_EMBEDDING, build_embedding_model_string
 from app.features.api_keys.crypto import reveal_api_key
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import effective_api_base, get_owned_key_of_type
+from app.features.evaluation import cleanup as evaluation_cleanup
 from app.features.knowledge import rag_client
 from app.features.knowledge.limits import KnowledgeLimits, current_limits
 from app.features.knowledge.models import KnowledgeBase, KnowledgeDocument, RagPendingDeletion
@@ -189,11 +190,14 @@ def _queue_or_delete_remote(session: Session, kind: str, target_id: str) -> None
 
 
 def delete_knowledge_base(session: Session, kb: KnowledgeBase) -> None:
-    """Delete a KB with all its documents; projects that used it just lose the link."""
+    """Delete a KB with all its documents, test sets and evaluation runs; projects that used it
+    just lose the link."""
     for project in projects_using(session, kb.user_id, kb.id):
         project.knowledge_base_ids_json = json.dumps([i for i in project.knowledge_base_ids if i != kb.id])
         session.add(project)
     session.execute(delete(KnowledgeDocument).where(KnowledgeDocument.knowledge_base_id == kb.id))
+    # Test sets belong to the KB, and runs hold copies of its passages.
+    evaluation_cleanup.delete_for_knowledge_base(session, kb.id)
     kb_id = kb.id
     session.delete(kb)
     session.commit()

@@ -42,6 +42,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/media/` | Avatar model and background image libraries |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
 | `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn |
+| `app/features/evaluation/` | Quality evaluation of knowledge-base answers: test sets, and runs that answer them through a project (`runner.py`, one background worker) and have the optional evaluation service (`rag-eval/`, Ragas) score them through `eval_client.py` |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
 
@@ -256,6 +257,37 @@ knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
 | `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
 | `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
 
+### Evaluation — `app/features/evaluation/router.py` (prefixes `/test-sets`, `/test-cases`, `/evaluation/runs`)
+
+Measuring how well a project answers from its knowledge bases, with Ragas as LLM judge (see
+[rag-eval/README.md](../rag-eval/README.md) and [docs/rag-plan.md §7](../docs/rag-plan.md)).
+Every route answers `404 EVALUATION_DISABLED` unless both `RAG_ENABLED` and
+`RAG_EVALUATION_ENABLED` are set. The judge is one of the user's own LLM keys (not Arcana); its
+decrypted key only goes to the evaluation service with each request. Runs answer through the
+project's real retrieval and prompt, without speech and without saving a conversation, and keep
+copies of questions, answers and passages — so they are deleted with the knowledge base, the
+project or the account.
+
+| Route | Access | Purpose |
+|---|---|---|
+| `GET /providers/evaluation-status` | Login required | Whether this deployment offers evaluation, the service's state, the per-run question cap and the judge calls per metric (for the cost estimate). |
+| `GET /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | The knowledge base's test sets with question counts. |
+| `POST /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | Create one (`name`, `language`: `de`/`en`). |
+| `GET /test-sets` | Login required | All the user's test sets (for the run form). |
+| `PATCH /test-sets/{id}`, `DELETE /test-sets/{id}` | Login required, own resource | Rename / delete it with its questions and every run that used it. |
+| `GET /test-sets/{id}/cases`, `POST /test-sets/{id}/cases` | Login required, own resource | List / add questions with optional reference answers (at most 500 per set). |
+| `POST /test-sets/{id}/cases/import` | Login required, own resource | Add questions from a CSV (`question`/`frage`, optional `reference`/`referenz`; `,` or `;`; at most 1 MB). |
+| `GET /test-sets/{id}/cases/export` | Login required, own resource | The approved questions as CSV (formula-guarded for spreadsheet apps). |
+| `POST /test-sets/{id}/generate` | Login required, own resource | Draft up to 10 questions with reference answers from a sample of the material, with a judge key. Drafts start unapproved. |
+| `DELETE /test-sets/{id}/drafts` | Login required, own resource | Discard the unapproved drafts. |
+| `PATCH /test-cases/{id}`, `DELETE /test-cases/{id}` | Login required, own resource | Edit or approve / delete one question. |
+| `GET /evaluation/runs` | Login required | The user's runs (optionally `?projectId=`). |
+| `POST /evaluation/runs` | Login required, own resources | Start a run (`projectId`, `testSetId`, `judgeApiKeyId`, `metrics`) in the background. One active run per user; capped by the admin's questions-per-run setting. |
+| `GET /evaluation/runs/{id}` | Login required, own resource | Progress, configuration snapshot, summary and per-question results. |
+| `POST /evaluation/runs/{id}/cancel` | Login required, own resource | Stop after the current question or batch; what's scored is kept. |
+| `DELETE /evaluation/runs/{id}` | Login required, own resource | Delete it. |
+| `GET /evaluation/runs/{id}/export?format=csv\|json` | Login required, own resource | Download the results. |
+
 ### Admin — `app/features/users/admin_users_router.py` and `app/features/site_settings/admin_router.py` (prefix `/admin`)
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
@@ -268,7 +300,7 @@ only way an account is actually deleted is the self-service `DELETE /me` above.
 | `POST /admin/users` | Admin only | Create an account with a temporary password the new user must change on first login. |
 | `PUT /admin/users/{user_id}` | Admin only | Promote/demote or enable/disable an account. |
 | `POST /admin/users/{user_id}/reset-password` | Admin only | Set a user's password on their behalf; they must change it on next login. |
-| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention, knowledge-base limits). |
+| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention, knowledge-base limits, questions per evaluation run). |
 | `PUT /admin/settings` | Admin only | Update the instance-wide site settings; knowledge limits are checked against the knowledge service's ceilings. |
 | `GET /admin/settings/knowledge-ceilings` | Admin only | The highest values the knowledge limits may be set to. |
 

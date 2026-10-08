@@ -215,6 +215,27 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
     return ChatReply(reply, audio_base64, content_type, llm_ms, tts_ms, retrieval_ms)
 
 
+@dataclass
+class EvaluationAnswer:
+    text: str
+    passages: list[Passage]
+    retrieval_ms: float | None
+    llm_ms: float
+
+
+def answer_for_evaluation(context: ChatContext, question: str) -> EvaluationAnswer:
+    """One test question through the same retrieval and prompt as a student's first message —
+    without speech and without saving (see features/evaluation/runner.py). Raises LLMFailed."""
+    turn = ChatTurn(question, [])
+    passages, retrieval_ms = _retrieve(context, turn)
+    llm_start = time.perf_counter()
+    try:
+        text = llm.complete(context.llm_key, _chat_request(context, turn, passages))
+    except Exception as exc:
+        raise LLMFailed() from exc
+    return EvaluationAnswer(text, passages, retrieval_ms, (time.perf_counter() - llm_start) * 1000)
+
+
 def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dict]]:
     """Yield (event, data) pairs for a streamed reply: one "chunk" per sentence-sized piece (see
     streaming.py), each synthesized as soon as it's ready — so the avatar can start speaking well

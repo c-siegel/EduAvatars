@@ -18,6 +18,7 @@ import anyio.to_thread
 from sqlmodel import Session
 
 from app.db.session import engine
+from app.features.evaluation.service import mark_interrupted
 from app.features.knowledge.service import retry_pending_deletions
 
 logger = logging.getLogger(__name__)
@@ -41,3 +42,15 @@ async def knowledge_cleanup_loop() -> None:
     while True:
         await anyio.to_thread.run_sync(run_knowledge_cleanup)
         await asyncio.sleep(KNOWLEDGE_CLEANUP_INTERVAL_SECONDS)
+
+
+def mark_interrupted_evaluation_runs() -> None:
+    """At startup: evaluation runs that were in progress when the backend stopped end as
+    "interrupted" — their worker thread is gone. Never lets a problem here block startup."""
+    try:
+        with Session(engine) as session:
+            count = mark_interrupted(session)
+        if count:
+            logger.info("Marked %d evaluation run(s) as interrupted.", count)
+    except Exception:
+        logger.exception("Marking interrupted evaluation runs failed.")

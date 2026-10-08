@@ -28,7 +28,7 @@ from app.core.config import settings
 from app.core.errors import DomainError, domain_error_handler
 from app.core.middleware import add_security_headers
 from app.core.urls import API_PREFIX
-from app.tasks.knowledge_cleanup import knowledge_cleanup_loop
+from app.tasks.knowledge_cleanup import knowledge_cleanup_loop, mark_interrupted_evaluation_runs
 from app.tasks.retention import retention_loop, run_retention_purge
 
 
@@ -42,6 +42,9 @@ async def lifespan(app: FastAPI):
     # thread for their own request. Settable only from inside a running event loop, hence here.
     anyio.to_thread.current_default_thread_limiter().total_tokens = settings.request_thread_pool_size
     run_retention_purge()
+    if settings.evaluation_enabled:
+        # Runs that were in progress when the backend stopped can't resume (see runner.py).
+        mark_interrupted_evaluation_runs()
     retention_task = asyncio.create_task(retention_loop())
     # Only with the knowledge service: sends deletes it missed while it was unreachable.
     knowledge_task = asyncio.create_task(knowledge_cleanup_loop()) if settings.rag_enabled else None

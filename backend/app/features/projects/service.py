@@ -23,6 +23,7 @@ from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_owned_key_of_type
 from app.features.chat.models import Conversation, ProjectAccess
+from app.features.evaluation import cleanup as evaluation_cleanup
 from app.features.knowledge.models import KnowledgeBase
 from app.features.media.service import get_owned_avatar, get_owned_background
 from app.features.projects.models import Project
@@ -109,6 +110,7 @@ def delete_project(session: Session, project: Project) -> None:
     unlink_quietly(project.start_audio_path)
     session.execute(delete(Conversation).where(Conversation.project_id == project.id))
     session.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
+    evaluation_cleanup.delete_for_project(session, project.id)
     session.delete(project)
     session.commit()
 

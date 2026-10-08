@@ -39,6 +39,7 @@ class SiteSettingsOut(PublicSiteSettingsOut):
     rag_max_kb_per_user: int
     rag_user_quota_mb: int
     rag_upload_rate_per_10min: int
+    rag_eval_max_cases_per_run: int
 
 
 class KnowledgeCeilingsOut(CamelModel):
@@ -68,6 +69,7 @@ class SiteSettingsUpdate(CamelModel):
     rag_max_kb_per_user: int | None = Field(default=None, ge=1, le=1000)
     rag_user_quota_mb: int | None = Field(default=None, ge=1, le=1_000_000)
     rag_upload_rate_per_10min: int | None = Field(default=None, ge=1, le=10_000)
+    rag_eval_max_cases_per_run: int | None = Field(default=None, ge=1, le=500)
 
     @field_validator("conversation_retention_days")
     @classmethod

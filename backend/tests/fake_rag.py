@@ -115,6 +115,14 @@ class FakeRag:
             ]
             return {"passages": hits[: body["top_k"]]}
 
+        @app.get("/knowledge-bases/{kb_id}/chunks")
+        def sample_chunks(kb_id: str, sample: int = 30):
+            return [
+                {k: c[k] for k in ("chunk_id", "document_id", "text", "page", "heading")}
+                for c in fake.chunks
+                if c["knowledge_base_id"] == kb_id
+            ][:sample]
+
         @app.post("/embedding-test")
         def embedding_test(body: dict):
             fake.embedding_tests.append(body)
