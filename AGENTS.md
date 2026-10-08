@@ -98,8 +98,10 @@ yourself before you push.
   rewritten commits make the branches look diverged and cause phantom conflicts.
 - Commit subjects: imperative, sentence case, no prefix, no trailing period — e.g.
   "Add avatar-only and chat-only layouts for the public chat". The body explains why.
-- Never add the Claude session link or a `Claude-Session:` line to commit messages or PR
-  descriptions.
+- Every commit message and PR description ends with one `Co-Authored-By:` line per model that
+  contributed, e.g. `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Nothing comes
+  after these lines: no session link, no `Claude-Session:` line, no session ID, no "Generated
+  with" footer.
 - One topic per commit; don't mix refactors with behaviour changes.
 
 ## Subagents
