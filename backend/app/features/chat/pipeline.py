@@ -102,14 +102,15 @@ class LLMFailed(Exception):
     """The LLM call itself failed; `__cause__` is the provider's original exception."""
 
 
-def prepare_chat(session: Session, project: Project) -> ChatContext | None:
+def prepare_chat(session: Session, project: Project, llm_key: UserApiKey | None = None) -> ChatContext | None:
     """Resolve the project's LLM (and, if enabled, TTS) key and snapshot what a turn needs.
 
-    None if the project has no usable LLM key. The key records are expunged from `session` so
+    `llm_key` replaces the project's own LLM key (the latency test compares models with it; the
+    caller has checked it's the owner's). None if there's no usable LLM key. The key records are expunged from `session` so
     their already-loaded columns can never be invalidated by a later commit expiring them — the
     caller may close or keep using the session independently of the returned context.
     """
-    api_key = resolve_llm_key(session, project)
+    api_key = llm_key or resolve_llm_key(session, project)
     if api_key is None:
         return None
     tts_api_key = resolve_tts_key(session, project) if project.tts_enabled else None
@@ -197,6 +198,9 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     # in submit() itself since that's the one place both the per-delta loop and the
     # chunker.flush() tail path funnel through.
     first_chunk_ready_ms: float | None = None
+    # Time until the LLM's first token — separates the provider's own response time from the
+    # chunker waiting for a whole sentence.
+    first_token_ms: float | None = None
     total_tts_ms: float | None = 0.0 if context.tts_enabled else None
     full_text_parts: list[str] = []
     chunker = SentenceChunker()
@@ -206,24 +210,36 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     # pool's worker threads finish chunk N+1 before chunk N, synthesis for chunk N still
     # overlaps with the LLM producing chunk N+1 rather than a fully sequential "wait for
     # TTS, then ask for more".
-    futures: deque[tuple[int, "Future[tuple[str | None, str | None, float]]", str]] = deque()
+    futures: deque[tuple[int, "Future[tuple[str | None, str | None, float]]", str, float]] = deque()
     next_index = 0
 
     def submit(text: str) -> None:
         nonlocal next_index, first_chunk_ready_ms
+        ready_ms = (time.perf_counter() - start_time) * 1000
         if first_chunk_ready_ms is None:
-            first_chunk_ready_ms = (time.perf_counter() - start_time) * 1000
-        futures.append((next_index, _tts_executor.submit(_synthesize, context, text), text))
+            first_chunk_ready_ms = ready_ms
+        futures.append((next_index, _tts_executor.submit(_synthesize, context, text), text, ready_ms))
         next_index += 1
 
-    def chunk_event(idx: int, future: Future, text: str) -> tuple[str, dict]:
+    def chunk_event(idx: int, future: Future, text: str, ready_ms: float) -> tuple[str, dict]:
         nonlocal first_chunk_ms, total_tts_ms
         audio_b64, content_type, synth_ms = future.result()
         if total_tts_ms is not None:
             total_tts_ms += synth_ms
+        sent_ms = (time.perf_counter() - start_time) * 1000
         if first_chunk_ms is None:
-            first_chunk_ms = (time.perf_counter() - start_time) * 1000
-        return "chunk", {"index": idx, "text": text, "audioBase64": audio_b64, "contentType": content_type}
+            first_chunk_ms = sent_ms
+        # The *Ms fields are per-chunk timings (since the request started) for the dashboard's
+        # latency test; the public chat ignores them.
+        return "chunk", {
+            "index": idx,
+            "text": text,
+            "audioBase64": audio_b64,
+            "contentType": content_type,
+            "textReadyMs": ready_ms,
+            "ttsMs": synth_ms if context.tts_enabled else None,
+            "sentMs": sent_ms,
+        }
 
     def pop_ready():
         while futures and futures[0][1].done():
@@ -232,6 +248,8 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     llm_error: Exception | None = None
     try:
         for delta in llm.stream(context.llm_key, _chat_request(context, turn)):
+            if first_token_ms is None:
+                first_token_ms = (time.perf_counter() - start_time) * 1000
             full_text_parts.append(delta)
             for chunk in chunker.feed(delta):
                 submit(chunk)
@@ -272,6 +290,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     yield "done", {
         "reply": full_reply,
         "llmMs": llm_ms,
+        "llmFirstTokenMs": first_token_ms,
         "firstChunkMs": first_chunk_ms,
         "firstChunkTextReadyMs": first_chunk_ready_ms,
         "ttsMs": total_tts_ms,

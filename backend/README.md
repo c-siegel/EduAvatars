@@ -134,6 +134,8 @@ library models) or `builtinAvatar` (a bundled default like `"julia"`), its backg
 | `GET /projects/{project_id}/start-audio` | `start_audio_router.py` | Owner, or public if published | Serve the pre-generated start-prompt audio file. |
 | `POST /projects/{project_id}/chat/messages` | `app/features/chat/preview_router.py` | Login required, own resource | Send a message to the project's LLM and return the reply, for the in-app preview chat. |
 | `POST /projects/{project_id}/chat/transcriptions` | `app/features/chat/preview_router.py` | Login required, own resource | Transcribe a voice message for the in-app preview chat. |
+| `POST /projects/{project_id}/latency-test/messages` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: answer a message as SSE with per-module timings, optionally with another of the owner's LLM keys (`llmApiKeyId`), another TTS path (`ttsMode`: `project`/`local`/`none`) or without streaming (`streaming: false`). Never saved. |
+| `POST /projects/{project_id}/latency-test/transcriptions` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: transcribe a recording on the server (`engine`: `project`/`whisper`/`parakeet`) and return `{text, sttMs, engine}`. |
 
 ### Public chat — `app/features/chat/public_router.py` (prefix `/public`)
 
@@ -342,13 +344,17 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 | `POST /{slug}/messages/stream` (SSE `done` event) | `llmMs` | Time from request start to the full LLM reply being assembled. |
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
+| | `llmFirstTokenMs` | Time until the LLM's first token arrived. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
+| (SSE `chunk` events) | `textReadyMs`, `ttsMs`, `sentMs` | Per chunk: when its text was handed to TTS, how long its synthesis took (`null` without TTS), and when it was sent — all since the request started. |
 | `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text) call — local Whisper or Parakeet, or the cloud provider. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio
 decode/playback, time to first spoken word). See [frontend/README.md](../frontend/README.md#debugging)
-for the full breakdown and what each logged field means.
+for the full breakdown and what each logged field means. The dashboard's latency test page
+(`/dashboard/latency`, routes `/projects/{id}/latency-test/*` above) shows the same numbers per
+message and compares configurations; the `chunk` and `done` fields are the same there.
 
 ## Tests
 

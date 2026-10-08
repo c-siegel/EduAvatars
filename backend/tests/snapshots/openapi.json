@@ -504,6 +504,30 @@
         "title": "Body_import_project_route_api_v1_projects_import_post",
         "type": "object"
       },
+      "Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio",
+            "type": "string"
+          },
+          "engine": {
+            "default": "project",
+            "enum": [
+              "project",
+              "whisper",
+              "parakeet"
+            ],
+            "title": "Engine",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "title": "Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post",
+        "type": "object"
+      },
       "Body_set_avatar_thumbnail_api_v1_avatars__avatar_id__thumbnail_post": {
         "properties": {
           "file": {
@@ -857,6 +881,76 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LatencyTestMessageIn": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "llmApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmapikeyid"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "streaming": {
+            "default": true,
+            "title": "Streaming",
+            "type": "boolean"
+          },
+          "ttsMode": {
+            "default": "project",
+            "enum": [
+              "project",
+              "local",
+              "none"
+            ],
+            "title": "Ttsmode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "LatencyTestMessageIn",
+        "type": "object"
+      },
+      "LatencyTranscriptionOut": {
+        "properties": {
+          "engine": {
+            "title": "Engine",
+            "type": "string"
+          },
+          "sttMs": {
+            "title": "Sttms",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "sttMs",
+          "engine"
+        ],
+        "title": "LatencyTranscriptionOut",
         "type": "object"
       },
       "LocalTtsStatusOut": {
@@ -4382,6 +4476,98 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/latency-test/messages": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LatencyTestMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/latency-test/transcriptions": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatencyTranscriptionOut"
+                }
               }
             },
             "description": "Successful Response"

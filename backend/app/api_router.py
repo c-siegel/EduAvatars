@@ -13,7 +13,7 @@ from app.features.analytics import conversations_router, stats_router
 from app.features.api_keys import providers_router
 from app.features.api_keys import router as api_keys_router
 from app.features.auth import router as auth_router
-from app.features.chat import preview_router, public_router
+from app.features.chat import latency_router, preview_router, public_router
 from app.features.media import avatars_router, backgrounds_router, voices_router
 from app.features.projects import publication_router, start_audio_router, transfer_router
 from app.features.projects import router as projects_router
@@ -33,6 +33,7 @@ api_router.include_router(projects_router.router)  # /projects: CRUD
 api_router.include_router(publication_router.router)  # /projects/{id}/publication
 api_router.include_router(start_audio_router.router)  # /projects/{id}/start-audio
 api_router.include_router(preview_router.router)  # /projects/{id}/chat/messages, /chat/transcriptions
+api_router.include_router(latency_router.router)  # /projects/{id}/latency-test/messages, /transcriptions
 
 # Libraries and keys
 api_router.include_router(avatars_router.router)  # /avatars
