@@ -72,6 +72,61 @@ services:
       retries: 3
       start_period: 20s
 
+  # Optional knowledge base (RAG, see rag/ and docs/rag-plan.md): teachers upload their own
+  # material and the avatar's answers are grounded in it, with any LLM provider. Only started with
+  # the "rag" profile — set COMPOSE_PROFILES=rag, RAG_ENABLED=true and RAG_SERVICE_TOKEN in .env
+  # (see docker/README.md). Publishes no port: only the backend talks to it, with the shared token.
+  rag:
+    image: chsiegel/eduavatars:rag
+    pull_policy: always
+    profiles: ["rag"]
+    env_file: ../.env
+    # Started directly as the data directory's owner (no root entrypoint), with a read-only root
+    # filesystem and no capabilities: this container parses untrusted uploads.
+    user: "${PUID:-568}:${PGID:-568}"
+    environment:
+      RAG_DATA_DIR: /data
+      RAG_MODEL_CACHE_DIR: /data/model-cache
+      HF_HOME: /data/model-cache/huggingface
+      HOME: /tmp
+    volumes:
+      - ${EDUAVATARS_DATA_DIR}/rag:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 3g
+    depends_on:
+      # The backend's entrypoint creates rag/ in the data directory and hands it to PUID:PGID —
+      # before that, Docker would create it as root and this user couldn't write there.
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Optional layout-aware document parsing for the knowledge base: tables, multi-column pages and
+  # OCR for scanned PDFs. A large image (PyTorch, several GB) — only started with the "docling"
+  # profile next to "rag", and only used once DOCLING_URL=http://docling:5001 is set in .env.
+  # Check the tag against https://github.com/docling-project/docling-serve/releases before
+  # deploying; override with DOCLING_SERVE_IMAGE.
+  docling:
+    image: ${DOCLING_SERVE_IMAGE:-quay.io/docling-project/docling-serve-cpu:v1.36.0}
+    profiles: ["docling"]
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "false"
+      # Longer than the default, so a long PDF finishes in one synchronous request.
+      DOCLING_SERVE_MAX_SYNC_WAIT: "600"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 6g
+    restart: unless-stopped
+
   backend:
     image: chsiegel/eduavatars:backend
     pull_policy: always
