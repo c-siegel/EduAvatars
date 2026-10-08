@@ -76,8 +76,7 @@ yourself before you push.
   matching README. New feature/provider/route → update the relevant README section.
 
 **Code style**
-- Code comments are always in English. When you touch a file with German comments, translate the
-  comments in the code you are changing.
+- Code comments are always in English. When you come across a German comment, translate it.
 - Comments explain *why*, not *what*. Match the naming and structure of the surrounding code.
 - Don't add dependencies without a reason; pin a version cap with a comment when a newer major is
   known to break (see `av<19` in `backend/pyproject.toml`).

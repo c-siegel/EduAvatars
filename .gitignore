@@ -28,7 +28,7 @@ local-tts/.cache/
 #Agents (shared subagent definitions in .claude/agents/ are versioned)
 .claude/*
 !.claude/agents/
-# CLAUDE.md only imports AGENTS.md and is versioned
+CLAUDE.md
 
 # On-device STT model files (see scripts/fetch-stt-model.sh)
 models/
