@@ -24,6 +24,7 @@ const EMPTY_FORM: SiteSettings = {
   ragMaxKbPerUser: 20,
   ragUserQuotaMb: 200,
   ragUploadRatePer10Min: 30,
+  ragEvalMaxCasesPerRun: 50,
 };
 
 type KnowledgeLimitField =
@@ -33,11 +34,18 @@ type KnowledgeLimitField =
   | "ragMaxDocumentsPerKb"
   | "ragMaxKbPerUser"
   | "ragUserQuotaMb"
-  | "ragUploadRatePer10Min";
+  | "ragUploadRatePer10Min"
+  | "ragEvalMaxCasesPerRun";
 
 // The knowledge-base limits, in display order. `ceiling` names the operator's hard limit (from
-// GET /admin/settings/knowledge-ceilings) a field may not exceed; the others are backend-only.
-const KNOWLEDGE_LIMIT_FIELDS: { field: KnowledgeLimitField; ceiling?: "maxUploadMb" | "maxPages" | "maxChars"; min: number }[] = [
+// GET /admin/settings/knowledge-ceilings) a field may not exceed; `max` is a fixed bound of the
+// backend's; the others are backend-only.
+const KNOWLEDGE_LIMIT_FIELDS: {
+  field: KnowledgeLimitField;
+  ceiling?: "maxUploadMb" | "maxPages" | "maxChars";
+  max?: number;
+  min: number;
+}[] = [
   { field: "ragMaxUploadMb", ceiling: "maxUploadMb", min: 1 },
   { field: "ragMaxPages", ceiling: "maxPages", min: 1 },
   { field: "ragMaxCharsPerDocument", ceiling: "maxChars", min: 1000 },
@@ -45,6 +53,8 @@ const KNOWLEDGE_LIMIT_FIELDS: { field: KnowledgeLimitField; ceiling?: "maxUpload
   { field: "ragMaxKbPerUser", min: 1 },
   { field: "ragUserQuotaMb", min: 1 },
   { field: "ragUploadRatePer10Min", min: 1 },
+  // Only matters with the evaluation service, but harmless to keep without it.
+  { field: "ragEvalMaxCasesPerRun", min: 1, max: 500 },
 ];
 
 /** Admin dashboard: instance-wide site settings (imprint details, registration, data retention,
@@ -186,8 +196,8 @@ export function AdminSettingsPage() {
           <div className={styles.card}>
             <h3>{t("admin.settings.knowledgeTitle")}</h3>
             <p className={styles.hint}>{t("admin.settings.knowledgeHint")}</p>
-            {KNOWLEDGE_LIMIT_FIELDS.map(({ field, ceiling, min }) => {
-              const max = ceiling ? ceilings[ceiling] : undefined;
+            {KNOWLEDGE_LIMIT_FIELDS.map(({ field, ceiling, max: fixedMax, min }) => {
+              const max = ceiling ? ceilings[ceiling] : fixedMax;
               return (
                 <div key={field} className={styles.limitField}>
                   <Input

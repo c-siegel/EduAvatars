@@ -309,3 +309,62 @@
     display: none;
   }
 }
+
+/* Test sets (TestSets.tsx) */
+.textarea {
+  width: 100%;
+  min-width: 12rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.fileButton input {
+  display: none;
+}
+
+.fileButton:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.rowActions {
+  white-space: nowrap;
+}
+
+.rowActions > * + * {
+  margin-left: var(--space-1);
+}
+
+.draftRow td {
+  background: var(--surface-accent-soft);
+}
+
+.cellText {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.selectInline {
+  width: auto;
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+}

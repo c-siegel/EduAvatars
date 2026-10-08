@@ -1,5 +1,5 @@
 // Dashboard tab "Knowledge": a teacher's knowledge bases (RAG) — create one, upload documents,
-// watch them get indexed, try a search, delete. Projects attach knowledge bases in the
+// watch them get indexed, try a search, keep test questions for the evaluation, delete. Projects attach knowledge bases in the
 // Configurator (step 3). Only reachable when the deployment runs the knowledge service.
 
 import { useState, type FormEvent } from "react";
@@ -20,8 +20,9 @@ import {
   type KnowledgeStatus,
 } from "@/api/knowledge";
 import { formatBytes, numberLocale } from "@/lib/format";
-import { keyDisplayName, useKnowledgeStatus, useProviders } from "@/lib/providers";
+import { keyDisplayName, useEvaluationStatus, useKnowledgeStatus, useProviders } from "@/lib/providers";
 import styles from "./Knowledge.module.css";
+import { TestSets } from "./TestSets";
 
 const ACCEPT = ".pdf,.docx,.txt,.md,.markdown";
 // How often the document list refreshes while something is still being indexed.
@@ -300,12 +301,14 @@ function KnowledgeBaseDetail({ kb, status }: { kb: KnowledgeBase; status: Knowle
       (query.state.data ?? []).some((d) => d.status === "queued" || d.status === "processing") ? POLL_MS : false,
   });
   const documents = documentsQuery.data ?? [];
+  const evaluationStatus = useEvaluationStatus().data;
 
   return (
     <div className={styles.detail}>
       <UploadDocuments kb={kb} status={status} />
       <DocumentTable kb={kb} documents={documents} loading={documentsQuery.isLoading} doclingAvailable={status.doclingAvailable} />
       {documents.some((d) => d.status === "ready") && <TestSearch kb={kb} />}
+      {evaluationStatus?.available && <TestSets kb={kb} status={evaluationStatus} />}
     </div>
   );
 }

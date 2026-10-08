@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiKeysApi } from "@/api/apiKeys";
 import i18n from "@/i18n";
+import { evaluationApi } from "@/api/evaluation";
 import { knowledgeApi } from "@/api/knowledge";
 import type { ApiKey, ApiKeyType, ProviderModel, ProviderSpec } from "@/types/apiKey";
 
@@ -87,4 +88,21 @@ export function modelLabel(key: ApiKey, specs: ProviderSpec[]): string | null {
     return modelFixed ? i18n.t("apiKeyForm.defaultModel") : null;
   }
   return curatedModels(spec, key.keyType).find((model) => model.value === key.modelId)?.label ?? key.modelId;
+}
+
+/** Whether this deployment runs the evaluation (Ragas) service — gates the Evaluation page, its
+ * nav item and the test sets on the Knowledge page. */
+export function useEvaluationStatus(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["evaluation-status"],
+    queryFn: evaluationApi.status,
+    staleTime: 60_000,
+    enabled: options.enabled ?? true,
+  });
+}
+
+/** Keys that can judge answers: LLM keys with a model, except Arcana (it adds its own retrieval
+ * to every call, see backend/app/features/evaluation/service.py::judge_for). */
+export function isJudgeKey(key: ApiKey): boolean {
+  return key.keyType === "llm" && Boolean(key.modelId) && key.provider !== "gwdg_arcana";
 }

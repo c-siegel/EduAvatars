@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   AudioLines,
   BookOpen,
+  Gauge,
   LayoutDashboard,
   Timer,
   BarChart3,
@@ -24,7 +25,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useKnowledgeStatus } from "@/lib/providers";
+import { useEvaluationStatus, useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -78,6 +79,14 @@ const KNOWLEDGE_NAV_ITEM: NavConfigItem = {
   isActive: (p) => p.startsWith("/dashboard/knowledge"),
 };
 
+// Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
+const EVALUATION_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.evaluation",
+  href: "/dashboard/evaluation",
+  icon: Gauge,
+  isActive: (p) => p.startsWith("/dashboard/evaluation"),
+};
+
 const ADMIN_NAV_ITEM: NavConfigItem = {
   labelKey: "nav.admin",
   href: "/dashboard/admin",
@@ -117,9 +126,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
-  // Knowledge sits right after Voices — both are the teacher's libraries.
+  const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
+  // Knowledge sits right after Voices — both are the teacher's libraries — and Evaluation after it.
+  const knowledgeItems = evaluationAvailable ? [KNOWLEDGE_NAV_ITEM, EVALUATION_NAV_ITEM] : [KNOWLEDGE_NAV_ITEM];
   const baseItems = knowledgeAvailable
-    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, KNOWLEDGE_NAV_ITEM] : [item]))
+    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, ...knowledgeItems] : [item]))
     : BASE_NAV_ITEMS;
   const navItems = user?.isAdmin ? [...baseItems, ADMIN_NAV_ITEM] : baseItems;
   const activeItem = navItems.find((item) => item.isActive(location.pathname));

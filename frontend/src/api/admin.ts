@@ -31,6 +31,8 @@ export interface SiteSettings {
   ragMaxKbPerUser: number;
   ragUserQuotaMb: number;
   ragUploadRatePer10Min: number;
+  // Quality evaluation: the most test questions one run may answer and score (1–500).
+  ragEvalMaxCasesPerRun: number;
 }
 
 // The operator's ceilings for the knowledge limits (RAG_HARD_MAX_* in the knowledge service).
