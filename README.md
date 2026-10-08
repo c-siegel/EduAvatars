@@ -165,6 +165,29 @@ uvicorn app.main:app --reload
 ```
 The API is now available at `http://localhost:8000` (health check: `GET /health`).
 
+<details>
+<summary>On Windows (PowerShell)</summary>
+
+```powershell
+# From the repo root: create .env, then fill in the two secrets as described above
+# (use `py` instead of `python3` in the generate commands)
+Copy-Item .env.example .env
+
+cd backend
+py -3.11 -m venv .venv            # any Python >= 3.11; `py --list` shows what's installed
+.\.venv\Scripts\Activate.ps1
+pip install -e .
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+- `uvicorn : Die Benennung "uvicorn" wurde nicht … erkannt` / `uvicorn is not recognized`: the
+  virtual environment isn't active in this window. Activate it again (needed in every new
+  PowerShell window; the prompt then starts with `(.venv)`), or call it without activating:
+  `.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload`.
+- `Activate.ps1 cannot be loaded because running scripts is disabled`: allow local scripts for
+  your user once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+</details>
+
 To get your first admin account (dashboard access to manage other accounts, site settings, ...),
 either set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env` and run
 `python -m app.cli.bootstrap_admin` from `backend/` (same idempotent step Deploy B runs
