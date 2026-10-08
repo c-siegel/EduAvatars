@@ -90,8 +90,9 @@ interface StreamHandlers {
   onDone: (data: StreamDoneEvent) => void;
 }
 
-/** Parses one "event: <name>\ndata: <json>" SSE frame (without the trailing blank line). */
-function parseSseFrame(frame: string): { event: string; data: unknown } | null {
+/** Parses one "event: <name>\ndata: <json>" SSE frame (without the trailing blank line). Also
+ * used by api/latencyTest.ts. */
+export function parseSseFrame(frame: string): { event: string; data: unknown } | null {
   let event = "message";
   let dataLine: string | null = null;
   for (const line of frame.split("\n")) {

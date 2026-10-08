@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 
 from app.core.error_codes import ErrorCode
 from app.core.errors import DomainError
-from app.core.providers import KEY_TYPE_STT, KEY_TYPE_TTS
+from app.core.providers import KEY_TYPE_EMBEDDING, KEY_TYPE_STT, KEY_TYPE_TTS
 from app.features.ai.llm import get_llm_client
 from app.features.ai.stt import get_stt_client
 from app.features.ai.tts import VoiceRequiredError, synthesize_speech
@@ -20,6 +20,8 @@ from app.features.api_keys.crypto import mask_key, scrub_key_from_text, store_ap
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_key_by_id
 from app.features.api_keys.schemas import ApiKeyCreate, ApiKeyUpdate
+from app.features.knowledge.models import KnowledgeBase
+from app.features.knowledge.service import detach_embedding_key, test_embedding_key
 from app.features.projects.models import Project
 from app.features.projects.service import sync_llm_model
 
@@ -55,6 +57,14 @@ def list_keys_with_usage(session: Session, user_id: str) -> list[tuple[UserApiKe
         ).all()
         for key_id, count in counts:
             usage[key_id] = usage.get(key_id, 0) + count
+    # An embedding key is "used" by the knowledge bases built with it.
+    kb_counts = session.exec(
+        select(KnowledgeBase.embedding_api_key_id, func.count(KnowledgeBase.id))
+        .where(KnowledgeBase.user_id == user_id, KnowledgeBase.embedding_api_key_id.is_not(None))
+        .group_by(KnowledgeBase.embedding_api_key_id)
+    ).all()
+    for key_id, count in kb_counts:
+        usage[key_id] = usage.get(key_id, 0) + count
     return [(key, usage.get(key.id, 0)) for key in keys]
 
 
@@ -127,6 +137,10 @@ def delete_key(session: Session, key: UserApiKey) -> None:
         project.stt_api_key_id = None
         session.add(project)
 
+    # Knowledge bases embedded with this key keep their documents but can't be searched until
+    # they're re-created with another model (see features/knowledge/service.py).
+    detach_embedding_key(session, key.id)
+
     session.delete(key)
     session.commit()
 
@@ -144,6 +158,8 @@ def run_key_test(session: Session, key: UserApiKey) -> str | None:
             synthesize_speech("Test", None, key)
         elif key.key_type == KEY_TYPE_STT:
             get_stt_client(key).test()
+        elif key.key_type == KEY_TYPE_EMBEDDING:
+            test_embedding_key(key)
         else:
             get_llm_client(key).test()
         key.status = "active"

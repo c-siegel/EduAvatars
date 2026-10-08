@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Literal
 
 from cryptography.fernet import Fernet
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Path to the .env-file within the root directory
@@ -456,6 +456,49 @@ class Settings(BaseSettings):
     share one pool sized by this setting, so a burst of simultaneously-streaming students shares
     a bounded resource instead of each spawning an unbounded number of threads.
     """
+
+    # ==================== KNOWLEDGE BASE (RAG) SETTINGS ====================
+
+    # Teachers' own documents as the avatar's knowledge, for any LLM provider. Like local TTS, the
+    # work happens in an optional sidecar container (see rag/ and docs/rag-plan.md): this backend
+    # owns who may see which knowledge base and calls that service over HTTP. Only the on/off
+    # switch and how to reach the service are env settings — the upload limits are site settings
+    # an admin changes in the dashboard (see features/site_settings/models.py).
+
+    rag_enabled: bool = False
+    """
+    Whether the knowledge-base feature exists on this instance at all: its routes, the dashboard
+    page and the retrieval step in every chat turn. Off by default — it needs the "rag" Compose
+    profile actually running.
+    """
+
+    rag_service_url: str = "http://rag:8090"
+    """Base URL of the knowledge service container. Only used when rag_enabled is True."""
+
+    rag_service_token: str = ""
+    """
+    Shared secret sent to the knowledge service as a bearer token — the same value as that
+    service's RAG_SERVICE_TOKEN. Required when rag_enabled is True.
+    """
+
+    rag_query_timeout_ms: int = 1500
+    """
+    Time budget for the retrieval step of one chat turn. Past it, the turn continues without
+    passages (the avatar answers as if no material were attached) instead of keeping the student
+    waiting — the student is already waiting for speech recognition, the LLM and TTS.
+    """
+
+    rag_request_timeout_seconds: float = 30.0
+    """Timeout for the knowledge service's other calls (uploads, status, deletes, key tests)."""
+
+    @model_validator(mode="after")
+    def _require_rag_token(self) -> "Settings":
+        if self.rag_enabled and self.rag_service_token.strip().lower() in {"", "change-me", "changeme"}:
+            raise ValueError(
+                "RAG_ENABLED is true but RAG_SERVICE_TOKEN isn't set — use the same random value as the "
+                'knowledge service\'s, e.g. python3 -c "import secrets; print(secrets.token_urlsafe(32))"'
+            )
+        return self
 
     # ==================== HELPER PROPERTIES ====================
     

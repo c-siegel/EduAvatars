@@ -52,7 +52,18 @@ def _csv_safe(value: str) -> str:
     return value
 
 
-def build_conversation_csv(conversation: Conversation, project: Project) -> str:
+def _sources_cell(sources: list[dict], document_names: dict[str, str]) -> str:
+    """ "Skript.pdf S. 3; Arbeitsblatt.docx" — the knowledge-base passages a reply was given."""
+    parts = []
+    for source in sources:
+        name = document_names.get(source.get("documentId"), "(gelöschtes Dokument)")
+        parts.append(f"{name} S. {source['page']}" if source.get("page") else name)
+    return "; ".join(dict.fromkeys(parts))
+
+
+def build_conversation_csv(
+    conversation: Conversation, project: Project, document_names: dict[str, str] | None = None
+) -> str:
     """Render one saved conversation as a CSV: a short metadata header (project, LLM model,
     visitor, start time), then one row per message with a timestamp column plus one column per
     speaker (Avatar/Schüler:in) — each row fills only the column of whichever side sent that
@@ -60,6 +71,9 @@ def build_conversation_csv(conversation: Conversation, project: Project) -> str:
 
     Messages saved before per-message timestamps existed (see
     app/features/chat/schemas.py::ChatHistoryEntry) leave the "Zeitpunkt" cell blank for that row.
+
+    A conversation with a knowledge base gets a fourth "Quellen" column (the documents each reply
+    was given, see features/knowledge/); every other export keeps its three columns unchanged.
     """
     messages = json.loads(conversation.messages_json)
 
@@ -70,18 +84,24 @@ def build_conversation_csv(conversation: Conversation, project: Project) -> str:
     writer.writerow(["Name/ID", _csv_safe(conversation.visitor_name or "")])
     writer.writerow(["Gestartet", conversation.started_at.isoformat()])
     writer.writerow([])
-    writer.writerow(["Zeitpunkt", "Avatar", "Schüler:in"])
+    with_sources = any("sources" in message for message in messages)
+    writer.writerow(["Zeitpunkt", "Avatar", "Schüler:in"] + (["Quellen"] if with_sources else []))
     for message in messages:
         timestamp = message.get("timestamp") or ""
         content = _csv_safe(message.get("content", ""))
         if message.get("role") == "assistant":
-            writer.writerow([timestamp, content, ""])
+            row = [timestamp, content, ""]
+            if with_sources:
+                row.append(_csv_safe(_sources_cell(message.get("sources") or [], document_names or {})))
         else:
-            writer.writerow([timestamp, "", content])
+            row = [timestamp, "", content] + ([""] if with_sources else [])
+        writer.writerow(row)
     return buffer.getvalue()
 
 
-def build_export(rows: list[tuple[Conversation, Project]]) -> tuple[bytes | str, str, str]:
+def build_export(
+    rows: list[tuple[Conversation, Project]], document_names: dict[str, str] | None = None
+) -> tuple[bytes | str, str, str]:
     """The download for one or more conversations: (content, media type, filename).
 
     A single conversation comes back as a plain .csv; more than one is bundled into a .zip (one
@@ -90,7 +110,7 @@ def build_export(rows: list[tuple[Conversation, Project]]) -> tuple[bytes | str,
     """
     if len(rows) == 1:
         conversation, project = rows[0]
-        return build_conversation_csv(conversation, project), "text/csv", conversation_export_filename(conversation, project)
+        return build_conversation_csv(conversation, project, document_names), "text/csv", conversation_export_filename(conversation, project)
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -106,5 +126,5 @@ def build_export(rows: list[tuple[Conversation, Project]]) -> tuple[bytes | str,
                 name = f"{stem}-{used_names[name]}.{ext}"
             else:
                 used_names[name] = 0
-            archive.writestr(name, build_conversation_csv(conversation, project))
+            archive.writestr(name, build_conversation_csv(conversation, project, document_names))
     return buffer.getvalue(), "application/zip", "eduavatars-gespraeche.zip"

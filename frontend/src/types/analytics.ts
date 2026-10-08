@@ -36,8 +36,18 @@ export interface SessionDetail {
   // Full message-by-message transcript — what GET /conversations/{id} returns, unlike
   // SessionRow's truncated lastQuestion. Reused from types/chat.ts since the shape matches
   // exactly (role "user"/"assistant", never "system" — that's a PublicChat-only local notice).
-  messages: ChatMessage[];
+  messages: TranscriptMessage[];
 }
+
+// A knowledge-base passage a reply was given (see backend features/knowledge/) — the document
+// and page only; filename is null once the document was deleted.
+export interface TranscriptSource {
+  documentId: string;
+  filename: string | null;
+  page: number | null;
+}
+
+export type TranscriptMessage = ChatMessage & { sources?: TranscriptSource[] | null };
 
 export type Granularity = "day" | "week" | "month";
 

@@ -17,13 +17,44 @@ const EMPTY_FORM: SiteSettings = {
   providerCountry: "",
   registrationEnabled: true,
   conversationRetentionDays: 0,
+  ragMaxUploadMb: 20,
+  ragMaxPages: 500,
+  ragMaxCharsPerDocument: 2_000_000,
+  ragMaxDocumentsPerKb: 50,
+  ragMaxKbPerUser: 20,
+  ragUserQuotaMb: 200,
+  ragUploadRatePer10Min: 30,
 };
 
-/** Admin dashboard: instance-wide site settings (imprint details, registration, data retention). */
+type KnowledgeLimitField =
+  | "ragMaxUploadMb"
+  | "ragMaxPages"
+  | "ragMaxCharsPerDocument"
+  | "ragMaxDocumentsPerKb"
+  | "ragMaxKbPerUser"
+  | "ragUserQuotaMb"
+  | "ragUploadRatePer10Min";
+
+// The knowledge-base limits, in display order. `ceiling` names the operator's hard limit (from
+// GET /admin/settings/knowledge-ceilings) a field may not exceed; the others are backend-only.
+const KNOWLEDGE_LIMIT_FIELDS: { field: KnowledgeLimitField; ceiling?: "maxUploadMb" | "maxPages" | "maxChars"; min: number }[] = [
+  { field: "ragMaxUploadMb", ceiling: "maxUploadMb", min: 1 },
+  { field: "ragMaxPages", ceiling: "maxPages", min: 1 },
+  { field: "ragMaxCharsPerDocument", ceiling: "maxChars", min: 1000 },
+  { field: "ragMaxDocumentsPerKb", min: 1 },
+  { field: "ragMaxKbPerUser", min: 1 },
+  { field: "ragUserQuotaMb", min: 1 },
+  { field: "ragUploadRatePer10Min", min: 1 },
+];
+
+/** Admin dashboard: instance-wide site settings (imprint details, registration, data retention,
+ * knowledge-base limits). */
 export function AdminSettingsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const settingsQuery = useQuery({ queryKey: ["admin", "settings"], queryFn: adminApi.getSettings });
+  const ceilingsQuery = useQuery({ queryKey: ["admin", "knowledge-ceilings"], queryFn: adminApi.getKnowledgeCeilings });
+  const ceilings = ceilingsQuery.data;
 
   const [form, setForm] = useState<SiteSettings>(EMPTY_FORM);
 
@@ -61,6 +92,10 @@ export function AdminSettingsPage() {
         providerCountry: form.providerCountry?.trim() || null,
         registrationEnabled: form.registrationEnabled,
         conversationRetentionDays: form.conversationRetentionDays,
+        // Only sent where the knowledge service exists — otherwise there's nothing to limit.
+        ...(ceilings?.enabled
+          ? Object.fromEntries(KNOWLEDGE_LIMIT_FIELDS.map(({ field }) => [field, form[field]]))
+          : {}),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(["admin", "settings"], updated);
@@ -146,6 +181,33 @@ export function AdminSettingsPage() {
             </span>
           </label>
         </div>
+
+        {ceilings?.enabled && (
+          <div className={styles.card}>
+            <h3>{t("admin.settings.knowledgeTitle")}</h3>
+            <p className={styles.hint}>{t("admin.settings.knowledgeHint")}</p>
+            {KNOWLEDGE_LIMIT_FIELDS.map(({ field, ceiling, min }) => {
+              const max = ceiling ? ceilings[ceiling] : undefined;
+              return (
+                <div key={field} className={styles.limitField}>
+                  <Input
+                    label={t(`admin.settings.knowledgeLimits.${field}`)}
+                    type="number"
+                    min={min}
+                    max={max}
+                    value={String(form[field])}
+                    onChange={(e) => update({ [field]: Math.max(min, Math.floor(Number(e.target.value) || min)) })}
+                  />
+                  {max !== undefined && (
+                    <span className={styles.limitCeiling}>
+                      {t("admin.settings.knowledgeCeiling", { max: max.toLocaleString() })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {saveMutation.isError && (
           <Callout variant="danger">{errorMessage(saveMutation.error, t("admin.settings.saveError"))}</Callout>

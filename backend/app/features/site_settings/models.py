@@ -2,8 +2,8 @@
 Site Settings Table
 
 Instance-wide settings an admin can change from the dashboard without a redeploy: the imprint
-("Impressum") details shown on the legal-notice page, whether self-registration is open, and how
-long student chat data is kept.
+("Impressum") details shown on the legal-notice page, whether self-registration is open, how long
+student chat data is kept, and the knowledge-base (RAG) upload limits.
 
 What is a singleton row?
 This table only ever holds one row, with id fixed to 1 — there's exactly one instance-wide
@@ -39,3 +39,15 @@ class SiteSettings(SQLModel, table=True):
     # (the previous behaviour). Enforced by tasks/retention.py, re-checked
     # periodically for as long as the process runs (see main.py's _retention_loop).
     conversation_retention_days: int = 0
+
+    # Knowledge base (RAG) limits — only relevant when Settings.rag_enabled. Editable by an admin
+    # within the knowledge service's hard ceilings (see features/knowledge/limits.py); the
+    # defaults below are the ones docs/rag-plan.md §5.5 settled on. Lowering one never touches
+    # documents that are already indexed, it only applies to new uploads.
+    rag_max_upload_mb: int = 20
+    rag_max_pages: int = 500
+    rag_max_chars_per_document: int = 2_000_000
+    rag_max_documents_per_kb: int = 50
+    rag_max_kb_per_user: int = 20
+    rag_user_quota_mb: int = 200
+    rag_upload_rate_per_10min: int = 30

@@ -35,6 +35,20 @@ class SessionRowOut(CamelModel):
     visitor_name: str | None
 
 
+class TranscriptSourceOut(CamelModel):
+    """A knowledge-base passage an assistant message was given (see features/knowledge/)."""
+
+    document_id: str
+    # None once the document has been deleted — the transcript keeps the reference, not the text.
+    filename: str | None
+    page: int | None
+
+
+class TranscriptMessageOut(ChatHistoryEntry):
+    # Only on assistant messages of projects with a knowledge base; None otherwise.
+    sources: list[TranscriptSourceOut] | None = None
+
+
 class ConversationDetailOut(CamelModel):
     """Full message-by-message transcript of one saved conversation — what GET
     /conversations/{id} returns, as opposed to SessionRowOut's one-line summary."""
@@ -43,7 +57,7 @@ class ConversationDetailOut(CamelModel):
     project_title: str
     visitor_name: str | None
     started_at: str
-    messages: list[ChatHistoryEntry]
+    messages: list[TranscriptMessageOut]
 
 
 class SessionsPageOut(CamelModel):

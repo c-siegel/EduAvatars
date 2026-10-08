@@ -42,8 +42,11 @@ visitors need no account and no technical knowledge to use it.
   visitors to type a name/ID first so their sessions are easy to tell apart afterwards.
 - **Bring your own AI provider key.** Connect Anthropic, OpenAI, Google Gemini, Mistral,
   Cartesia, Google Cloud TTS (text-to-speech), a self-hosted/Ollama model, an OpenAI-compatible
-  endpoint, or GWDG Arcana (which adds RAG — retrieval-augmented generation — so answers can be
-  grounded in your own uploaded documents). See [Supported AI providers](#supported-ai-providers).
+  endpoint, or GWDG Arcana. See [Supported AI providers](#supported-ai-providers).
+- **Ground answers in your own material.** Upload scripts, worksheets or notes (PDF, Word, text,
+  Markdown) to a knowledge base and attach it to a project: before each reply, the best-matching
+  passages are handed to the AI, whichever provider it is (RAG — retrieval-augmented
+  generation). Optional module, see [Knowledge bases](#knowledge-bases-optional).
 - **Review usage afterwards.** A built-in analytics dashboard shows session counts, message
   volume, and per-conversation transcripts, exportable as CSV/ZIP.
 - **Use it in English or German.** The dashboard and public chat UI (user interface) are fully
@@ -85,13 +88,17 @@ you, none of the setup below applies — just:
 - **Compare AI providers.** Because API keys are bring-your-own and swappable per project, you
   can run the same persona against different LLMs (large language models) or voices and compare
   cost, latency, or answer quality.
-- **Ground answers in your own material.** The GWDG Arcana provider adds RAG (retrieval-
-  augmented generation): the avatar's answers are grounded in a knowledge base you supply,
-  instead of relying purely on the model's built-in training.
+- **Ground answers in your own material.** Knowledge bases (RAG, retrieval-augmented generation)
+  work with every provider; transcripts and CSV exports record which document and page each reply
+  was given, and the latency test times the lookup. The GWDG Arcana provider offers its own,
+  separately hosted knowledge base too.
 - **Measure latency.** Every response is timed server-side (LLM, TTS, STT stage-by-stage) and
   the frontend can log matching client-side timings — see
   [backend/README.md](backend/README.md#latency-monitoring) — useful if you're studying
-  response-time perception or comparing infrastructure choices.
+  response-time perception or comparing infrastructure choices. The dashboard's **Latency test**
+  page runs scripted student conversations on any device and compares configurations (speech
+  recognition on the device or the server, LLM, streaming, speech output, avatar on/off) — see
+  [docs/latency-test.md](docs/latency-test.md).
 
 ## Project status
 
@@ -114,10 +121,12 @@ The app is split into two independent apps plus a deployment folder:
 | [`backend/`](backend/) | FastAPI (Python) API: auth, projects, LLM/TTS/STT calls, analytics | [backend/README.md](backend/README.md) |
 | [`frontend/`](frontend/) | React + TypeScript single-page app, 3D avatar rendering with three.js enabled by [TalkingHead](https://github.com/met4citizen/TalkingHead) by Mika Suominen | [frontend/README.md](frontend/README.md) |
 | [`local-tts/`](local-tts/) | Optional self-hosted text-to-speech sidecar, so no cloud key is needed for speech output | [local-tts/README.md](local-tts/README.md) |
+| [`rag/`](rag/) | Optional knowledge service: parses teachers' documents, indexes them and finds matching passages | [rag/README.md](rag/README.md) |
 | [`docker/`](docker/) | Docker images, Compose file, and reverse-proxy config for deployment | [docker/README.md](docker/README.md) |
 
 The frontend talks to the backend over HTTP; the backend optionally calls the local-TTS sidecar
-over HTTP too, when a project has no cloud TTS key configured. In production, Caddy (in
+over HTTP too, when a project has no cloud TTS key configured, and the knowledge service when a
+project has knowledge bases attached. In production, Caddy (in
 `docker/`) reverse-proxies the frontend and backend behind a single domain.
 
 <p align="center">
@@ -243,6 +252,35 @@ clip per language — see [`local-tts/voices/README.md`](local-tts/voices/README
 none by default.
 Full details, including the model's resource footprint and API: [local-tts/README.md](local-tts/README.md).
 
+### Knowledge bases (optional)
+
+Teachers upload their own documents (Dashboard → Knowledge) and attach them to projects
+(Configurator, step 3); before each reply, the passages that best match the student's message are
+added to the system prompt. This works with every LLM provider. The work happens in a separate
+service, [`rag/`](rag/), which is off unless you switch it on: it parses uploads in a sandbox,
+embeds them with a local model by default (teachers can pick an API embedding model instead), and
+keeps the index in its own SQLite file. Design and safety measures:
+[docs/rag-plan.md](docs/rag-plan.md). In Docker it's an optional service, see
+[docker/README.md](docker/README.md#knowledge-bases-optional). To try it locally:
+
+```bash
+cd rag
+python3 -m venv .venv && ./.venv/bin/pip install -e .
+export RAG_SERVICE_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+RAG_DATA_DIR="$PWD/.data" ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8090
+```
+
+and start the backend with the same token:
+
+```bash
+RAG_ENABLED=true
+RAG_SERVICE_URL=http://127.0.0.1:8090
+RAG_SERVICE_TOKEN=<the same value>
+```
+
+The first upload downloads the local embedding model (about 600 MB) from Hugging Face. Upload
+limits (file size, pages, quotas) are set by an admin under Admin → Settings.
+
 ### Deploy B: Docker (production)
 
 Runs both apps as containers behind a Caddy reverse proxy — the setup used for real deployments
@@ -284,6 +322,45 @@ For Ollama and OpenAI-compatible keys, the endpoint address you enter can be any
 network (e.g. a school's LAN GPU box) — the backend only rejects addresses that could never be a
 real LLM/TTS server, like a cloud metadata endpoint, to close off that one otherwise-easy misuse of
 a "bring your own endpoint" field.
+
+### Requirements for on-device speech recognition
+
+Voice input is transcribed in the visitor's browser only when **all** of the following hold.
+Otherwise the chat shows a short notice and voice input goes through the server instead, so it
+keeps working, just without live text while speaking and with a bit more delay.
+
+**On the server**
+- The model files are in place: `scripts/fetch-stt-model.sh` (Deploy A) or the `stt-model`
+  service (Deploy B, automatic). Check: `/models/parakeet-redux/v1/manifest.json` loads.
+- `BROWSER_STT_ENABLED` is not set to `false`, and the project has voice input enabled.
+- The site is served over **HTTPS** (or opened as `localhost`). Browsers turn off WebGPU and the
+  microphone on plain HTTP.
+
+**On the visitor's device**
+- **A browser with WebGPU that finds a usable GPU.** The API being there isn't enough: the app asks
+  for a GPU adapter, and the device falls back to the server if it doesn't get one.
+  - iPad / iPhone: **iPadOS / iOS 26 or newer** (Safari 26 is the first Safari with WebGPU on by
+    default). Older iPads that can't update to 26 (or are held back by device management) always
+    use the server. This is the most likely reason some iPads in the pilot didn't support it.
+    Lockdown Mode also turns WebGPU off.
+  - Windows, macOS, ChromeOS: current Chrome or Edge. Safari 26 on macOS.
+  - Android: current Chrome on Android 12 or newer; some GPUs are still left out.
+  - Firefox: only on Windows so far.
+- **Enough memory.** The model takes ~350 MB of GPU memory next to the 3D avatar. iPadOS reloads
+  tabs that use too much, which hits older iPads with little RAM first.
+- **~400 MB of free storage** for the browser's cache. Private browsing keeps nothing, so the
+  model downloads again on every visit.
+- **Microphone permission** for the site.
+
+**Network.** A device's first visit downloads ~175 MB. A class of 25 iPads opening the chat at
+the same time therefore pulls ~4.4 GB through the school's network, so let the devices open the
+chat link once before the lesson (the model then comes from the browser cache, and the chat is
+ready in a few seconds). Safari can delete a site's stored data after 7 days without a visit, so
+on iPads used only weekly, expect the download again now and then. On Deploy B behind Cloudflare, also see
+[docker/README.md](docker/README.md#deploying) for letting Cloudflare cache the model.
+
+To check a specific device, open `/stt-test` on it and follow
+[docs/stt-device-test.md](docs/stt-device-test.md).
 
 ## Tech stack
 
@@ -329,6 +406,13 @@ a project-configured cloud STT key) — see [Supported AI providers](#supported-
 avatar's replies. That provider's own data-handling terms apply to that traffic, independent of
 where you host EduAvatars itself. Password-reset emails (only if you configure SMTP) are the
 only other outbound traffic the backend generates on its own.
+
+Knowledge bases (if enabled) stay on your server with the default local embedding model. A
+teacher who picks an API embedding model instead sends the full text of their documents to that
+provider when they're indexed. Original files are deleted as soon as they're parsed; deleting a
+document, knowledge base or account deletes its indexed text too. Material attached to a
+published project can be quoted by anyone who can open its link — teachers confirm they may make
+it available when they upload.
 
 Whether a given deployment and provider choice satisfies your institution's data-protection
 requirements (e.g. GDPR — General Data Protection Regulation) is something you need to assess

@@ -11,6 +11,8 @@ How to use:
     projects = list_projects(session, user_id)
 """
 
+import json
+
 from sqlalchemy import delete
 from sqlmodel import Session, select
 
@@ -21,6 +23,7 @@ from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_owned_key_of_type
 from app.features.chat.models import Conversation, ProjectAccess
+from app.features.knowledge.models import KnowledgeBase
 from app.features.media.service import get_owned_avatar, get_owned_background
 from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectUpdate
@@ -44,6 +47,11 @@ class UnknownAvatar(DomainError):
 class UnknownBackground(DomainError):
     status_code = 400
     detail = ErrorCode.BACKGROUND_NOT_FOUND
+
+
+class UnknownKnowledgeBase(DomainError):
+    status_code = 400
+    detail = ErrorCode.KNOWLEDGE_BASE_NOT_FOUND
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -121,6 +129,11 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
     ):
         unlink_quietly(project.start_audio_path)
         project.start_audio_path = None
+    if "knowledge_base_ids" in data:
+        ids = data.pop("knowledge_base_ids")
+        if ids is not None:
+            # dict.fromkeys: de-duplicated, order kept.
+            project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(ids)))
     for field, value in data.items():
         if value is not None or field in _CLEARABLE_FIELDS:
             setattr(project, field, value)
@@ -157,6 +170,10 @@ def _check_references(session: Session, user_id: str, data: ProjectUpdate) -> No
         raise UnknownAvatar()
     if data.avatar_background_id and get_owned_background(session, user_id, data.avatar_background_id) is None:
         raise UnknownBackground()
+    for kb_id in data.knowledge_base_ids or []:
+        kb = session.get(KnowledgeBase, kb_id)
+        if kb is None or kb.user_id != user_id:
+            raise UnknownKnowledgeBase()
 
 
 def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Project:
@@ -167,7 +184,10 @@ def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Proje
     _check_references(session, user_id, data)
     create_data = data.model_dump(exclude_unset=True)
     chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    knowledge_base_ids = create_data.pop("knowledge_base_ids", None)
     project = Project(user_id=user_id, **create_data)
+    if knowledge_base_ids:
+        project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(knowledge_base_ids)))
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)
     sync_llm_model(session, project)

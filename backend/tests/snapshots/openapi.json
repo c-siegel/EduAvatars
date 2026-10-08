@@ -504,6 +504,30 @@
         "title": "Body_import_project_route_api_v1_projects_import_post",
         "type": "object"
       },
+      "Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio",
+            "type": "string"
+          },
+          "engine": {
+            "default": "project",
+            "enum": [
+              "project",
+              "whisper",
+              "parakeet"
+            ],
+            "title": "Engine",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "title": "Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post",
+        "type": "object"
+      },
       "Body_set_avatar_thumbnail_api_v1_avatars__avatar_id__thumbnail_post": {
         "properties": {
           "file": {
@@ -583,6 +607,30 @@
           "file"
         ],
         "title": "Body_upload_background_api_v1_backgrounds_post",
+        "type": "object"
+      },
+      "Body_upload_document_api_v1_knowledge_bases__kb_id__documents_post": {
+        "properties": {
+          "consent": {
+            "default": false,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "parser": {
+            "default": "light",
+            "title": "Parser",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_document_api_v1_knowledge_bases__kb_id__documents_post",
         "type": "object"
       },
       "Body_upload_profile_picture_api_v1_me_picture_post": {
@@ -781,7 +829,7 @@
           },
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/ChatHistoryEntry"
+              "$ref": "#/components/schemas/TranscriptMessageOut"
             },
             "title": "Messages",
             "type": "array"
@@ -857,6 +905,514 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KnowledgeBaseCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "embeddingApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddingapikeyid"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KnowledgeBaseCreate",
+        "type": "object"
+      },
+      "KnowledgeBaseOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "documentCount": {
+            "title": "Documentcount",
+            "type": "integer"
+          },
+          "embeddingApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddingapikeyid"
+          },
+          "embeddingAvailable": {
+            "title": "Embeddingavailable",
+            "type": "boolean"
+          },
+          "embeddingMode": {
+            "title": "Embeddingmode",
+            "type": "string"
+          },
+          "embeddingModel": {
+            "title": "Embeddingmodel",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "title": "Sizebytes",
+            "type": "integer"
+          },
+          "usedByProjects": {
+            "title": "Usedbyprojects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "embeddingMode",
+          "embeddingModel",
+          "embeddingApiKeyId",
+          "embeddingAvailable",
+          "documentCount",
+          "sizeBytes",
+          "usedByProjects",
+          "createdAt"
+        ],
+        "title": "KnowledgeBaseOut",
+        "type": "object"
+      },
+      "KnowledgeBaseUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "KnowledgeBaseUpdate",
+        "type": "object"
+      },
+      "KnowledgeCeilingsOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "maxChars": {
+            "title": "Maxchars",
+            "type": "integer"
+          },
+          "maxPages": {
+            "title": "Maxpages",
+            "type": "integer"
+          },
+          "maxUploadMb": {
+            "title": "Maxuploadmb",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "maxUploadMb",
+          "maxPages",
+          "maxChars"
+        ],
+        "title": "KnowledgeCeilingsOut",
+        "type": "object"
+      },
+      "KnowledgeDocumentOut": {
+        "properties": {
+          "chunkCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunkcount"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "fileType": {
+            "title": "Filetype",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "knowledgeBaseId": {
+            "title": "Knowledgebaseid",
+            "type": "string"
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount"
+          },
+          "parser": {
+            "title": "Parser",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "title": "Sizebytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "processing",
+              "ready",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "knowledgeBaseId",
+          "filename",
+          "fileType",
+          "sizeBytes",
+          "parser",
+          "status",
+          "errorCode",
+          "pageCount",
+          "chunkCount",
+          "truncated",
+          "createdAt"
+        ],
+        "title": "KnowledgeDocumentOut",
+        "type": "object"
+      },
+      "KnowledgeLimitsOut": {
+        "properties": {
+          "maxDocumentsPerKb": {
+            "title": "Maxdocumentsperkb",
+            "type": "integer"
+          },
+          "maxKbPerUser": {
+            "title": "Maxkbperuser",
+            "type": "integer"
+          },
+          "maxPages": {
+            "title": "Maxpages",
+            "type": "integer"
+          },
+          "maxUploadMb": {
+            "title": "Maxuploadmb",
+            "type": "integer"
+          },
+          "userQuotaMb": {
+            "title": "Userquotamb",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "maxUploadMb",
+          "maxPages",
+          "maxDocumentsPerKb",
+          "maxKbPerUser",
+          "userQuotaMb"
+        ],
+        "title": "KnowledgeLimitsOut",
+        "type": "object"
+      },
+      "KnowledgePassageOut": {
+        "properties": {
+          "chunkId": {
+            "title": "Chunkid",
+            "type": "integer"
+          },
+          "documentId": {
+            "title": "Documentid",
+            "type": "string"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunkId",
+          "documentId",
+          "filename",
+          "text",
+          "page",
+          "heading",
+          "score"
+        ],
+        "title": "KnowledgePassageOut",
+        "type": "object"
+      },
+      "KnowledgeSearchIn": {
+        "properties": {
+          "query": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "KnowledgeSearchIn",
+        "type": "object"
+      },
+      "KnowledgeStatusOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "doclingAvailable": {
+            "default": false,
+            "title": "Doclingavailable",
+            "type": "boolean"
+          },
+          "fileTypes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Filetypes",
+            "type": "array"
+          },
+          "limits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeLimitsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "localModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Localmodel"
+          },
+          "reachable": {
+            "default": false,
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "usageBytes": {
+            "default": 0,
+            "title": "Usagebytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "KnowledgeStatusOut",
+        "type": "object"
+      },
+      "LatencyTestMessageIn": {
+        "properties": {
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "llmApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llmapikeyid"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "streaming": {
+            "default": true,
+            "title": "Streaming",
+            "type": "boolean"
+          },
+          "ttsMode": {
+            "default": "project",
+            "enum": [
+              "project",
+              "local",
+              "none"
+            ],
+            "title": "Ttsmode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "LatencyTestMessageIn",
+        "type": "object"
+      },
+      "LatencyTranscriptionOut": {
+        "properties": {
+          "engine": {
+            "title": "Engine",
+            "type": "string"
+          },
+          "sttMs": {
+            "title": "Sttms",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "sttMs",
+          "engine"
+        ],
+        "title": "LatencyTranscriptionOut",
         "type": "object"
       },
       "LocalTtsStatusOut": {
@@ -1102,6 +1658,26 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "knowledgeBaseIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Knowledgebaseids",
+            "type": "array"
+          },
+          "knowledgeMode": {
+            "enum": [
+              "off",
+              "supplement",
+              "strict"
+            ],
+            "title": "Knowledgemode",
+            "type": "string"
+          },
+          "knowledgeTopK": {
+            "title": "Knowledgetopk",
+            "type": "integer"
           },
           "llmApiKeyId": {
             "anyOf": [
@@ -1349,6 +1925,9 @@
           "passwordProtected",
           "requireVisitorName",
           "startAudioUrl",
+          "knowledgeMode",
+          "knowledgeTopK",
+          "knowledgeBaseIds",
           "createdAt"
         ],
         "title": "ProjectOut",
@@ -1466,6 +2045,50 @@
               }
             ],
             "title": "Gradelevel"
+          },
+          "knowledgeBaseIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledgebaseids"
+          },
+          "knowledgeMode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "off",
+                  "supplement",
+                  "strict"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledgemode"
+          },
+          "knowledgeTopK": {
+            "anyOf": [
+              {
+                "maximum": 8.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledgetopk"
           },
           "llmApiKeyId": {
             "anyOf": [
@@ -1751,6 +2374,14 @@
               }
             ],
             "title": "Defaultapibase"
+          },
+          "embeddingModels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProviderModelOut"
+            },
+            "title": "Embeddingmodels",
+            "type": "array"
           },
           "hint": {
             "anyOf": [
@@ -2285,6 +2916,34 @@
             ],
             "title": "Providerstreet"
           },
+          "ragMaxCharsPerDocument": {
+            "title": "Ragmaxcharsperdocument",
+            "type": "integer"
+          },
+          "ragMaxDocumentsPerKb": {
+            "title": "Ragmaxdocumentsperkb",
+            "type": "integer"
+          },
+          "ragMaxKbPerUser": {
+            "title": "Ragmaxkbperuser",
+            "type": "integer"
+          },
+          "ragMaxPages": {
+            "title": "Ragmaxpages",
+            "type": "integer"
+          },
+          "ragMaxUploadMb": {
+            "title": "Ragmaxuploadmb",
+            "type": "integer"
+          },
+          "ragUploadRatePer10Min": {
+            "title": "Raguploadrateper10Min",
+            "type": "integer"
+          },
+          "ragUserQuotaMb": {
+            "title": "Raguserquotamb",
+            "type": "integer"
+          },
           "registrationEnabled": {
             "title": "Registrationenabled",
             "type": "boolean"
@@ -2298,7 +2957,14 @@
           "providerCity",
           "providerCountry",
           "registrationEnabled",
-          "conversationRetentionDays"
+          "conversationRetentionDays",
+          "ragMaxUploadMb",
+          "ragMaxPages",
+          "ragMaxCharsPerDocument",
+          "ragMaxDocumentsPerKb",
+          "ragMaxKbPerUser",
+          "ragUserQuotaMb",
+          "ragUploadRatePer10Min"
         ],
         "title": "SiteSettingsOut",
         "type": "object"
@@ -2382,6 +3048,94 @@
             ],
             "title": "Providerstreet"
           },
+          "ragMaxCharsPerDocument": {
+            "anyOf": [
+              {
+                "minimum": 1000.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragmaxcharsperdocument"
+          },
+          "ragMaxDocumentsPerKb": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragmaxdocumentsperkb"
+          },
+          "ragMaxKbPerUser": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragmaxkbperuser"
+          },
+          "ragMaxPages": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragmaxpages"
+          },
+          "ragMaxUploadMb": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ragmaxuploadmb"
+          },
+          "ragUploadRatePer10Min": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raguploadrateper10Min"
+          },
+          "ragUserQuotaMb": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raguserquotamb"
+          },
           "registrationEnabled": {
             "anyOf": [
               {
@@ -2413,6 +3167,90 @@
           "value"
         ],
         "title": "TimeseriesPointOut",
+        "type": "object"
+      },
+      "TranscriptMessageOut": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptSourceOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "TranscriptMessageOut",
+        "type": "object"
+      },
+      "TranscriptSourceOut": {
+        "properties": {
+          "documentId": {
+            "title": "Documentid",
+            "type": "string"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "documentId",
+          "filename",
+          "page"
+        ],
+        "title": "TranscriptSourceOut",
         "type": "object"
       },
       "TranscriptionOut": {
@@ -2648,6 +3486,22 @@
               }
             },
             "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/knowledge-ceilings": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeCeilingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
           }
         }
       }
@@ -3898,6 +4752,302 @@
         }
       }
     },
+    "/api/v1/knowledge-bases": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeBaseOut"
+                  },
+                  "title": "Response List Knowledge Bases Api V1 Knowledge Bases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeBaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-bases/{kb_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeBaseUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-bases/{kb_id}/documents": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeDocumentOut"
+                  },
+                  "title": "Response List Documents Api V1 Knowledge Bases  Kb Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_api_v1_knowledge_bases__kb_id__documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-bases/{kb_id}/search": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kb_id",
+            "required": true,
+            "schema": {
+              "title": "Kb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeSearchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgePassageOut"
+                  },
+                  "title": "Response Search Knowledge Base Api V1 Knowledge Bases  Kb Id  Search Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-documents/{document_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "delete": {
         "responses": {
@@ -4399,6 +5549,98 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/latency-test/messages": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LatencyTestMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/latency-test/transcriptions": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_latency_test_transcription_api_v1_projects__project_id__latency_test_transcriptions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatencyTranscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/publication": {
       "delete": {
         "parameters": [
@@ -4585,6 +5827,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LocalTtsStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/rag-status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeStatusOut"
                 }
               }
             },
