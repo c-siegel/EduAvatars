@@ -1,0 +1,29 @@
+[project]
+name = "eduavatars-rag-eval"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+    # Pinned to a minor: Ragas changed its API in each of 0.1, 0.2, 0.3 and 0.4. All Ragas calls
+    # live in app/scoring.py, app/judge.py and app/language.py, so an upgrade touches only those.
+    "ragas>=0.4.3,<0.5",
+    # Ragas 0.4 still imports langchain_community.chat_models.vertexai, which 0.4 removed — with
+    # a newer langchain-community, `import ragas` fails outright.
+    "langchain-community<0.4",
+    # The judge LLM goes through litellm (any provider the teacher has a key for), with instructor
+    # turning its replies into Ragas' structured outputs (app/judge.py).
+    "litellm>=1.48",
+    "instructor>=1.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

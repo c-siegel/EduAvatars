@@ -110,6 +110,45 @@ services:
       retries: 3
       start_period: 30s
 
+  # Optional quality evaluation of the knowledge base (Ragas, see rag-eval/): scores the avatar's
+  # answers to test questions and drafts test questions from the material, using one of the
+  # teacher's own LLM keys as judge. Only started with the "rag-eval" profile next to "rag" — set
+  # COMPOSE_PROFILES=rag,rag-eval and RAG_EVALUATION_ENABLED=true in .env. Publishes no port.
+  rag-eval:
+    image: chsiegel/eduavatars:rag-eval
+    pull_policy: always
+    profiles: ["rag-eval"]
+    # Only the shared token, not the whole .env: this container needs none of the backend's
+    # secrets, and the judge's key arrives per request.
+    environment:
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-}
+      RAG_SERVICE_URL: http://rag:8090
+      RAG_EVAL_DATA_DIR: /data
+      RAG_EVAL_CONCURRENCY: ${RAG_EVAL_CONCURRENCY:-4}
+      RAG_EVAL_LLM_TIMEOUT_SECONDS: ${RAG_EVAL_LLM_TIMEOUT_SECONDS:-120}
+      RAGAS_DO_NOT_TRACK: "true"
+      HOME: /tmp
+    user: "${PUID:-568}:${PGID:-568}"
+    volumes:
+      - ${EDUAVATARS_DATA_DIR}/rag-eval:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    depends_on:
+      # The backend's entrypoint creates rag-eval/ in the data directory (see the rag service).
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8091/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   # Optional layout-aware document parsing for the knowledge base: tables, multi-column pages and
   # OCR for scanned PDFs. A large image (PyTorch, several GB) — only started with the "docling"
   # profile next to "rag", and only used once DOCLING_URL=http://docling:5001 is set in .env.

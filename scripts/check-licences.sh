@@ -1,6 +1,6 @@
 #!/bin/sh
 # Licence gate: fails if any installed Python package isn't under one of the permissive licences
-# below. Run it inside an environment that has exactly one component installed (backend/ or rag/)
+# below. Run it inside an environment that has exactly one component installed (backend/, rag/ or rag-eval/)
 # plus pip-licenses — CI does this for every release (see .github/workflows/docker-publish.yml):
 #
 #   pip install pip-licenses && sh scripts/check-licences.sh
@@ -18,7 +18,7 @@ ALLOWED="MIT;BSD;Apache;ISC;PSF;Python Software Foundation;Mozilla Public Licens
 #   tiktoken         MIT (licence text in the package metadata)
 #   py_rust_stemmers MIT (github.com/qdrant/py-rust-stemmers; a fastembed dependency)
 # Plus our own packages and the CI-only tooling that runs this check.
-REVIEWED="tiktoken py_rust_stemmers py-rust-stemmers eduavatars-backend eduavatars-rag pip-licenses prettytable wcwidth tomli"
+REVIEWED="tiktoken py_rust_stemmers py-rust-stemmers eduavatars-backend eduavatars-rag eduavatars-rag-eval pip-licenses prettytable wcwidth tomli"
 
 # shellcheck disable=SC2086
 pip-licenses --partial-match --allow-only="$ALLOWED" --ignore-packages $REVIEWED >/dev/null

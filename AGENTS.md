@@ -15,7 +15,8 @@ an analytics dashboard.
 - `frontend/` — React 18 + TypeScript + Vite, three.js via TalkingHead, react-query, i18next.
   Details: [frontend/README.md](frontend/README.md)
 - `local-tts/` — optional self-hosted TTS sidecar. `rag/` — optional knowledge service (RAG):
-  parsing, embeddings, search; see [rag/README.md](rag/README.md). `docker/` — images, Compose, Caddy.
+  parsing, embeddings, search; see [rag/README.md](rag/README.md). `rag-eval/` — optional Ragas quality evaluation of
+  the knowledge base; see [rag-eval/README.md](rag-eval/README.md). `docker/` — images, Compose, Caddy.
 
 ## Commands
 
@@ -28,6 +29,10 @@ python -m alembic revision --autogenerate -m "Add foo to project"   # then revie
 uvicorn app.main:app --reload             # http://localhost:8000, needs .env (see README)
 
 # Knowledge service (from rag/) — tests fake the embedding model, nothing is downloaded
+pip install -e ".[dev]"
+RAG_SERVICE_TOKEN=test python -m pytest
+
+# Evaluation service (from rag-eval/) — tests fake the judge LLM at the litellm seam
 pip install -e ".[dev]"
 RAG_SERVICE_TOKEN=test python -m pytest
 
