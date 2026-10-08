@@ -103,5 +103,7 @@ Changing the model later doesn't convert existing knowledge bases: they have to 
 | `DELETE /documents/{id}`, `DELETE /knowledge-bases/{id}` | Remove everything derived from them. Idempotent. |
 | `POST /query` | Hybrid search over some knowledge bases. |
 | `POST /embedding-test` | Embed one word with an API config (the dashboard's key test). |
+| `POST /embed` | Embed up to 64 texts with a knowledge base's embedding config (used by the evaluation service, [rag-eval/](../rag-eval/)). |
+| `GET /knowledge-bases/{id}/chunks?sample=30` | A random sample of a knowledge base's passages, to draft test questions from. |
 
 Errors come back as `{"detail": {"code": "..."}}` with the codes in `app/errors.py`.

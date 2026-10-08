@@ -101,6 +101,26 @@ class QueryResponse(BaseModel):
     passages: list[Passage]
 
 
+class EmbedRequest(BaseModel):
+    """Used by the optional evaluation service (rag-eval), which scores answer relevancy with the
+    knowledge base's own embedding model."""
+
+    texts: list[str] = Field(min_length=1, max_length=64)
+    embedding: EmbeddingConfig
+
+
+class EmbedResponse(BaseModel):
+    vectors: list[list[float]]
+
+
+class ChunkSample(BaseModel):
+    chunk_id: int
+    document_id: str
+    text: str
+    page: int | None
+    heading: str | None
+
+
 class EmbeddingTestRequest(BaseModel):
     embedding: EmbeddingConfig
 

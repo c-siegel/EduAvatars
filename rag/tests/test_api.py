@@ -259,3 +259,15 @@ def test_deleting_a_failed_document_removes_its_original(client):
     wait_and_status(client)
     client.delete("/documents/doc-1", headers=AUTH)
     assert not os.listdir(os.path.join(settings.rag_data_dir, "incoming"))
+
+
+def test_embed_and_chunk_sample_for_the_evaluation_service(client):
+    upload(client, "a.txt", "Erster Absatz über Vulkane.\n\nZweiter Absatz.".encode())
+    wait_and_status(client)
+    response = client.post("/embed", headers=AUTH, json={"texts": ["Vulkane", "Lava"], "embedding": local_config()})
+    vectors = response.json()["vectors"]
+    assert len(vectors) == 2 and len(vectors[0]) == embedding.LOCAL_MODELS[LOCAL_MODEL].dimensions
+    chunks = client.get("/knowledge-bases/kb-1/chunks?sample=5", headers=AUTH).json()
+    assert chunks and chunks[0]["document_id"] == "doc-1" and "Vulkane" in chunks[0]["text"]
+    assert client.get("/knowledge-bases/unknown/chunks", headers=AUTH).json() == []
+    assert client.get("/knowledge-bases/kb-1/chunks").status_code == 401

@@ -325,6 +325,13 @@ class Store:
             ).fetchall()
         return [(row["chunk_id"], row["rank"]) for row in rows]
 
+    def sample_chunks(self, kb_id: str, n: int) -> list[sqlite3.Row]:
+        """Up to `n` random chunks of a KB — the raw material for generated test questions."""
+        with self._lock:
+            return self._db.execute(
+                "SELECT * FROM chunks WHERE knowledge_base_id = ? ORDER BY random() LIMIT ?", (kb_id, n)
+            ).fetchall()
+
     def chunks_by_id(self, chunk_ids: list[int]) -> dict[int, sqlite3.Row]:
         if not chunk_ids:
             return {}

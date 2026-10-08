@@ -34,7 +34,10 @@ from app.parsing.docling import docling_available
 from app.parsing.sandbox import warn_if_unsandboxed
 from app.schemas import (
     Capabilities,
+    ChunkSample,
     DocumentMeta,
+    EmbedRequest,
+    EmbedResponse,
     DocumentStatus,
     EmbeddingTestRequest,
     EmbeddingTestResponse,
@@ -178,6 +181,27 @@ def delete_knowledge_base(knowledge_base_id: str, request: Request) -> None:
 def query(body: QueryRequest, request: Request) -> QueryResponse:
     passages = hybrid_search(_store(request), body.knowledge_base_ids, body.query, body.top_k, body.embedding)
     return QueryResponse(passages=passages)
+
+
+@app.post("/embed", response_model=EmbedResponse, dependencies=[Depends(require_token)])
+def embed(body: EmbedRequest) -> EmbedResponse:
+    """Embed a few texts with a knowledge base's model (query-style, like a student question)."""
+    embedder = get_embedder(body.embedding)
+    return EmbedResponse(vectors=[embedder.embed_query(text) for text in body.texts])
+
+
+@app.get(
+    "/knowledge-bases/{knowledge_base_id}/chunks",
+    response_model=list[ChunkSample],
+    dependencies=[Depends(require_token)],
+)
+def sample_chunks(knowledge_base_id: str, request: Request, sample: int = 30) -> list[ChunkSample]:
+    """A random sample of a knowledge base's passages, for generating test questions."""
+    rows = _store(request).sample_chunks(knowledge_base_id, max(1, min(sample, 200)))
+    return [
+        ChunkSample(chunk_id=r["id"], document_id=r["document_id"], text=r["text"], page=r["page"], heading=r["heading"])
+        for r in rows
+    ]
 
 
 @app.post("/embedding-test", response_model=EmbeddingTestResponse, dependencies=[Depends(require_token)])
