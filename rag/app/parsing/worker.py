@@ -9,14 +9,28 @@ network — it only ever sees the bytes it was handed.
 Limits are set here rather than via subprocess's preexec_fn: preexec_fn isn't safe in a process
 that runs threads (the ingest workers do), while a fresh interpreter setting limits on itself
 before doing anything else is equivalent and safe.
+
+POSIX resource limits don't exist on Windows (no `resource` module), where the service only runs in
+local development: there, only the parent's wall-clock timeout applies (see sandbox.py, which
+logs this once at startup). Production runs in the Linux container, with every limit.
 """
 
 import json
-import resource
 import sys
+
+try:
+    import resource
+except ImportError:  # Windows
+    resource = None
+
+
+def limits_supported() -> bool:
+    return resource is not None
 
 
 def _limit_resources(memory_mb: int, cpu_seconds: int) -> None:
+    if resource is None:
+        return
     memory = memory_mb * 1024 * 1024
     resource.setrlimit(resource.RLIMIT_AS, (memory, memory))
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))

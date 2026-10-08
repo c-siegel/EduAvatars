@@ -31,6 +31,7 @@ from app.errors import RagError
 from app.ingest import Ingestor, Job, write_incoming
 from app.parsing.checks import FILE_TYPES, detect_file_type
 from app.parsing.docling import docling_available
+from app.parsing.sandbox import warn_if_unsandboxed
 from app.schemas import (
     Capabilities,
     DocumentMeta,
@@ -51,6 +52,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     local_model_spec()  # fail at startup, not at the first upload, if the model isn't allowed
+    warn_if_unsandboxed()
     Path(settings.rag_data_dir).mkdir(parents=True, exist_ok=True)
     store = Store(str(Path(settings.rag_data_dir) / "rag.db"))
     ingestor = Ingestor(store, settings.rag_data_dir)

@@ -25,6 +25,21 @@ from app.schemas import DocumentLimits
 
 logger = logging.getLogger(__name__)
 
+# Not defined on Windows, where the CPU limit doesn't exist either (see worker.py).
+_SIGXCPU = getattr(signal, "SIGXCPU", None)
+
+
+def warn_if_unsandboxed() -> None:
+    """Called once at startup: say plainly when parsing runs without resource limits."""
+    from app.parsing.worker import limits_supported
+
+    if not limits_supported():
+        logger.warning(
+            "This platform has no POSIX resource limits (Windows): uploaded documents are parsed "
+            "with a wall-clock timeout only, without memory or CPU limits. Fine for local "
+            "development; run the knowledge service in its Linux container for real use."
+        )
+
 
 def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> ParseResult:
     cpu_seconds = settings.rag_parse_timeout_s
@@ -42,6 +57,9 @@ def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> Par
         str(cpu_seconds),
     ]
     env = {"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8", "PYTHONIOENCODING": "utf-8"}
+    # Windows' Python needs SYSTEMROOT to initialise (random numbers, sockets) in a bare environment.
+    if "SYSTEMROOT" in os.environ:
+        env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
     try:
         completed = subprocess.run(
             command,
@@ -65,7 +83,7 @@ def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> Par
             completed.returncode,
             completed.stderr.decode("utf-8", errors="replace")[-500:].strip() or "(no output)",
         )
-        if completed.returncode == -signal.SIGXCPU:
+        if _SIGXCPU is not None and completed.returncode == -_SIGXCPU:
             # RLIMIT_CPU is the only source of SIGXCPU (the worker sets soft = hard, so it's sent
             # before any SIGKILL) — the teacher should read "took too long", not "too complex".
             raise RagError(errors.PARSE_TIMEOUT)

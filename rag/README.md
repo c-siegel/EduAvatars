@@ -50,6 +50,11 @@ Then set the same `RAG_SERVICE_TOKEN`, `RAG_ENABLED=true` and
 `RAG_SERVICE_URL=http://127.0.0.1:8090` for the backend. The first upload downloads the local
 embedding model from Hugging Face into `$RAG_DATA_DIR/model-cache` (about 600 MB for the default).
 
+On Windows the service runs too, but without the parser's memory and CPU limits (they rely on
+POSIX `resource` limits, which Windows doesn't have; only the time limit applies). That's fine for
+trying it out with your own files — the service logs a warning at startup — but real deployments
+should use the Linux container.
+
 Tests (no model download, no provider calls — see `tests/conftest.py`):
 
 ```bash

@@ -151,3 +151,23 @@ def test_cpu_limit_reports_a_timeout(monkeypatch):
 
     monkeypatch.setattr(sandbox.subprocess, "run", killed)
     assert _code("txt", b"hello") == errors.PARSE_TIMEOUT
+
+
+def test_worker_runs_without_posix_resource_limits(monkeypatch):
+    # Regression: on Windows there's no `resource` module; importing it crashed every parse.
+    from app.parsing import worker
+
+    monkeypatch.setattr(worker, "resource", None)
+    assert worker.limits_supported() is False
+    worker._limit_resources(1024, 120)  # a no-op, not an error
+
+
+def test_crash_without_sigxcpu_is_reported_cleanly(monkeypatch):
+    # Regression: on Windows signal.SIGXCPU doesn't exist, and looking it up crashed the error path.
+    import subprocess
+
+    monkeypatch.setattr(sandbox, "_SIGXCPU", None)
+    monkeypatch.setattr(
+        sandbox.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, b"", b"Traceback ...")
+    )
+    assert _code("txt", b"hello") == errors.FILE_TOO_COMPLEX
