@@ -1,6 +1,6 @@
 import type { ChatLayout, SpokenLanguage, SttServerEngine } from "@/types/project";
 
-// Lokaler Assistenten-Zustand für Screen 1e.
+// Local wizard state for screen 1e.
 export interface ConfiguratorDraft {
   title: string;
   description: string;
@@ -12,7 +12,7 @@ export interface ConfiguratorDraft {
   gradeLevel: string;
   preprompt: string;
   startPrompt: string;
-  // Die Modellwahl läuft über den eingerichteten Schlüssel (Screen 1g); null = noch keiner gewählt.
+  // The model is chosen via the configured key (screen 1g); null = none chosen yet.
   llmApiKeyId: string | null;
   temperature: number;
   topP: number;

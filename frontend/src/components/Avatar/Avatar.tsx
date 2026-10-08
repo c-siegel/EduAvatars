@@ -8,8 +8,8 @@ interface AvatarProps {
   selected?: boolean;
 }
 
-// Kreis mit Initialen (Fallback, solange keine echten Avatar-Bilder/3D-Renderings angebunden
-// sind — 3D-Rendering ist bewusst nicht Teil dieser Struktur).
+// Circle with initials (fallback as long as no real avatar images/3D renderings are wired up —
+// 3D rendering is deliberately not part of this structure).
 export function Avatar({ name, src, size = "md", selected }: AvatarProps) {
   const classes = [styles.avatar, styles[size], selected && styles.selected].filter(Boolean).join(" ");
   return (

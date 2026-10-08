@@ -30,11 +30,11 @@
   position: relative;
 }
 
-/* Der Kreis (Avatar, size="md") ist mit 2.75rem deutlich kleiner als die Grid-Spalte — ohne dies
-   würde .tileWrap (und damit der daran positionierte Löschbutton) auf die volle, breitere
-   Zellbreite gestreckt, statt sich eng um den sichtbaren Kreis zu legen (der Button "schwebt" dann
-   rechts daneben statt an dessen Rand zu sitzen). Nur für die Avatar-Bibliothek nötig — die
-   rechteckigen Hintergrundbild-Kacheln füllen ihre Zelle bewusst vollständig aus. */
+/* At 2.75rem the circle (Avatar, size="md") is clearly smaller than the grid column — without
+   this, .tileWrap (and the delete button positioned on it) would stretch to the full, wider cell
+   width instead of hugging the visible circle (the button then "floats" to the right of it
+   instead of sitting on its edge). Only needed for the avatar library — the rectangular
+   background image tiles deliberately fill their cell completely. */
 .avatarGrid .tileWrap {
   justify-self: center;
   align-self: center;

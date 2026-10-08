@@ -116,10 +116,10 @@
   margin: var(--space-4);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  /* Nur noch die Fallback-Fläche für "kein Hintergrundbild gewählt" — das Bild selbst rendert jetzt
-     TalkingHeadAvatar direkt (.backdrop, Geschwister des Canvas im selben Elternteil), damit beide
-     garantiert exakt dieselbe Box haben. Eine reine Flächenfarbe hat dieses Problem nicht (kein
-     "Kanten"-Versatz bei einer einfarbigen Fläche möglich), bleibt also hier. */
+  /* Only the fallback surface for "no background image chosen" now — TalkingHeadAvatar renders
+     the image itself (.backdrop, a sibling of the canvas in the same parent), so both are
+     guaranteed to have exactly the same box. A plain colour fill doesn't have that problem (no
+     "edge" offset is possible on a single-colour surface), so it stays here. */
   background-color: var(--neutral-200);
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-sm);
@@ -131,22 +131,22 @@
   font-size: 0.875rem;
 }
 
-/* Der eigentliche Bug hinter der Lücke: .avatarStage ist ein Flex-Container mit
-   justify-content: center — ohne dies würde TalkingHeadAvatar (erstes Kind) nur seine natürliche
-   Höhe bekommen und dann vertikal zentriert, statt den Rahmen auszufüllen. Der Canvas selbst reicht
-   dadurch gar nicht bis zum unteren Rand, weshalb Zuschnitt innerhalb des Canvas (siehe
-   TalkingHeadAvatar.module.css) daran nichts ändern konnte. Fix: das erste Kind wächst über den
-   verfügbaren Platz — .stageControls zählt nicht mit (siehe unten, position: absolute). */
+/* The actual bug behind the gap: .avatarStage is a flex container with
+   justify-content: center — without this, TalkingHeadAvatar (first child) would only get its
+   natural height and then be centered vertically instead of filling the frame. The canvas itself
+   then doesn't reach the bottom edge at all, which is why cropping inside the canvas (see
+   TalkingHeadAvatar.module.css) couldn't change anything. Fix: the first child grows into the
+   available space — .stageControls doesn't count (see below, position: absolute). */
 .avatarStage > :first-child {
   flex: 1;
   min-height: 0;
   min-width: 0;
 }
 
-/* Mikro + Stumm-Schalter schweben als eigene Steuerleiste über dem Avatar-Canvas, mittig unten —
-   wie die Steuerleiste unter dem Video in einer Videokonferenz. Absolute Positionierung statt
-   Flex-Fluss, damit dieselbe Regel auf Mobile UND Desktop funktioniert, unabhängig davon, ob
-   .avatarStage gerade Reihe oder Spalte ist (kein eigener Media-Query-Zweig nötig). */
+/* Mic + mute toggle float as their own control bar over the avatar canvas, bottom centre — like
+   the control bar under the video in a video call. Absolute positioning instead of flex flow, so
+   the same rule works on mobile AND desktop, regardless of whether .avatarStage is currently a row
+   or a column (no separate media query branch needed). */
 .stageControls {
   position: absolute;
   left: 50%;
@@ -180,18 +180,18 @@
   cursor: pointer;
 }
 
-/* Eingeklappter Chat: das Avatar-Fenster wächst über den Platz, den sonst die Chat-Spalte belegt
-   hätte, statt bei der festen Mobile-Höhe (40vh) zu bleiben — wie bei einer Videokonferenz, die den
-   Videobereich vergrößert, sobald man das Chat-Panel schließt. Auf Desktop übernimmt das schon
-   .avatarStages eigenes flex: 2 automatisch, sobald .chatColumn aus dem Fluss verschwindet. */
+/* Collapsed chat: the avatar window grows into the space the chat column would otherwise take,
+   instead of staying at the fixed mobile height (40vh) — like a video call that enlarges the
+   video area as soon as you close the chat panel. On desktop, .avatarStage's own flex: 2 already
+   does this automatically once .chatColumn leaves the flow. */
 .avatarStageFull {
   flex: 1;
   height: auto;
 }
 
-/* Ausziehbarer Griff zwischen Avatar und Chat-Spalte — als normales Flex-Geschwister sitzt er in
-   beiden Layouts automatisch genau an der Nahtstelle (unter dem Avatar auf Mobile, siehe Media
-   Query unten für die gedrehte Desktop-Variante). */
+/* Pull-out handle between avatar and chat column — as a normal flex sibling it automatically sits
+   exactly at the seam in both layouts (below the avatar on mobile, see the media query below for
+   the rotated desktop variant). */
 .chatToggle {
   flex-shrink: 0;
   display: flex;
@@ -214,9 +214,9 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* Ohne das würde ein Flex-Item nie schmaler als sein Inhalt — eine lange, nicht umbrechende Zeile
-     in einer Nachricht (z.B. eine URL oder ein langes Wort) zwingt die Spalte sonst zu wachsen und
-     drückt .avatarStage daneben zusammen, statt innerhalb der Spalte selbst zu umbrechen/scrollen. */
+  /* Without this a flex item would never get narrower than its content — a long, non-wrapping
+     line in a message (e.g. a URL or a long word) would otherwise force the column to grow and
+     squeeze .avatarStage next to it, instead of wrapping/scrolling inside the column itself. */
   min-width: 0;
 }
 
@@ -362,8 +362,8 @@
   color: var(--color-accent-contrast);
 }
 
-/* Nur während der Aufnahme selbst gedimmt (Button bleibt anklickbar, um sie zu beenden) — die
-   Transkription danach läuft über :disabled + .spinIcon weiter unten. */
+/* Dimmed only during the recording itself (the button stays clickable to stop it) — the
+   transcription afterwards is handled by :disabled + .spinIcon further down. */
 .recording:disabled {
   opacity: 1;
 }
@@ -495,9 +495,9 @@
     height: auto;
   }
 
-  /* Griff dreht auf Desktop von einer horizontalen Leiste unter dem Avatar zu einer vertikalen
-     Leiste neben der (ein- oder ausgeklappten) Chat-Spalte — dieselbe Nahtstellen-Position wie auf
-     Mobile, nur entlang der anderen Achse, da .body hier zur Zeile wird (siehe unten). */
+  /* On desktop the handle turns from a horizontal bar below the avatar into a vertical bar next
+     to the (expanded or collapsed) chat column — the same seam position as on mobile, just along
+     the other axis, since .body becomes a row here (see below). */
   .chatToggle {
     height: auto;
     width: 1.75rem;

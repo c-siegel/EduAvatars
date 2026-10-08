@@ -6,7 +6,7 @@ import { numberLocale } from "@/lib/format";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import styles from "./Imprint.module.css";
 
-// Screen — Impressum (Legal Notice)
+// Screen — legal notice (Impressum)
 export function ImprintPage() {
   const { t } = useTranslation();
   // Every value here is admin-editable (Dashboard → Admin → Site settings) rather than hardcoded,

@@ -68,7 +68,7 @@ const ADMIN_NAV_ITEM: NavConfigItem = {
   isActive: (p) => p.startsWith("/dashboard/admin"),
 };
 
-// Layout für 1c–1h — Sidebar (Desktop) bzw. Hamburger + Overlay-Drawer (<1024px) + Content-Bereich
+// Layout for 1c–1h — sidebar (desktop) or hamburger + overlay drawer (<1024px) + content area
 export function DashboardShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const location = useLocation();

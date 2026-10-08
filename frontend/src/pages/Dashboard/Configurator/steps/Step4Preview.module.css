@@ -3,8 +3,8 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: var(--space-4);
-  /* Nur noch Fallback-Fläche für "kein Hintergrundbild gewählt" — das Bild selbst rendert jetzt
-     TalkingHeadAvatar direkt (.backdrop), siehe TalkingHeadAvatar.module.css/.tsx. */
+  /* Only the fallback surface for "no background image chosen" now — TalkingHeadAvatar renders
+     the image itself (.backdrop), see TalkingHeadAvatar.module.css/.tsx. */
   background-color: var(--neutral-200);
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-sm);

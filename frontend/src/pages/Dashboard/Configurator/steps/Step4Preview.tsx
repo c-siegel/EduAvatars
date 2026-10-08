@@ -22,8 +22,8 @@ interface Step4Props {
   hasUnsavedChanges: boolean;
 }
 
-// Schritt 4 — Live-Vorschau: testet den Avatar mit dem zuletzt GESPEICHERTEN Preprompt/Modell
-// (die Backend-Route arbeitet auf den persistierten Projektdaten, nicht auf dem Entwurf).
+// Step 4 — live preview: tests the avatar with the most recently SAVED preprompt/model (the
+// backend route works on the persisted project data, not on the draft).
 export function Step4Preview({
   projectId,
   title,
@@ -64,7 +64,7 @@ export function Step4Preview({
     const trimmed = input.trim();
     if (!trimmed || sendMutation.isPending) return;
     avatarRef.current?.startThinking();
-    // history = der bisherige Verlauf VOR dieser neuen Nachricht, siehe PublicChat/index.tsx.
+    // history = the conversation so far BEFORE this new message, see PublicChat/index.tsx.
     sendMutation.mutate({ message: trimmed, history: messages });
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");

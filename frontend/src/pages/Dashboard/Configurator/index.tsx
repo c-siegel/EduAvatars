@@ -38,9 +38,8 @@ function toDraft(project: Project): ConfiguratorDraft {
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
     startPrompt: project.startPrompt ?? "",
-    // Keine Vorauswahl mehr: das Dropdown in Schritt 3 listet nur eingerichtete Schlüssel, und
-    // solange keiner gewählt wurde, zeigt es einen Platzhalter statt eines Modells, das die
-    // Lehrkraft gar nicht bestätigt hat.
+    // No preselection anymore: the dropdown in step 3 only lists configured keys, and as long as
+    // none is chosen it shows a placeholder instead of a model the teacher never confirmed.
     llmApiKeyId: project.llmApiKeyId,
     temperature: project.temperature,
     topP: project.topP,
@@ -63,8 +62,8 @@ function toDraft(project: Project): ConfiguratorDraft {
   };
 }
 
-// Vergleicht nur die tatsächlich persistierten Felder (goal/personality sind rein Schritt-1-lokal,
-// siehe types.ts) — bestimmt, ob der "ungespeicherte Änderungen"-Hinweis in Schritt 4 erscheint.
+// Compares only the fields that are actually persisted (goal/personality are purely local to
+// step 1, see types.ts) — decides whether the "unsaved changes" notice appears in step 4.
 function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
   return (
     draft.title !== project.title ||
@@ -98,8 +97,8 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
   );
 }
 
-// Screen 1e — Tab Konfigurator: 5-Schritte-Assistent (Aussehen → Technik → Verhalten → Vorschau →
-// Veröffentlichung). Abweichung von der einspaltigen Wireframe-Referenz auf ausdrücklichen Wunsch.
+// Screen 1e — configurator tab: 5-step wizard (appearance → technical → behaviour → preview →
+// publish). Deviates from the single-column wireframe reference on explicit request.
 export function ConfiguratorPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -116,7 +115,7 @@ export function ConfiguratorPage() {
   const [draft, setDraft] = useState<ConfiguratorDraft | null>(null);
   const [prepromptGenerated, setPrepromptGenerated] = useState(false);
 
-  // Entwurf einmalig aus den geladenen Projektdaten initialisieren.
+  // Initialize the draft once from the loaded project data.
   useEffect(() => {
     if (projectQuery.data && !draft) {
       setDraft(toDraft(projectQuery.data));
@@ -224,9 +223,9 @@ export function ConfiguratorPage() {
           />
         )}
         {step === 4 && (
-          // avatarModelUrl/ttsEnabled kommen bewusst von project (gespeicherter Stand), nicht vom
-          // draft — die Preview-Chat-Route (/projects/{id}/chat/messages) arbeitet serverseitig auch auf den persistierten
-          // Projektdaten (siehe Kommentar in Step4Preview.tsx).
+          // avatarModelUrl/ttsEnabled deliberately come from project (the saved state), not from
+          // draft — the preview chat route (/projects/{id}/chat/messages) also works on the
+          // persisted project data on the server side (see the comment in Step4Preview.tsx).
           <Step4Preview
             projectId={projectId}
             title={draft.title}

@@ -19,8 +19,8 @@ import type { SttServerEngine } from "@/types/project";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
 
-// Platzhalter, solange noch kein Schlüssel gewählt wurde — ein <select> braucht immer einen
-// kontrollierten String-Wert, draft.llmApiKeyId ist aber null, bis die Lehrkraft wählt.
+// Placeholder while no key has been chosen yet — a <select> always needs a controlled string
+// value, but draft.llmApiKeyId is null until the teacher picks one.
 const NO_MODEL_SELECTED = "";
 
 // The STT dropdown mixes two kinds of choices in one <select>: a server engine (stored in
@@ -29,18 +29,18 @@ const NO_MODEL_SELECTED = "";
 const STT_ENGINE_PREFIX = "engine:";
 const STT_SERVER_ENGINES: SttServerEngine[] = ["whisper", "parakeet"];
 
-// Obergrenzen der beiden Sampling-Parameter — dieselben Werte prüft das Backend nochmal
-// (MAX_TEMPERATURE/MAX_TOP_P in backend/app/features/projects/schemas.py), damit ein per API
-// gesetzter Wert nicht am Slider vorbeikommt.
+// Upper bounds of the two sampling parameters — the backend checks the same values again
+// (MAX_TEMPERATURE/MAX_TOP_P in backend/app/features/projects/schemas.py), so a value set via
+// the API can't get around the slider.
 const MAX_TEMPERATURE = 2;
 const MAX_TOP_P = 1;
 
-// Schritt 2 — Technik: Modell, Sampling (Temperatur/Top P), Sprache, TTS und STT.
+// Step 2 — technical: model, sampling (temperature/top P), language, TTS and STT.
 export function Step2Technical({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
-  // Zur Auswahl stehen ausschließlich tatsächlich eingerichtete Schlüssel vom Typ LLM (Screen 1g).
-  // Vorher listete das Dropdown eine feste Modell-Liste, was Verfügbarkeit suggerierte, die erst
-  // nach dem Hinterlegen eines passenden Keys bestand — der Fehler fiel dann erst im Chat auf.
+  // Only keys of type LLM that are actually configured are offered (screen 1g). Previously the
+  // dropdown listed a fixed model list, which suggested availability that only existed once a
+  // matching key had been added — the error then only showed up in the chat.
   const providersQuery = useProviders();
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
   const localTtsStatusQuery = useLocalTtsStatus();
@@ -58,11 +58,11 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   const browserSttAvailable = browserSttStatusQuery.data?.available ?? false;
   const specs = providersQuery.data ?? [];
   const llmKeys = (keysQuery.data ?? []).filter((key) => key.keyType === "llm" && key.modelId);
-  // TTS wählt wie das LLM-Modell direkt einen eingerichteten Key (Screen 1g), keine feste
-  // Anbieter-Liste mehr — deckt damit automatisch jeden Anbieter ab, den die Registry für TTS
-  // vorsieht (OpenAI, Gemini, Cartesia, eigener OpenAI-kompatibler Endpunkt).
-  // Anbieter mit fest verdrahtetem TTS-Modell (ttsModelFixed) speichern bewusst kein modelId
-  // (siehe ApiKeyForm.tsx) — die brauchen hier trotzdem als wählbar zu gelten.
+  // Like the LLM model, TTS picks a configured key directly (screen 1g), no fixed provider list
+  // anymore — this automatically covers every provider the registry supports for TTS (OpenAI,
+  // Gemini, Cartesia, a custom OpenAI-compatible endpoint).
+  // Providers with a hard-wired TTS model (ttsModelFixed) deliberately store no modelId (see
+  // ApiKeyForm.tsx) — they still need to count as selectable here.
   const ttsKeys = (keysQuery.data ?? []).filter((key) => {
     if (key.keyType !== "tts") return false;
     if (key.modelId) return true;

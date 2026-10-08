@@ -5,14 +5,14 @@ export interface Project {
   title: string;
   description: string | null;
   status: ProjectStatus;
-  // Referenz auf den im API-Dashboard eingerichteten Schlüssel — die eigentliche Modellwahl.
+  // Reference to the key set up in the API dashboard — the actual model choice.
   llmApiKeyId: string | null;
-  // Vom Backend daraus abgeleiteter litellm-Modellstring (nur lesend, u.a. für Projektkarten und
-  // den Modellfilter der Auswertung).
+  // litellm model string the backend derives from it (read-only, used e.g. for project cards and
+  // the analytics model filter).
   llmModel: string | null;
   preprompt: string;
-  // Erste Nachricht des Avatars, Schüler:innen sichtbar UND dem Modell als Kontext mitgegeben
-  // (siehe backend features/ai/llm/__init__.py::complete). Leer = generische Begrüßung.
+  // The avatar's first message, visible to students AND given to the model as context (see backend
+  // features/ai/llm/__init__.py::complete). Empty = generic greeting.
   startPrompt: string;
   // URL of the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see the "Generate audio" button in Step3Behavior and pages/PublicChat/index.tsx's autoplay.
@@ -26,8 +26,8 @@ export interface Project {
   avatarModelUrl: string | null;
   avatarBackgroundUrl: string | null;
   gradeLevel: string | null;
-  // Sampling-Parameter, 1:1 an den Anbieter durchgereicht (siehe backend features/ai/llm
-  // ::_sampling_params). temperature 0.0-2.0, topP 0.0-1.0 — dieselben Grenzen prüft das Backend.
+  // Sampling parameters, passed 1:1 to the provider (see backend features/ai/llm
+  // ::_sampling_params). temperature 0.0-2.0, topP 0.0-1.0 — the backend checks the same limits.
   temperature: number;
   topP: number;
   published: boolean;
@@ -38,7 +38,7 @@ export interface Project {
   surveyAfterUrl: string | null;
   surveyAfterEnabled: boolean;
   ttsEnabled: boolean;
-  // Referenz auf einen Key vom Typ TTS (analog llmApiKeyId).
+  // Reference to a key of type TTS (like llmApiKeyId).
   ttsApiKeyId: string | null;
   ttsVoice: string | null;
   // A clip from the owner's voice library (Dashboard → Voices) that local TTS clones the voice

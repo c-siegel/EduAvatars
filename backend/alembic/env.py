@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
-from app.db import base  # noqa: F401  (registriert alle Modelle für Autogenerate)
+from app.db import base  # noqa: F401  (registers every model for autogenerate)
 from sqlmodel import SQLModel
 
 config = context.config
