@@ -86,9 +86,16 @@ yourself before you push.
 
 ## Git and pull requests
 
+- Branch flow: `claude/working-branch` (agent work) → PR → `working-branch` (development) → PR by
+  the maintainer → `main` (current release). Never commit or push to `main` or `working-branch`.
 - Develop new features and bug fixes on the branch `claude/working-branch`. Never create a new
   branch per session.
+- Before starting work, merge `origin/working-branch` (and `origin/main`, if it has anything new)
+  into `claude/working-branch`, so PRs are based on the current state and don't conflict.
 - Pull requests always target `working-branch`.
+- `.github/workflows/sync-working-branch.yml` merges `main` back into `working-branch` after every
+  push to `main`. Merge `working-branch → main` PRs with a merge commit, not squash or rebase:
+  rewritten commits make the branches look diverged and cause phantom conflicts.
 - Commit subjects: imperative, sentence case, no prefix, no trailing period — e.g.
   "Add avatar-only and chat-only layouts for the public chat". The body explains why.
 - Never add the Claude session link or a `Claude-Session:` line to commit messages or PR
