@@ -7,15 +7,15 @@ import { findProvider } from "@/lib/providers";
 import { ALL_KEY_TYPES, KEY_TYPE_LABELS, type ApiKey, type ApiKeyInput, type ApiKeyType, type ProviderSpec } from "@/types/apiKey";
 import styles from "./ApiDashboard.module.css";
 
-// Sentinel im Modell-Dropdown: "keine der kuratierten Optionen" — blendet das Freitextfeld ein und
-// wird nie ans Backend geschickt.
+// Sentinel in the model dropdown: "none of the curated options" — shows the free-text field and is
+// never sent to the backend.
 const FREE_TEXT_MODEL = "__free_text_model__";
-// Solange nichts gewählt ist, steht ein Platzhalter im Dropdown statt einer scheinbaren Auswahl.
+// While nothing is chosen, the dropdown shows a placeholder instead of a seeming selection.
 const NO_MODEL = "";
 
 interface ApiKeyFormProps {
   specs: ProviderSpec[];
-  // Gesetzt = Bearbeiten eines bestehenden Eintrags, sonst Anlegen.
+  // Set = editing an existing entry, otherwise creating a new one.
   editing?: ApiKey;
   pending: boolean;
   errorMessage?: string;
@@ -39,15 +39,15 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
   // dropdown never shows an endpoint that couldn't be used for what was just picked.
   const eligibleSpecs = specs.filter((option) => option.supportedTypes.includes(keyType));
   const spec = findProvider(eligibleSpecs, provider) ?? eligibleSpecs[0] ?? specs[0];
-  // Ein hinterlegtes Modell, das nicht in der kuratierten Liste steht, wurde als Freitext
-  // eingetragen (oder der Anbieter pflegt gar keine Liste) — dann zeigt das Dropdown den
-  // Freitext-Eintrag als aktiv und das Eingabefeld darunter.
+  // A stored model that isn't in the curated list was entered as free text (or the provider keeps
+  // no list at all) — then the dropdown shows the free-text entry as active, with the input field
+  // below it.
   const isCuratedModel = spec.models.some((model) => model.value === modelId);
   const showFreeTextModel = freeTextModel || (Boolean(modelId) && !isCuratedModel);
   const modelSelectValue = showFreeTextModel ? FREE_TEXT_MODEL : modelId || NO_MODEL;
-  // TTS-Anbieter mit fest verdrahtetem Sprachausgabe-Modell (spec.ttsModelFixed, z. B.
-  // OpenAI/Gemini) brauchen keine Modellwahl — features/ai/tts nutzt dort ohnehin immer dasselbe
-  // Modell, nie das hier hinterlegte model_id.
+  // TTS providers with a hard-wired speech output model (spec.ttsModelFixed, e.g. OpenAI/Gemini)
+  // need no model choice — features/ai/tts always uses the same model for them anyway, never the
+  // model_id stored here.
   // (Same for an STT provider with spec.sttModelFixed, currently GWDG SAIA.)
   const showModelField = !((keyType === "tts" && spec.ttsModelFixed) || (keyType === "stt" && spec.sttModelFixed));
 
@@ -55,12 +55,12 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
     const nextSpec = findProvider(specs, nextProvider);
     if (!nextSpec) return;
     setProvider(nextProvider);
-    // Vorbelegen, ohne eine eigene Eingabe zu überschreiben: nur wenn das Feld leer ist oder noch
-    // exakt den Default des vorher gewählten Anbieters enthält.
+    // Prefill without overwriting the user's own input: only if the field is empty or still
+    // contains exactly the default of the previously chosen provider.
     if (!apiBase.trim() || apiBase === spec.defaultApiBase) {
       setApiBase(nextSpec.defaultApiBase ?? "");
     }
-    // Modelle sind anbieterspezifisch — eine Auswahl des alten Anbieters ergibt hier keinen Sinn.
+    // Models are provider-specific — a selection from the old provider makes no sense here.
     if (!nextSpec.models.some((model) => model.value === modelId)) {
       setModelId("");
       setFreeTextModel(false);
@@ -166,7 +166,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
             value={modelSelectValue}
             onChange={(e) => {
               const value = e.target.value;
-              // Der Freitext-Eintrag löscht die Auswahl und blendet stattdessen das Eingabefeld ein.
+              // The free-text entry clears the selection and shows the input field instead.
               setModelId(value === FREE_TEXT_MODEL || value === NO_MODEL ? "" : value);
               setFreeTextModel(value === FREE_TEXT_MODEL);
             }}

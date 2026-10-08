@@ -1,13 +1,13 @@
 import type { TalkingHead } from "@met4citizen/talkinghead";
 
-// HeadAudio (frontend/public/headaudio/, siehe ATTRIBUTION.md) berechnet Lipsync-Visemes in
-// Echtzeit direkt aus dem abgespielten Audiosignal — unabhängig von Sprache/TTS-Anbieter, ohne
-// Wort-Timestamps. Ersetzt TalkingHeads eigenen text-basierten Viseme-Pfad (der Wort-Timing
-// bräuchte, das litellm.speech() nicht liefert). Setup entspricht 1:1 dem offiziellen
-// Integrationsbeispiel aus der HeadAudio-Doku.
+// HeadAudio (frontend/public/headaudio/, see ATTRIBUTION.md) computes lipsync visemes in real time
+// directly from the audio being played — independent of language/TTS provider, without word
+// timestamps. Replaces TalkingHead's own text-based viseme path (which would need word timing that
+// litellm.speech() doesn't provide). Setup matches the official integration example from the
+// HeadAudio docs 1:1.
 //
-// Bekannte Einschränkung: das einzige vortrainierte Modell (model-en-mixed.bin) wurde nur auf
-// englischen Stimmen trainiert — für Deutsch unverifiziert.
+// Known limitation: the only pretrained model (model-en-mixed.bin) was trained on English voices
+// only — unverified for German.
 
 interface HeadAudioNodeLike extends AudioNode {
   loadModel(url: string): Promise<void>;
@@ -15,27 +15,26 @@ interface HeadAudioNodeLike extends AudioNode {
   onvalue: (key: string, value: number) => void;
 }
 
-// Vite blockiert im Dev-Server jeden import(), der (auch dynamisch/nicht statisch analysierbar)
-// durch seine Transform-Middleware läuft und auf eine Datei unter public/ zeigt ("This file is in
-// /public ... should not be imported from source code"), selbst mit @vite-ignore — das unterdrückt
-// nur die Analyse-Warnung, nicht diese Laufzeit-Sperre. new Function(...) erzeugt einen echten,
-// nativen Browser-import() außerhalb von Vites Modulgraph, den die Middleware nie zu Gesicht
-// bekommt — verifiziert per Playwright gegen den echten Dev-Server.
+// In the dev server, Vite blocks every import() that passes through its transform middleware
+// (even dynamic/not statically analyzable ones) and points to a file under public/ ("This file is
+// in /public ... should not be imported from source code"), even with @vite-ignore — that only
+// suppresses the analysis warning, not this runtime block. new Function(...) creates a real,
+// native browser import() outside Vite's module graph that the middleware never sees — verified
+// with Playwright against the real dev server.
 const nativeImport = new Function("specifier", "return import(specifier)") as (
   specifier: string,
 ) => Promise<{ HeadAudio: new (context: AudioContext, options: Record<string, unknown>) => HeadAudioNodeLike }>;
 
 export async function attachHeadAudio(head: TalkingHead): Promise<void> {
   await head.audioCtx.audioWorklet.addModule("/headaudio/headworklet.mjs");
-  // Laufzeit-URL unter public/, kein Vite-Modulgraph-Eintrag (kein npm-Paket vorhanden, siehe
-  // ATTRIBUTION.md). Klasse heißt "HeadAudio" (verifiziert im Quellcode) — die HeadAudio-Doku
-  // selbst spricht generisch von einem "audio worklet node", das ist kein exakter Klassenname.
-  // Fertig aufgelöste URL statt "/headaudio/headaudio.mjs": Code aus new Function(...) hat keine
-  // eigene Skript-URL, und Firefox löst ein dynamisches import() darin gegen eine file://-Basis auf
-  // statt gegen die Dokument-Basis. Der Browser bricht dann mit "Content at https://… may not load
-  // or link to file:///…" ab — Chromium (und damit die Playwright-Verifikation oben) und WebKit
-  // nehmen die Dokument-Basis und waren davon nie betroffen. Eine absolute URL lässt dem Browser
-  // gar keine Basis mehr zu wählen.
+  // Runtime URL under public/, no Vite module graph entry (no npm package exists, see
+  // ATTRIBUTION.md). The class is called "HeadAudio" (verified in the source) — the HeadAudio docs
+  // themselves speak generically of an "audio worklet node", which is not an exact class name.
+  // A fully resolved URL instead of "/headaudio/headaudio.mjs": code from new Function(...) has no
+  // script URL of its own, and Firefox resolves a dynamic import() in it against a file:// base
+  // instead of the document base. The browser then aborts with "Content at https://… may not load
+  // or link to file:///…" — Chromium (and so the Playwright verification above) and WebKit use the
+  // document base and were never affected. An absolute URL leaves the browser no base to choose.
   const { HeadAudio } = await nativeImport(new URL("/headaudio/headaudio.mjs", location.origin).href);
   const headaudio: HeadAudioNodeLike = new HeadAudio(head.audioCtx, {
     parameterData: { vadGateActiveDb: -40, vadGateInactiveDb: -60 },

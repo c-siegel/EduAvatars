@@ -6,7 +6,7 @@ import { numberLocale } from "@/lib/format";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import styles from "./Privacy.module.css";
 
-/** Screen — Datenschutzerklärung (privacy policy), required before any student data is processed. */
+/** Screen — privacy policy (Datenschutzerklärung), required before any student data is processed. */
 export function PrivacyPage() {
   const { t } = useTranslation();
   // The controller's contact details come from the same admin-editable site settings as the

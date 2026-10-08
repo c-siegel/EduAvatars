@@ -24,12 +24,12 @@ const PAGE_SIZE = 4;
 
 const DEFAULT_FILTERS: AnalyticsFilters = { projectId: null, periodDays: 30, model: null };
 
-// Screen 1f — Tab Auswertung
+// Screen 1f — analytics tab
 export function AnalyticsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  // "Filter anwenden" im Wireframe impliziert zwei Zustände: was gerade in den Dropdowns steht
-  // (draft) und was tatsächlich die Abfragen bestimmt (applied) — erst der Button übernimmt.
+  // "Apply filter" in the wireframe implies two states: what's currently in the dropdowns (draft)
+  // and what actually drives the queries (applied) — only the button transfers one to the other.
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [granularity, setGranularity] = useState<Granularity>("week");
@@ -78,9 +78,8 @@ export function AnalyticsPage() {
   });
 
   const stats = statsQuery.data;
-  // Nur Modelle anbieten, die tatsächlich in Projekten stehen — der Filter vergleicht serverseitig
-  // exakt gegen Project.llm_model, eine feste Liste würde also auch Optionen ohne jeden Treffer
-  // enthalten.
+  // Only offer models that are actually used in projects — the filter compares exactly against
+  // Project.llm_model on the server, so a fixed list would also contain options without any match.
   const usedModels = [...new Set((projectsQuery.data ?? []).map((p) => p.llmModel).filter(Boolean))].sort();
   const sessions = sessionsQuery.data?.items ?? [];
   const totalSessions = sessionsQuery.data?.total ?? 0;

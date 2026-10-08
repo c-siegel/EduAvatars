@@ -18,8 +18,8 @@ declare module "@met4citizen/talkinghead" {
     // releases the WebGL context (via WEBGL_lose_context) and disposes the Three.js renderer — see
     // TalkingHeadAvatar.tsx's unmount cleanup for why that distinction matters.
     dispose(): void;
-    // Für die HeadAudio-Integration (components/TalkingHeadAvatar/headAudioIntegration.ts):
-    // audioCtx/audioSpeechGainNode sind öffentliche Properties, die TalkingHead selbst verwaltet.
+    // For the HeadAudio integration (components/TalkingHeadAvatar/headAudioIntegration.ts):
+    // audioCtx/audioSpeechGainNode are public properties that TalkingHead manages itself.
     audioCtx: AudioContext;
     audioSpeechGainNode: AudioNode;
     mtAvatar: Record<string, { newvalue: number; needsUpdate: boolean }>;

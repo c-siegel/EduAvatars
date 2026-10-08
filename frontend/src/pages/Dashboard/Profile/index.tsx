@@ -16,7 +16,7 @@ const PICTURE_ACCEPT = "image/png,image/jpeg,image/webp";
 
 const MIN_PASSWORD_LENGTH = 10;
 
-// Screen 1h — Tab Profileinstellungen
+// Screen 1h — profile settings tab
 export function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ export function ProfilePage() {
 
   function handlePictureChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    event.target.value = ""; // erlaubt erneute Auswahl derselben Datei nach einem Fehler
+    event.target.value = ""; // allows selecting the same file again after an error
     if (!file) return;
     setPictureError(null);
     uploadPictureMutation.mutate(file);

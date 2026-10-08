@@ -29,7 +29,7 @@ interface Step3Props extends StepProps {
   onSaveDraft: () => Promise<Project>;
 }
 
-// Schritt 3 — Verhalten: Zielgruppe, Preprompt (mit generischem Standardtext) und Startnachricht.
+// Step 3 — behaviour: target audience, preprompt (with a generic default text) and start message.
 export function Step3Behavior({
   draft,
   onChange,
@@ -86,7 +86,7 @@ export function Step3Behavior({
       onChange({ preprompt: defaultPreprompt });
       onGenerated();
     }
-    // Nur beim ersten Betreten von Schritt 3 automatisch befüllen, solange preprompt leer ist.
+    // Only prefill automatically on the first visit to step 3, while preprompt is empty.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoGenerate]);
 

@@ -10,7 +10,7 @@ import styles from "@/pages/AuthShell.module.css";
 
 const MIN_PASSWORD_LENGTH = 10;
 
-// Screen 1b (Erweiterung) — Ziel des Links aus der Passwort-Reset-E-Mail (?token=...).
+// Screen 1b (extension) — target of the link in the password reset email (?token=...).
 export function ResetPasswordPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();

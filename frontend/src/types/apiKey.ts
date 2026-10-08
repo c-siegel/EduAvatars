@@ -1,6 +1,6 @@
 export type ApiKeyStatus = "active" | "unverified" | "error";
 
-// Wofür ein Schlüssel eingerichtet ist.
+// What a key is set up for.
 export type ApiKeyType = "llm" | "tts" | "stt";
 
 export const KEY_TYPE_LABELS: Record<ApiKeyType, string> = {
@@ -13,7 +13,7 @@ export const KEY_TYPE_LABELS: Record<ApiKeyType, string> = {
 // so it can't be derived from a single provider's supportedTypes).
 export const ALL_KEY_TYPES: ApiKeyType[] = ["llm", "tts", "stt"];
 
-// Generischer Anbieter für alles, was die OpenAI-API nachbildet (früher der Sonderfall "custom").
+// Generic provider for anything that mimics the OpenAI API (formerly the special case "custom").
 export const OPENAI_COMPATIBLE_PROVIDER = "openai_compatible";
 
 export interface ApiKey {
@@ -34,7 +34,7 @@ export interface ApiKeyInput {
   provider: string;
   keyType: ApiKeyType;
   label: string | null;
-  // Beim Bearbeiten heißt leer: gespeicherten Schlüssel unverändert lassen.
+  // When editing, empty means: leave the stored key unchanged.
   apiKey: string;
   apiBase: string | null;
   modelId: string | null;
@@ -46,8 +46,8 @@ export interface ProviderModel {
   label: string;
 }
 
-// Anbieter-Stammdaten aus der Backend-Registry (app/core/providers.py) — Vorbelegungen, Pflichtfelder
-// und kuratierte Modelle werden nicht im Frontend gepflegt, damit beide Seiten nicht auseinanderlaufen.
+// Provider reference data from the backend registry (app/core/providers.py) — defaults, required
+// fields and curated models aren't maintained in the frontend, so the two sides can't drift apart.
 export interface ProviderSpec {
   value: string;
   label: string;
@@ -58,11 +58,11 @@ export interface ProviderSpec {
   supportedTypes: ApiKeyType[];
   models: ProviderModel[];
   hint: string | null;
-  // Sprachausgabe-Modell steht bei diesem Anbieter fest (z. B. OpenAI/Gemini) — das Modellfeld
-  // wird für TTS-Keys dann ausgeblendet, statt eine Auswahl zu erzwingen, die nie verwendet wird.
+  // The speech output model is fixed for this provider (e.g. OpenAI/Gemini) — the model field is
+  // then hidden for TTS keys instead of forcing a choice that's never used.
   ttsModelFixed: boolean;
   // Same idea for STT keys (currently only GWDG SAIA, which has exactly one Whisper model).
   sttModelFixed: boolean;
-  // Zusätzliches Pflichtfeld "Arcana-ID" im Key-Formular (aktuell nur GWDG Arcana).
+  // Extra required field "Arcana ID" in the key form (currently only GWDG Arcana).
   requiresArcanaId: boolean;
 }

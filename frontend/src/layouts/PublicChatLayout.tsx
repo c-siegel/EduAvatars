@@ -10,7 +10,7 @@ interface PublicChatLayoutProps {
   showLanguageSwitcher?: boolean;
 }
 
-// Layout für 1i — unabhängig von DashboardShell/Auth, mobile-first
+// Layout for 1i — independent of DashboardShell/auth, mobile-first
 export function PublicChatLayout({ children, showLanguageSwitcher = true }: PublicChatLayoutProps) {
   return (
     <div className={styles.page}>

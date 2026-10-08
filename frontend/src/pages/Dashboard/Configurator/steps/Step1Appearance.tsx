@@ -40,8 +40,8 @@ function isSelectedAvatar(draft: ConfiguratorDraft, avatar: AvatarModel): boolea
   return draft.avatarModelId === ref.avatarModelId && draft.builtinAvatar === ref.builtinAvatar;
 }
 
-// Schritt 1 — Aussehen: Projektname, Kurzbeschreibung, Avatar-Bibliothek, Hintergrundbild und
-// Chat-Sichtbarkeit.
+// Step 1 — appearance: project name, short description, avatar library, background image and
+// chat visibility.
 export function Step1Appearance({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -56,11 +56,11 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
       queryClient.invalidateQueries({ queryKey: ["avatar-models"] });
       onChange(avatarRef(avatar));
 
-      // Vorschaubild ist ein reines Extra (Grid zeigt sonst weiter Initialen) — Fehler hier
-      // (z.B. kein WebGL) sollen den eigentlichen Upload nicht als fehlgeschlagen erscheinen lassen.
-      // Dynamischer Import: three.js/GLTFLoader sollen nicht ins eager geladene Haupt-Bundle des
-      // Konfigurators wandern, sondern nur bei einem tatsächlichen Avatar-Upload nachgeladen werden
-      // (gleiches Muster wie der dynamische Import von @met4citizen/talkinghead in TalkingHeadAvatar.tsx).
+      // The thumbnail is purely a bonus (the grid otherwise keeps showing initials) — errors here
+      // (e.g. no WebGL) must not make the actual upload look failed.
+      // Dynamic import: three.js/GLTFLoader shouldn't end up in the configurator's eagerly loaded
+      // main bundle, only be loaded when an avatar is actually uploaded (same pattern as the
+      // dynamic import of @met4citizen/talkinghead in TalkingHeadAvatar.tsx).
       try {
         const { captureAvatarThumbnail } = await import("@/lib/avatarThumbnail");
         const thumbnail = await captureAvatarThumbnail(avatar.fileUrl);
@@ -104,8 +104,8 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
 
   function handleRemoveAvatar(avatar: AvatarModel) {
     if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: avatar.name }))) return;
-    // Ausgewählter Avatar wird beim Löschen mit abgewählt, statt im Entwurf auf eine nicht mehr
-    // existierende Datei zeigen zu lassen.
+    // The selected avatar is deselected on delete too, instead of leaving the draft pointing at a
+    // file that no longer exists.
     if (isSelectedAvatar(draft, avatar)) onChange({ avatarModelId: null, builtinAvatar: null });
     removeAvatarMutation.mutate(avatar.id);
   }
@@ -151,9 +151,9 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
                 aria-label={avatar.name}
                 aria-pressed={isSelectedAvatar(draft, avatar)}
               >
-                {/* fileUrl zeigt auf die .glb-3D-Datei selbst, kein Bild — die Kachel zeigt stattdessen
-                    das einmalig client-seitig gerenderte Vorschaubild (thumbnailUrl), solange keins
-                    vorhanden ist (z.B. noch in Erzeugung oder fehlgeschlagen) bleibt es bei Initialen. */}
+                {/* fileUrl points at the .glb 3D file itself, not an image — the tile shows the
+                    preview image rendered once on the client (thumbnailUrl) instead; while there
+                    is none (e.g. still being generated, or failed) it stays at initials. */}
                 <Avatar
                   name={avatar.name}
                   src={avatar.thumbnailUrl ?? undefined}

@@ -15,7 +15,7 @@ export const avatarLibraryApi = {
     formData.append("file", file);
     return apiClient.upload<AvatarModel>("/avatars", formData);
   },
-  // Einmalig client-seitig gerendertes PNG (siehe lib/avatarThumbnail.ts) — kein Nutzer-Upload.
+  // PNG rendered once on the client (see lib/avatarThumbnail.ts) — not a user upload.
   uploadThumbnail: (avatarId: string, thumbnail: Blob) => {
     const formData = new FormData();
     formData.append("file", thumbnail, "thumbnail.png");

@@ -2,8 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  /* Breiter als die übrigen Dashboard-Seiten: die Schlüsseltabelle trägt seit der Typ- und
-     Modellspalte sieben Spalten. */
+  /* Wider than the other dashboard pages: since the type and model columns were added, the key
+     table has seven columns. */
   max-width: 1080px;
 }
 
@@ -47,8 +47,8 @@
   font-size: 0.875rem;
 }
 
-/* Name (1) und Schlüssel (4) tragen den variablen Inhalt; Typ, Modell, Datum, Status und die
-   Aktionen bekommen nur so viel Breite wie nötig, damit dort nichts umbricht. */
+/* Name (1) and key (4) carry the variable content; type, model, date, status and the actions only
+   get as much width as they need, so nothing wraps there. */
 .table th:first-child {
   min-width: 11rem;
 }
@@ -164,8 +164,8 @@
   color: var(--text-tertiary);
 }
 
-/* Endpunkt-Adressen können beliebig lang werden — in der Tabelle abschneiden statt die Spalte
-   aufblähen; die vollständige Adresse steht im Bearbeiten-Formular. */
+/* Endpoint addresses can get arbitrarily long — truncate in the table instead of bloating the
+   column; the full address is in the edit form. */
 .table .hint {
   max-width: 16rem;
   overflow: hidden;

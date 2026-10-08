@@ -10,8 +10,8 @@ import { errorMessage } from "@/api/client";
 import { AuthShell } from "@/pages/AuthShell";
 import styles from "@/pages/AuthShell.module.css";
 
-// Screen 1b — Registrierung (gleiche Card wie Login, plus Namensfeld + Zustimmungs-Checkbox,
-// siehe Wireframe-Annotation zu 1b)
+// Screen 1b — registration (same card as login, plus a name field + consent checkbox, see the
+// wireframe annotation on 1b)
 export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -22,8 +22,9 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Config-Schalter für den internen Startbetrieb (siehe REGISTRATION_ENABLED in backend/app/core/config.py) —
-  // solange offen, kein Formular rendern (kein Flackern), sondern gleich den Hinweis zeigen.
+  // Config switch for the internal launch phase (see REGISTRATION_ENABLED in
+  // backend/app/core/config.py) — while closed, render no form (no flicker) but show the notice
+  // right away.
   const { data: registrationStatus, isLoading: statusLoading } = useQuery({
     queryKey: ["auth", "registration-status"],
     queryFn: authApi.registrationStatus,

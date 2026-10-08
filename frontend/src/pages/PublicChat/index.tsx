@@ -257,16 +257,16 @@ function SttLoadingScreen({ progress, onStart }: { progress: LoadProgress | null
   );
 }
 
-// Screen 1i — Öffentliche Schüler-Chat-Seite (mobile-first, kein Login). Gesprochene Nachrichten
-// werden nach der Transkription automatisch gesendet (kein manueller "Senden"-Klick nötig).
+// Screen 1i — public student chat page (mobile-first, no login). Spoken messages are sent
+// automatically after transcription (no manual "Send" click needed).
 export function PublicChatPage() {
   const { t } = useTranslation();
   const { projectSlug } = useParams<{ projectSlug: string }>();
   const slug = projectSlug!;
   const [searchParams] = useSearchParams();
-  // Schaltet NUR das Latenz-Konsolen-Log unten (nicht das Auto-Senden selbst) frei — sonst bekäme
-  // jede echte Besucherin bei jeder Sprachnachricht eine technische Zeitaufschlüsselung in ihre
-  // Browser-Konsole, ohne dass sie danach gefragt hat. Siehe frontend/README.md ("Debugging").
+  // Unlocks ONLY the latency console log below (not auto-send itself) — otherwise every real
+  // visitor would get a technical timing breakdown in their browser console with every voice
+  // message, without asking for it. See frontend/README.md ("Debugging").
   const latencyTestEnabled = searchParams.get("latencyTest") === "1";
 
   const queryClient = useQueryClient();
@@ -316,11 +316,11 @@ export function PublicChatPage() {
   // so a student who denied the permission prompt had no idea why voice input silently did
   // nothing.
   const [micErrorKey, setMicErrorKey] = useState<string | null>(null);
-  // null = noch keine manuelle Stufen-Wahl getroffen; die tatsächliche Anfangsstufe hängt vom
-  // geladenen Projekt ab (Vor-Umfrage konfiguriert?), siehe `stage` weiter unten.
+  // null = no manual stage choice made yet; the actual initial stage depends on the loaded
+  // project (pre-survey configured?), see `stage` further down.
   const [manualStage, setManualStage] = useState<Stage | null>(null);
-  // null = noch nicht aus dem geladenen Projekt initialisiert (siehe useEffect unten); danach
-  // steuert nur noch der eigene Klick der Besucherin, das Projekt-Default wirkt nur als Startwert.
+  // null = not yet initialized from the loaded project (see useEffect below); after that only the
+  // visitor's own click controls it, the project default only acts as the starting value.
   const [chatOpen, setChatOpen] = useState<boolean | null>(null);
 
   const avatarRef = useRef<TalkingHeadAvatarHandle>(null);
@@ -412,9 +412,9 @@ export function PublicChatPage() {
   // shown after it in the composer.
   const inputBeforeRecordingRef = useRef("");
   const threadRef = useRef<HTMLDivElement>(null);
-  // Überlebt die Kette toggleRecording -> recorder.onstop -> transcribeSegment, die über mehrere
-  // async Hops läuft — nur so lässt sich der ursprüngliche "Sprechende"-Zeitpunkt bis zum
-  // Latenz-Log durchreichen. { micStopAt } statt nur eine Zahl, damit spätere Felder ergänzbar sind.
+  // Survives the chain toggleRecording -> recorder.onstop -> transcribeSegment, which runs over
+  // several async hops — the only way to pass the original "end of speech" time through to the
+  // latency log. { micStopAt } instead of a bare number, so later fields can be added.
   const latencyRef = useRef<{ micStopAt: number } | null>(null);
 
   // One AbortController per in-flight turn, created in runSend() — read by mutationFn (passed into
@@ -843,12 +843,12 @@ export function PublicChatPage() {
     }
   }
 
-  // Funktion für Sprachaufnahme im Browser
+  // Voice recording in the browser
   async function toggleRecording() {
-    // Wird bereits aufgenommen -> Aufnahme stoppen
+    // Already recording -> stop the recording
     if (isRecording) {
-      // Frühestmöglicher, eindeutiger "Sprechende"-Zeitpunkt (Klick-Handler) fürs Latenz-Log —
-      // Erfassen ist praktisch kostenlos, daher immer, nicht nur wenn latencyTestEnabled.
+      // Earliest unambiguous "end of speech" time (click handler) for the latency log —
+      // capturing it is practically free, so always, not only when latencyTestEnabled.
       latencyRef.current = { micStopAt: performance.now() };
       if (streamingSessionRef.current) {
         void stopStreamingRecording(streamingSessionRef.current);
@@ -870,12 +870,12 @@ export function PublicChatPage() {
     // a new recording now would let its final sendMessage() call silently no-op against the
     // pending-mutation guard below, dropping the just-recorded message with no feedback.
     if (sendMutation.isPending) return;
-    // Wird nicht aufgenommen, Erlaubnis fürs Gerät einholen, aufnehmen und transkribieren
+    // Not recording yet: get the device permission, record and transcribe
     setMicErrorKey(null);
     try {
       const engine = sttEngineRef.current;
       if (engine?.status === "ready" && (await startStreamingRecording(engine))) return;
-      // Mikrofonanfrage mit warten auf Erlaubnis. echoCancellation/noiseSuppression requested
+      // Request the microphone and wait for permission. echoCancellation/noiseSuppression requested
       // explicitly rather than left to the browser's own default — bare booleans (not wrapped in
       // `exact`) are "ideal" constraints per the Media Capture spec, so a device that can't honor
       // them still grants the stream instead of getUserMedia rejecting. Suppressing steady room
@@ -929,8 +929,8 @@ export function PublicChatPage() {
   function sendMessage(text: string, latency?: SendLatency) {
     const trimmed = text.trim();
     if (!trimmed || sendMutation.isPending) return;
-    // history = der bisherige Verlauf VOR dieser neuen Nachricht (messages ist an dieser Stelle noch
-    // der alte State-Wert, das setMessages darunter wirkt erst beim nächsten Render).
+    // history = the conversation so far BEFORE this new message (messages is still the old state
+    // value here; the setMessages below only takes effect on the next render).
     runSend(trimmed, messages, latency);
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
@@ -999,14 +999,14 @@ export function PublicChatPage() {
     }
   }
 
-  // Nach jeder neuen Nachricht (und beim Erscheinen/Verschwinden der Typing-Bubble) automatisch ans
-  // Ende des Threads scrollen, statt den Nutzer selbst nachscrollen zu lassen.
+  // After every new message (and when the typing bubble appears/disappears) scroll to the end of
+  // the thread automatically instead of making the user scroll down themselves.
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, sendMutation.isPending]);
 
-  // Einmalige Übernahme des im Konfigurator gesetzten Anfangszustands, sobald das Projekt geladen
-  // ist — danach bestimmt nur noch setChatOpen (Klick auf den Griff) den Zustand.
+  // One-time adoption of the initial state set in the configurator once the project has loaded —
+  // after that only setChatOpen (a click on the handle) determines the state.
   // Not while password-locked: that response carries no layout yet (it'd always read as the default).
   useEffect(() => {
     const tutor = tutorQuery.data;
@@ -1106,7 +1106,7 @@ export function PublicChatPage() {
     tutor.chatLayout === "avatar_only" && !(tutor.ttsEnabled && tutor.sttEnabled) ? "avatar_chat" : tutor.chatLayout;
   const showAvatar = chatLayout !== "chat_only";
   const hasChat = chatLayout !== "avatar_only";
-  // Fallback nur für den allerersten Render, bevor der Initialisierungs-Effekt oben gelaufen ist.
+  // Fallback only for the very first render, before the initialization effect above has run.
   const isChatOpen = hasChat && (!showAvatar || (chatOpen ?? chatLayout !== "avatar_chat_collapsed"));
 
   function endChat() {
@@ -1376,10 +1376,9 @@ export function PublicChatPage() {
                     {input}
                   </p>
                 )}
-                {/* Mikro (Eingabe) + Stopp (Unterbrechen der Antwort) liegen bewusst hier, nicht im
-                    Composer der Chat-Spalte — wie die Steuerleiste unter dem Video in einer
-                    Videokonferenz bleiben sie so unabhängig vom Ein-/Ausklapp-Zustand des Chats immer
-                    erreichbar. */}
+                {/* Mic (input) + stop (interrupting the reply) deliberately sit here, not in the
+                    chat column's composer — like the control bar under the video in a video call,
+                    they stay reachable regardless of whether the chat is expanded or collapsed. */}
                 {(tutor.sttEnabled || sendMutation.isPending) && (
                   <div className={styles.stageControls}>
                     {micButton}
@@ -1406,11 +1405,11 @@ export function PublicChatPage() {
               tutor.ttsEnabled && <AudioOnlySpeaker onReady={handleAvatarReady} ref={avatarRef} />
             )}
 
-            {/* Ausziehbarer Griff am Rand der Chat-Spalte — horizontal unter dem Avatar auf Mobile,
-                vertikal neben der Spalte auf Desktop (siehe CSS-Media-Query). Sitzt als normales
-                Flex-Geschwister genau an der Nahtstelle zwischen Avatar und Chat-Spalte, in beiden
-                Layouts, ohne eigene Positionierungslogik pro Breakpoint. Only when there's both an
-                avatar and a chat to trade space between. */}
+            {/* Pull-out handle at the edge of the chat column — horizontal below the avatar on
+                mobile, vertical next to the column on desktop (see the CSS media query). Sits as
+                a normal flex sibling exactly at the seam between avatar and chat column, in both
+                layouts, without its own positioning logic per breakpoint. Only when there's both
+                an avatar and a chat to trade space between. */}
             {showAvatar && hasChat && (
               <button
                 type="button"

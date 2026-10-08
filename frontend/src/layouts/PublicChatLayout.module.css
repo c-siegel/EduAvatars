@@ -1,9 +1,9 @@
 .page {
-  /* Feste statt min-Höhe: erst dadurch greift die flex/min-height:0/overflow-y:auto-Kette bis
-     hinunter zu .thread (PublicChat.module.css) — sonst hat kein Vorfahre eine begrenzte Höhe, an
-     der sich "overflow-y: auto" festhalten könnte, und die ganze Seite wächst mit dem Chatverlauf
-     mit statt nur der Nachrichtenliste zu scrollen. 100dvh (dynamische Viewport-Höhe) statt 100vh
-     dort, wo unterstützt, wegen mobiler Adressleisten, die 100vh sonst zu groß werden lassen. */
+  /* Fixed instead of min height: only then does the flex/min-height:0/overflow-y:auto chain reach
+     down to .thread (PublicChat.module.css) — otherwise no ancestor has a bounded height that
+     "overflow-y: auto" could hold on to, and the whole page grows with the chat history instead of
+     only the message list scrolling. 100dvh (dynamic viewport height) instead of 100vh where
+     supported, because of mobile address bars that otherwise make 100vh too tall. */
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
