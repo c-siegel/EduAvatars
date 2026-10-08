@@ -18,9 +18,15 @@ from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, func, select
 
-from app.features.analytics.schemas import AnalyticsStatsOut, ConversationDetailOut, SessionRowOut
+from app.features.analytics.schemas import (
+    AnalyticsStatsOut,
+    ConversationDetailOut,
+    SessionRowOut,
+    TranscriptMessageOut,
+    TranscriptSourceOut,
+)
 from app.features.chat.models import Conversation, ProjectAccess
-from app.features.chat.schemas import ChatHistoryEntry
+from app.features.knowledge.service import document_names
 from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectStats
 from app.features.projects.service import list_projects
@@ -40,12 +46,25 @@ def get_conversation_detail(session: Session, user_id: str, conversation_id: str
     if project is None or project.user_id != user_id:
         return None
     messages = json.loads(conversation.messages_json)
+    names = document_names(session, [s["documentId"] for m in messages for s in m.get("sources") or []])
     return ConversationDetailOut(
         id=conversation.id,
         project_title=project.title,
         visitor_name=conversation.visitor_name,
         started_at=conversation.started_at.isoformat(),
-        messages=[ChatHistoryEntry(role=m["role"], content=m["content"]) for m in messages],
+        messages=[
+            TranscriptMessageOut(
+                role=m["role"],
+                content=m["content"],
+                sources=[
+                    TranscriptSourceOut(document_id=s["documentId"], filename=names.get(s["documentId"]), page=s.get("page"))
+                    for s in m["sources"]
+                ]
+                if m.get("sources") is not None
+                else None,
+            )
+            for m in messages
+        ],
     )
 
 

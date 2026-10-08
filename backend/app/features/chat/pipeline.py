@@ -32,6 +32,8 @@ from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import resolve_llm_key, resolve_tts_key
 from app.features.chat.conversation_store import save_turn
 from app.features.chat.streaming import SentenceChunker
+from app.features.knowledge.prompt import reference_block
+from app.features.knowledge.retrieval import KnowledgeContext, Passage, prepare_knowledge, retrieve, sources_for_transcript
 from app.features.media.service import voice_reference_for_project
 from app.features.projects.models import Project
 
@@ -72,6 +74,8 @@ class ChatContext:
     # The teacher's voice clip local TTS clones the voice from (None: default voice). Resolved
     # here, while the DB session is still at hand — the reply itself is synthesized without one.
     voice_clip: VoiceReference | None = None
+    # The project's knowledge bases (see features/knowledge/retrieval.py), None if it uses none.
+    knowledge: KnowledgeContext | None = None
 
 
 @dataclass
@@ -96,6 +100,8 @@ class ChatReply:
     # None (not ~0ms) when TTS didn't actually run (disabled, or enabled with nothing configured to
     # synthesize with).
     tts_ms: float | None
+    # None when the project uses no knowledge base.
+    retrieval_ms: float | None = None
 
 
 class LLMFailed(Exception):
@@ -130,18 +136,43 @@ def prepare_chat(session: Session, project: Project, llm_key: UserApiKey | None 
         spoken_language=project.spoken_language,
         save_conversations=project.save_conversations,
         voice_clip=voice_reference_for_project(session, project) if tts_api_key is None else None,
+        knowledge=prepare_knowledge(session, project, api_key.provider),
     )
 
 
-def _chat_request(context: ChatContext, turn: ChatTurn) -> llm.ChatRequest:
+def _retrieve(context: ChatContext, turn: ChatTurn) -> tuple[list[Passage], float | None]:
+    """The knowledge-base passages for this turn and how long finding them took (None: no KB).
+    Never raises — see features/knowledge/retrieval.py::retrieve."""
+    if context.knowledge is None:
+        return [], None
+    start = time.perf_counter()
+    passages = retrieve(context.knowledge, turn.message, turn.history)
+    return passages, (time.perf_counter() - start) * 1000
+
+
+def _chat_request(context: ChatContext, turn: ChatTurn, passages: list[Passage]) -> llm.ChatRequest:
+    reference = reference_block(context.knowledge.mode, passages) if context.knowledge else None
     return llm.ChatRequest(
-        context.preprompt, turn.message, context.temperature, context.top_p, context.start_prompt, turn.history
+        context.preprompt,
+        turn.message,
+        context.temperature,
+        context.top_p,
+        context.start_prompt,
+        turn.history,
+        reference_material=reference,
     )
 
 
-def _save(context: ChatContext, turn: ChatTurn, reply: str, reply_ready_at: datetime) -> None:
+def _save(context: ChatContext, turn: ChatTurn, reply: str, reply_ready_at: datetime, passages: list[Passage]) -> None:
     save_turn(
-        context.project_id, turn.visitor_id, turn.message, reply, turn.received_at, reply_ready_at, turn.visitor_name
+        context.project_id,
+        turn.visitor_id,
+        turn.message,
+        reply,
+        turn.received_at,
+        reply_ready_at,
+        turn.visitor_name,
+        sources=sources_for_transcript(passages) if context.knowledge else None,
     )
 
 
@@ -166,21 +197,22 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
     synthesize the whole reply. Raises LLMFailed if the LLM call fails."""
     # Timed for the client-side latency-test log (see pages/PublicChat/index.tsx) — not used by
     # the default UI, just extra fields riding along in the response.
+    passages, retrieval_ms = _retrieve(context, turn)
     llm_start = time.perf_counter()
     try:
-        reply = llm.complete(context.llm_key, _chat_request(context, turn))
+        reply = llm.complete(context.llm_key, _chat_request(context, turn, passages))
     except Exception as exc:
         raise LLMFailed() from exc
     llm_ms = (time.perf_counter() - llm_start) * 1000
     reply_ready_at = datetime.now(timezone.utc)
 
     if save and context.save_conversations:
-        _save(context, turn, reply, reply_ready_at)
+        _save(context, turn, reply, reply_ready_at, passages)
 
     tts_start = time.perf_counter()
     audio_base64, content_type, _ = _synthesize(context, reply)
     tts_ms = (time.perf_counter() - tts_start) * 1000 if audio_base64 is not None else None
-    return ChatReply(reply, audio_base64, content_type, llm_ms, tts_ms)
+    return ChatReply(reply, audio_base64, content_type, llm_ms, tts_ms, retrieval_ms)
 
 
 def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dict]]:
@@ -245,9 +277,12 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
         while futures and futures[0][1].done():
             yield chunk_event(*futures.popleft())
 
+    # Before the LLM call and inside the measured time: retrieval delays the first audio too.
+    passages, retrieval_ms = _retrieve(context, turn)
+
     llm_error: Exception | None = None
     try:
-        for delta in llm.stream(context.llm_key, _chat_request(context, turn)):
+        for delta in llm.stream(context.llm_key, _chat_request(context, turn, passages)):
             if first_token_ms is None:
                 first_token_ms = (time.perf_counter() - start_time) * 1000
             full_text_parts.append(delta)
@@ -280,7 +315,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
 
     if context.save_conversations:
         try:
-            _save(context, turn, full_reply, reply_ready_at)
+            _save(context, turn, full_reply, reply_ready_at, passages)
         except Exception:
             # The reply itself already reached the visitor via the chunk events above —
             # only the save failed, so log it instead of turning it into an error event
@@ -294,4 +329,5 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
         "firstChunkMs": first_chunk_ms,
         "firstChunkTextReadyMs": first_chunk_ready_ms,
         "ttsMs": total_tts_ms,
+        "retrievalMs": retrieval_ms,
     }

@@ -38,7 +38,10 @@ def build_messages(request: ChatRequest) -> list[dict]:
     # itself (e.g. a posed task), consistent with the bubble students see as the first message
     # (see the public chat's load route). history is the actual, already-exchanged conversation
     # so far — without it, every request would be stateless.
-    messages = [{"role": "system", "content": request.preprompt}]
+    system = request.preprompt
+    if request.reference_material:
+        system = f"{system}\n\n{request.reference_material}" if system else request.reference_material
+    messages = [{"role": "system", "content": system}]
     if request.start_prompt:
         messages.append({"role": "assistant", "content": request.start_prompt})
     if request.history:

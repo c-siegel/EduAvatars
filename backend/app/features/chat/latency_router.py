@@ -82,6 +82,7 @@ def _plain_turn_events(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[s
         "firstChunkMs": total_ms,
         "firstChunkTextReadyMs": reply.llm_ms,
         "ttsMs": reply.tts_ms,
+        "retrievalMs": reply.retrieval_ms,
     }
 
 

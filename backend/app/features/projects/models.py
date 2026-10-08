@@ -11,6 +11,7 @@ How to use:
     project = session.get(Project, project_id)
 """
 
+import json
 import uuid
 from datetime import datetime, timezone
 
@@ -131,12 +132,31 @@ class Project(SQLModel, table=True):
     # text. Cleared automatically whenever start_prompt/tts_voice/tts_api_key_id changes (see
     # features/projects/service.py::update_project), so a stale voice/text is never served.
     start_audio_path: str | None = None
+    # Knowledge base (RAG, see features/knowledge/): "off", "supplement" (use the attached
+    # material where it helps) or "strict" (answer only from it). Only takes effect when the
+    # deployment has Settings.rag_enabled and at least one knowledge base is attached.
+    knowledge_mode: str = "off"
+    # How many passages are added to the system prompt per turn.
+    knowledge_top_k: int = 4
+    # IDs of the owner's knowledge bases, as a JSON list — a list of a handful of IDs that's only
+    # ever read whole, so a join table would add queries without adding anything. Kept clean by
+    # features/knowledge/service.py when a knowledge base is deleted.
+    knowledge_base_ids_json: str = "[]"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def password_protected(self) -> bool:
         """Whether a visitor must unlock this project's chat with a password before using it."""
         return self.chat_password_hash is not None
+
+    @property
+    def knowledge_base_ids(self) -> list[str]:
+        """The attached knowledge bases' IDs (see knowledge_base_ids_json)."""
+        try:
+            ids = json.loads(self.knowledge_base_ids_json or "[]")
+        except ValueError:
+            return []
+        return [i for i in ids if isinstance(i, str)] if isinstance(ids, list) else []
 
     @property
     def start_audio_url(self) -> str | None:

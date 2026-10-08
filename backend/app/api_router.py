@@ -14,6 +14,7 @@ from app.features.api_keys import providers_router
 from app.features.api_keys import router as api_keys_router
 from app.features.auth import router as auth_router
 from app.features.chat import latency_router, preview_router, public_router
+from app.features.knowledge import router as knowledge_router
 from app.features.media import avatars_router, backgrounds_router, voices_router
 from app.features.projects import publication_router, start_audio_router, transfer_router
 from app.features.projects import router as projects_router
@@ -41,6 +42,7 @@ api_router.include_router(backgrounds_router.router)  # /backgrounds
 api_router.include_router(voices_router.router)  # /voice-clips: voice library for local TTS
 api_router.include_router(providers_router.router)  # /providers: provider registry
 api_router.include_router(api_keys_router.router)  # /api-keys: the user's stored keys
+api_router.include_router(knowledge_router.router)  # /knowledge-bases, /knowledge-documents, /providers/rag-status
 
 # Analytics
 api_router.include_router(stats_router.router)  # /analytics/stats, /timeseries, /overview
