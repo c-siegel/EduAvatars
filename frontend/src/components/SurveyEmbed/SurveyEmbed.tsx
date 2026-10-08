@@ -11,8 +11,8 @@ interface SurveyEmbedProps {
   onSkip: () => void;
 }
 
-// Reine <iframe src=…> Einbettung ohne zusätzliches embed.js von tally.so — minimiert die
-// Drittanbieter-Anbindung (vgl. selbst gehostete Inter-Schrift, aus Datenschutzgründen).
+// Plain <iframe src=…> embed without tally.so's extra embed.js — minimizes the third-party
+// connection (cf. the self-hosted Inter font, for privacy reasons).
 export function SurveyEmbed({ url, title, continueLabel, onContinue, onSkip }: SurveyEmbedProps) {
   const { t } = useTranslation();
   const [loaded, setLoaded] = useState(false);

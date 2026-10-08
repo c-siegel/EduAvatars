@@ -49,9 +49,9 @@ export default defineConfig({
     format: "es",
   },
   optimizeDeps: {
-    // talkinghead.mjs läd Lipsync-Sprachmodule per eigenem dynamischem import() nach,
-    // das kann Vites Dep-Optimizer nicht mitverfolgen (Datei fehlt dann im .vite/deps-Cache).
-    // Wir setzen ohnehin lipsyncModules: [] in TalkingHeadAvatar.tsx, dies ist nur Absicherung.
+    // talkinghead.mjs loads its lipsync language modules via its own dynamic import(), which
+    // Vite's dep optimizer can't follow (the file is then missing from the .vite/deps cache).
+    // We set lipsyncModules: [] in TalkingHeadAvatar.tsx anyway, so this is only a safeguard.
     //
     // onnxruntime-web has the same problem: it loads its WASM backend via its own dynamic
     // import()/new URL() at runtime, inside workers/parakeetWorker.ts — invisible to Vite's

@@ -8,6 +8,7 @@ import pytest
 
 from app.core.config import settings
 from app.features.ai.tts import local
+from app.features.chat import public_router
 from conftest import browser_url, create_key, create_project, parse_sse, publish
 
 WAV = b"RIFF-fake-wav"
@@ -47,6 +48,49 @@ def test_status_endpoints(client, teacher, monkeypatch):
     monkeypatch.setattr(settings, "browser_stt_enabled", True)
     assert client.get("/providers/local-tts-status").json() == {"available": True}
     assert client.get("/providers/browser-stt-status").json() == {"available": True}
+
+
+def test_server_stt_status(client, teacher, monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "stt_engine", "whisper")
+    monkeypatch.setattr(settings, "stt_parakeet_model_dir", str(tmp_path))
+    assert client.get("/providers/server-stt-status").json() == {"defaultEngine": "whisper", "parakeetAvailable": False}
+    monkeypatch.setattr(settings, "stt_engine", "parakeet")
+    (tmp_path / "manifest.json").write_text("{}")
+    assert client.get("/providers/server-stt-status").json() == {"defaultEngine": "parakeet", "parakeetAvailable": True}
+
+
+def test_project_picks_its_own_server_stt_engine(client, anon, keyless_tts_project, monkeypatch):
+    project_id = keyless_tts_project["id"]
+    assert client.get(f"/projects/{project_id}").json()["sttServerEngine"] is None
+    assert client.put(f"/projects/{project_id}", json={"sttServerEngine": "nonsense"}).status_code == 422
+    client.put(f"/projects/{project_id}", json={"sttServerEngine": "parakeet"})
+    assert client.get(f"/projects/{project_id}").json()["sttServerEngine"] == "parakeet"
+
+    engines = []
+    monkeypatch.setattr(
+        public_router,
+        "transcribe_audio",
+        lambda content, language, prompt=None, api_key_record=None, engine=None: engines.append(engine) or "Hallo",
+    )
+    slug = keyless_tts_project["shareSlug"]
+    response = anon.post(f"/public/{slug}/transcriptions", files={"audio": ("a.webm", b"audio", "audio/webm")})
+    assert response.status_code == 200, response.text
+    assert engines == ["parakeet"]
+
+    # null resets it to the deployment default.
+    client.put(f"/projects/{project_id}", json={"sttServerEngine": None})
+    assert client.get(f"/projects/{project_id}").json()["sttServerEngine"] is None
+
+
+def test_chat_layout_is_saved_validated_and_public(client, anon, keyless_tts_project):
+    project_id = keyless_tts_project["id"]
+    slug = keyless_tts_project["shareSlug"]
+    assert client.get(f"/projects/{project_id}").json()["chatLayout"] == "avatar_chat"
+    assert anon.get(f"/public/{slug}").json()["chatLayout"] == "avatar_chat"
+    assert client.put(f"/projects/{project_id}", json={"chatLayout": "sideways"}).status_code == 422
+    client.put(f"/projects/{project_id}", json={"chatLayout": "chat_only"})
+    assert client.get(f"/projects/{project_id}").json()["chatLayout"] == "chat_only"
+    assert anon.get(f"/public/{slug}").json()["chatLayout"] == "chat_only"
 
 
 def test_without_sidecar_a_keyless_tts_project_replies_text_only(anon, keyless_tts_project):

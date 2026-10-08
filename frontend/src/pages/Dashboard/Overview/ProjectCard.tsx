@@ -79,7 +79,7 @@ export function ProjectCard({ project }: { project: Project }) {
           {t("overview.card.lastActive", { relative: formatRelativeDate(project.createdAt) })}
         </span>
 
-        {/* Desktop: both actions visible directly, plus a "…" reserved for future actions (e.g. Löschen) */}
+        {/* Desktop: both actions visible directly, plus a "…" reserved for future actions (e.g. Delete) */}
         <div className={styles.actionsDesktop}>
           <Link
             className={styles.iconButton}

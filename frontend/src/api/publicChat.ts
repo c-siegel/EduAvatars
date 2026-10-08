@@ -2,13 +2,13 @@ import { API_BASE_URL, apiClient, ApiError } from "./client";
 import { getUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName } from "@/lib/visitorNameStorage";
 import type { ChatMessage } from "@/types/chat";
-import type { SpokenLanguage } from "@/types/project";
+import type { ChatLayout, SpokenLanguage } from "@/types/project";
 
 export interface PublicProject {
   title: string;
   teacherName: string;
-  // Erste Nachricht des Avatars, dem Modell ebenfalls als Kontext mitgegeben (siehe Backend
-  // features/ai/llm/__init__.py::complete). Leer = generische Begrüßung im Frontend.
+  // The avatar's first message, also given to the model as context (see backend
+  // features/ai/llm/__init__.py::complete). Empty = generic greeting in the frontend.
   startPrompt: string | null;
   // Route to the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see pages/PublicChat/index.tsx's autoplay-on-load and overlay play button.
@@ -25,8 +25,8 @@ export interface PublicProject {
   // See types/project.ts — the page only uses the streaming endpoint when this AND ttsEnabled
   // are both true (see pages/PublicChat/index.tsx).
   streamingEnabled: boolean;
-  // Siehe types/project.ts — noch ohne UI-Auswirkung auf dieser Seite.
-  chatDefaultOpen: boolean;
+  // See types/project.ts.
+  chatLayout: ChatLayout;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
   // Whether this chat requires a password, and whether this tab already unlocked it — see
@@ -171,8 +171,8 @@ export const publicChatApi = {
   loadTutor: (slug: string) => apiClient.get<PublicProject>(`/public/${slug}`, requestHeaders(slug)),
   unlock: (slug: string, password: string) =>
     apiClient.post<{ unlockToken: string }>(`/public/${slug}/unlock`, { password }),
-  // Backend gibt {reply} zurück, keine vollständige Conversation (siehe app/features/chat/public_router.py) —
-  // war zuvor fälschlich als Conversation typisiert.
+  // The backend returns {reply}, not a full Conversation (see app/features/chat/public_router.py) —
+  // it was previously typed as a Conversation by mistake.
   sendMessage: (slug: string, message: string, history: ChatMessage[], signal?: AbortSignal) =>
     // llmMs/ttsMs: backend-side call durations, only meaningful together with the client-side
     // timestamps captured in PublicChat/index.tsx's latency-test log (?latencyTest=1).

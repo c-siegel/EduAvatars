@@ -9,8 +9,9 @@ interface PublicLayoutProps {
   showLanguageSwitcher?: boolean;
 }
 
-// Layout für 1a/1b — öffentliche Seiten ohne Sidebar; Seiteninhalt (Header/Hero/Card) liegt in der jeweiligen Page,
-// da sich Header-Aufbau zwischen Landing (Nav) und Login/Register (zentrierte Card) stark unterscheidet.
+// Layout for 1a/1b — public pages without a sidebar; the page content (header/hero/card) lives in
+// each page, since the header structure differs a lot between landing (nav) and login/register
+// (centered card).
 export function PublicLayout({ children, showLanguageSwitcher = true }: PublicLayoutProps) {
   return (
     <div className={styles.page}>

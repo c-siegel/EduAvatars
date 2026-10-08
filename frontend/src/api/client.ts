@@ -16,11 +16,11 @@ export class ApiError extends Error {
   }
 }
 
-// FastAPI antwortet je nach Fehlerart unterschiedlich: HTTPException liefert {detail: "CODE"} oder
-// {detail: {code, message}} (siehe app/core/error_codes.py), eine Pydantic-Validierung
-// {detail: [{msg: "Value error, CODE", loc}, …]}. In allen Fällen ist `detail` ein stabiler Code,
-// keine Anzeigetext — die Übersetzung passiert hier über i18next (errors.<CODE> in
-// src/i18n/locales), damit die gleiche Fehlermeldung in beiden Sprachen korrekt ist.
+// FastAPI responds differently depending on the kind of error: HTTPException returns
+// {detail: "CODE"} or {detail: {code, message}} (see app/core/error_codes.py), Pydantic validation
+// returns {detail: [{msg: "Value error, CODE", loc}, …]}. In every case `detail` is a stable code,
+// not display text — translation happens here via i18next (errors.<CODE> in src/i18n/locales), so
+// the same error message is correct in both languages.
 export function errorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof ApiError)) return fallback;
   try {
@@ -35,7 +35,7 @@ export function errorMessage(error: unknown, fallback: string): string {
       if (codes.length) return codes.join(" ");
     }
   } catch {
-    // Kein JSON-Body (z.B. Proxy-/Netzwerkfehler) — dann bleibt es beim Fallback.
+    // No JSON body (e.g. proxy/network error) — then the fallback stays.
   }
   return fallback;
 }

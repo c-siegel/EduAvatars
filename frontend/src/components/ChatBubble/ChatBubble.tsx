@@ -121,7 +121,7 @@ export function ChatBubble({
   );
 }
 
-// Tippindikator während auf die Bot-Antwort gewartet wird (Live-Vorschau 1e, Chat 1i)
+// Typing indicator while waiting for the bot's reply (live preview 1e, chat 1i)
 export function TypingBubble() {
   const { t } = useTranslation();
   return (

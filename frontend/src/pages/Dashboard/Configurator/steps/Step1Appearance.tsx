@@ -8,19 +8,20 @@ import { Callout } from "@/components/Callout";
 import { errorMessage } from "@/api/client";
 import { avatarLibraryApi, type AvatarModel } from "@/api/avatarLibrary";
 import { backgroundLibraryApi, type BackgroundImage } from "@/api/backgroundLibrary";
+import { CHAT_LAYOUTS } from "@/types/project";
 import type { ConfiguratorDraft, StepProps } from "../types";
 import styles from "./Step1Appearance.module.css";
 import sharedStyles from "./shared.module.css";
 
 // Bundled under frontend/public/avatars/ (see ATTRIBUTION.md there) instead of coming from the
 // user's own upload library — shown in every project's avatar grid below so a project always has
-// a usable face without requiring an upload first. Not real AvatarModel rows (no DB id, no
-// thumbnail), so isBuiltinAvatar() below keys off the "builtin-" id prefix to skip the delete
+// a usable face without requiring an upload first. Not real AvatarModel rows (no DB id; their
+// thumbnails are static PNGs next to the .glb files), so isBuiltinAvatar() below keys off the "builtin-" id prefix to skip the delete
 // button and the removeAvatarMutation call, which only work on the user's own library entries. A
 // project stores one of these by name (builtinAvatar, the part after "builtin-"), see avatarRef().
 const BUILTIN_AVATARS: AvatarModel[] = [
-  { id: "builtin-julia", name: "Julia", fileUrl: "/avatars/julia.glb", thumbnailUrl: null, createdAt: "" },
-  { id: "builtin-david", name: "David", fileUrl: "/avatars/david.glb", thumbnailUrl: null, createdAt: "" },
+  { id: "builtin-julia", name: "Julia", fileUrl: "/avatars/julia.glb", thumbnailUrl: "/avatars/julia.png", createdAt: "" },
+  { id: "builtin-david", name: "David", fileUrl: "/avatars/david.glb", thumbnailUrl: "/avatars/david.png", createdAt: "" },
 ];
 
 function isBuiltinAvatar(avatar: AvatarModel): boolean {
@@ -39,8 +40,8 @@ function isSelectedAvatar(draft: ConfiguratorDraft, avatar: AvatarModel): boolea
   return draft.avatarModelId === ref.avatarModelId && draft.builtinAvatar === ref.builtinAvatar;
 }
 
-// Schritt 1 — Aussehen: Projektname, Kurzbeschreibung, Avatar-Bibliothek, Hintergrundbild und
-// Chat-Sichtbarkeit.
+// Step 1 — appearance: project name, short description, avatar library, background image and
+// chat visibility.
 export function Step1Appearance({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -55,11 +56,11 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
       queryClient.invalidateQueries({ queryKey: ["avatar-models"] });
       onChange(avatarRef(avatar));
 
-      // Vorschaubild ist ein reines Extra (Grid zeigt sonst weiter Initialen) — Fehler hier
-      // (z.B. kein WebGL) sollen den eigentlichen Upload nicht als fehlgeschlagen erscheinen lassen.
-      // Dynamischer Import: three.js/GLTFLoader sollen nicht ins eager geladene Haupt-Bundle des
-      // Konfigurators wandern, sondern nur bei einem tatsächlichen Avatar-Upload nachgeladen werden
-      // (gleiches Muster wie der dynamische Import von @met4citizen/talkinghead in TalkingHeadAvatar.tsx).
+      // The thumbnail is purely a bonus (the grid otherwise keeps showing initials) — errors here
+      // (e.g. no WebGL) must not make the actual upload look failed.
+      // Dynamic import: three.js/GLTFLoader shouldn't end up in the configurator's eagerly loaded
+      // main bundle, only be loaded when an avatar is actually uploaded (same pattern as the
+      // dynamic import of @met4citizen/talkinghead in TalkingHeadAvatar.tsx).
       try {
         const { captureAvatarThumbnail } = await import("@/lib/avatarThumbnail");
         const thumbnail = await captureAvatarThumbnail(avatar.fileUrl);
@@ -103,8 +104,8 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
 
   function handleRemoveAvatar(avatar: AvatarModel) {
     if (!window.confirm(t("configurator.step1.confirmDeleteLibraryItem", { name: avatar.name }))) return;
-    // Ausgewählter Avatar wird beim Löschen mit abgewählt, statt im Entwurf auf eine nicht mehr
-    // existierende Datei zeigen zu lassen.
+    // The selected avatar is deselected on delete too, instead of leaving the draft pointing at a
+    // file that no longer exists.
     if (isSelectedAvatar(draft, avatar)) onChange({ avatarModelId: null, builtinAvatar: null });
     removeAvatarMutation.mutate(avatar.id);
   }
@@ -150,9 +151,9 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
                 aria-label={avatar.name}
                 aria-pressed={isSelectedAvatar(draft, avatar)}
               >
-                {/* fileUrl zeigt auf die .glb-3D-Datei selbst, kein Bild — die Kachel zeigt stattdessen
-                    das einmalig client-seitig gerenderte Vorschaubild (thumbnailUrl), solange keins
-                    vorhanden ist (z.B. noch in Erzeugung oder fehlgeschlagen) bleibt es bei Initialen. */}
+                {/* fileUrl points at the .glb 3D file itself, not an image — the tile shows the
+                    preview image rendered once on the client (thumbnailUrl) instead; while there
+                    is none (e.g. still being generated, or failed) it stays at initials. */}
                 <Avatar
                   name={avatar.name}
                   src={avatar.thumbnailUrl ?? undefined}
@@ -257,18 +258,28 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
         )}
       </div>
 
-      <label className={sharedStyles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.chatDefaultOpen}
-          onChange={(e) => onChange({ chatDefaultOpen: e.target.checked })}
-        />
-        <span className={sharedStyles.toggleCopy}>
-          <strong>{t("configurator.step1.chatVisibleTitle")}</strong>
-          <span>{t("configurator.step1.chatVisibleText")}</span>
-        </span>
-      </label>
-      <Callout variant="info">{t("configurator.step1.chatVisibleNote")}</Callout>
+      <fieldset className={sharedStyles.radioGroup}>
+        <legend className={sharedStyles.label}>{t("configurator.step1.chatLayoutTitle")}</legend>
+        {CHAT_LAYOUTS.map((layout) => (
+          <label key={layout} className={sharedStyles.toggleRow}>
+            <input
+              type="radio"
+              name="chat-layout"
+              checked={draft.chatLayout === layout}
+              onChange={() => onChange({ chatLayout: layout })}
+            />
+            <span className={sharedStyles.toggleCopy}>
+              <strong>{t(`configurator.step1.chatLayouts.${layout}.title`)}</strong>
+              <span>{t(`configurator.step1.chatLayouts.${layout}.text`)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {/* Without voice in and out there'd be no way to talk to an avatar without a chat — the public
+          page then falls back to avatar + chat (see effectiveChatLayout in pages/PublicChat). */}
+      {draft.chatLayout === "avatar_only" && !(draft.ttsEnabled && draft.sttEnabled) && (
+        <Callout variant="warning">{t("configurator.step1.avatarOnlyNeedsVoice")}</Callout>
+      )}
     </>
   );
 }

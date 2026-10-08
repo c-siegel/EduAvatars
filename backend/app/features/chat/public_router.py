@@ -95,7 +95,7 @@ def load_tutor(
         stt_enabled=project.stt_enabled,
         browser_stt_model_url=browser_stt_model_url_for(project),
         streaming_enabled=project.streaming_enabled,
-        chat_default_open=project.chat_default_open,
+        chat_layout=project.chat_layout,
         # The checkbox and URL are combined here, before anything goes out to the anonymous page —
         # both "not enabled" and "enabled but URL empty" end up as None.
         survey_before_url=project.survey_before_url if project.survey_before_enabled and project.survey_before_url else None,
@@ -253,7 +253,13 @@ def transcribe(
     stt_key = resolve_stt_key(session, project)
     stt_start = time.perf_counter()
     try:
-        text = transcribe_audio(content, project.spoken_language, initial_prompt, api_key_record=stt_key)
+        text = transcribe_audio(
+            content,
+            project.spoken_language,
+            initial_prompt,
+            api_key_record=stt_key,
+            engine=project.stt_server_engine,
+        )
     except Exception as exc:
         # Generic message for visitors (no technical detail), consistent with send_message.
         logger.exception("Transkription fehlgeschlagen (project_id=%s)", project.id)

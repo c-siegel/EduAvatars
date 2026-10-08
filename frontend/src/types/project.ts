@@ -5,14 +5,14 @@ export interface Project {
   title: string;
   description: string | null;
   status: ProjectStatus;
-  // Referenz auf den im API-Dashboard eingerichteten Schlüssel — die eigentliche Modellwahl.
+  // Reference to the key set up in the API dashboard — the actual model choice.
   llmApiKeyId: string | null;
-  // Vom Backend daraus abgeleiteter litellm-Modellstring (nur lesend, u.a. für Projektkarten und
-  // den Modellfilter der Auswertung).
+  // litellm model string the backend derives from it (read-only, used e.g. for project cards and
+  // the analytics model filter).
   llmModel: string | null;
   preprompt: string;
-  // Erste Nachricht des Avatars, Schüler:innen sichtbar UND dem Modell als Kontext mitgegeben
-  // (siehe backend features/ai/llm/__init__.py::complete). Leer = generische Begrüßung.
+  // The avatar's first message, visible to students AND given to the model as context (see backend
+  // features/ai/llm/__init__.py::complete). Empty = generic greeting.
   startPrompt: string;
   // URL of the once-generated audio for startPrompt, or null if it hasn't been generated (yet)
   // — see the "Generate audio" button in Step3Behavior and pages/PublicChat/index.tsx's autoplay.
@@ -26,8 +26,8 @@ export interface Project {
   avatarModelUrl: string | null;
   avatarBackgroundUrl: string | null;
   gradeLevel: string | null;
-  // Sampling-Parameter, 1:1 an den Anbieter durchgereicht (siehe backend features/ai/llm
-  // ::_sampling_params). temperature 0.0-2.0, topP 0.0-1.0 — dieselben Grenzen prüft das Backend.
+  // Sampling parameters, passed 1:1 to the provider (see backend features/ai/llm
+  // ::_sampling_params). temperature 0.0-2.0, topP 0.0-1.0 — the backend checks the same limits.
   temperature: number;
   topP: number;
   published: boolean;
@@ -38,7 +38,7 @@ export interface Project {
   surveyAfterUrl: string | null;
   surveyAfterEnabled: boolean;
   ttsEnabled: boolean;
-  // Referenz auf einen Key vom Typ TTS (analog llmApiKeyId).
+  // Reference to a key of type TTS (like llmApiKeyId).
   ttsApiKeyId: string | null;
   ttsVoice: string | null;
   // A clip from the owner's voice library (Dashboard → Voices) that local TTS clones the voice
@@ -48,6 +48,9 @@ export interface Project {
   // Reference to a key of type STT (mirrors ttsApiKeyId) — null keeps transcribing locally
   // (see backend features/ai/stt).
   sttApiKeyId: string | null;
+  // Which local engine transcribes on the server when sttApiKeyId is null — null follows the
+  // deployment's STT_ENGINE (see useServerSttStatus in lib/providers.ts).
+  sttServerEngine: SttServerEngine | null;
   sttEnabled: boolean;
   // Whether this project prefers on-device (browser, WebGPU) transcription over sttApiKeyId/the
   // server's local Whisper — only shown/usable in the Configurator when the deployment also
@@ -57,10 +60,9 @@ export interface Project {
   // instead of waiting for the full reply — see backend features/chat/public_router.py's /messages/stream.
   // Meaningless without ttsEnabled, so the configurator only shows this toggle when TTS is on.
   streamingEnabled: boolean;
-  // Ob der öffentliche Chat standardmäßig offen (true) oder eingeklappt-aber-ausklappbar (false)
-  // startet. Wird im Konfigurator gesetzt/gespeichert; die Public-Chat-Seite rendert den
-  // eingeklappten Zustand aktuell noch nicht (folgt später).
-  chatDefaultOpen: boolean;
+  // What the public chat page shows: avatar + chat (open or starting collapsed), the avatar alone
+  // (voice only) or the chat alone (no 3D model loaded) — see pages/PublicChat/index.tsx.
+  chatLayout: ChatLayout;
   // Whether a visitor must enter a password before the public chat unlocks (see
   // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
   // projectsApi.update's separate `chatPassword` field, never read back here.
@@ -79,6 +81,12 @@ export type ProjectUpdate = Partial<
 > & { chatPassword?: string | null };
 
 export type SpokenLanguage = "de" | "en";
+
+// The local server STT engines (backend Settings.stt_engine / Project.stt_server_engine).
+export type SttServerEngine = "whisper" | "parakeet";
+
+export type ChatLayout = "avatar_chat" | "avatar_chat_collapsed" | "avatar_only" | "chat_only";
+export const CHAT_LAYOUTS: ChatLayout[] = ["avatar_chat", "avatar_chat_collapsed", "avatar_only", "chat_only"];
 
 export interface ProjectStats {
   totalProjects: number;

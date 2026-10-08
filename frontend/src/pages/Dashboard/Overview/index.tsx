@@ -13,7 +13,7 @@ import styles from "./Overview.module.css";
 
 type Filter = "all" | "draft" | "published";
 
-// Screen 1d — Tab Übersicht
+// Screen 1d — overview tab
 export function OverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -58,8 +58,8 @@ export function OverviewPage() {
     <div className={styles.page}>
       <div className={styles.greetingRow}>
         <div>
-          {/* Wireframe zeigt "Hallo Frau Berger 👋" — ohne Anrede-/Geschlechtsfeld im User-Modell
-              verwenden wir hier schlicht den registrierten Namen. */}
+          {/* The wireframe shows "Hallo Frau Berger 👋" — without a salutation/gender field in the
+              user model we simply use the registered name here. */}
           <h1>{t("overview.greeting", { name: user?.name ?? "…" })}</h1>
           <p className={styles.subtitle}>
             {statsQuery.data

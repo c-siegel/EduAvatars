@@ -28,9 +28,9 @@
   color: var(--color-accent-contrast);
 }
 
-/* Markdown-Inhalte (react-markdown) — Browser-Defaults der Blockelemente passen nicht zu einer
-   kompakten Chat-Bubble (z.B. Absatz-Ränder), deshalb hier zurückgesetzt/angepasst. :global, weil
-   react-markdown die Tags selbst rendert, ohne CSS-Module-Klassen zu vergeben. */
+/* Markdown content (react-markdown) — the browser defaults for block elements don't suit a compact
+   chat bubble (e.g. paragraph margins), so they're reset/adjusted here. :global because
+   react-markdown renders the tags itself without assigning CSS module classes. */
 .bubble :global(p) {
   margin: 0;
 }

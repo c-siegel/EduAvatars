@@ -13,7 +13,7 @@ interface BarChartProps {
   isFetching?: boolean;
 }
 
-// Rundet auf eine "glatte" Zahl auf (0/1.000/2.000 …), siehe dataviz-Skill "Y-axis ticks".
+// Rounds up to a "nice" number (0/1,000/2,000 …), see the dataviz skill "Y-axis ticks".
 function niceMax(value: number): number {
   if (value <= 0) return 1;
   const magnitude = 10 ** Math.floor(Math.log10(value));
@@ -22,9 +22,9 @@ function niceMax(value: number): number {
   return niceResidual * magnitude;
 }
 
-// Balkendiagramm "Sessions im Zeitverlauf" (Screen 1f). Einzelne Serie -> keine Legende nötig
-// (Titel der Karte benennt sie), teal-600 statt emerald-500 als Füllfarbe: emerald-500 liegt mit
-// ~2.5:1 unter dem 3:1-Kontrast-Minimum für Marks auf hellem Grund, teal-600 schafft ~3.7:1.
+// Bar chart "Sessions over time" (screen 1f). Single series -> no legend needed (the card title
+// names it). teal-600 instead of emerald-500 as fill colour: at ~2.5:1 emerald-500 falls below the
+// 3:1 contrast minimum for marks on a light background, teal-600 reaches ~3.7:1.
 export function BarChart({ data, isFetching }: BarChartProps) {
   const { t } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

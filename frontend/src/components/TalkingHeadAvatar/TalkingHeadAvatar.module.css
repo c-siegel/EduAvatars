@@ -5,13 +5,13 @@
   overflow: hidden;
 }
 
-/* Geschwister von .canvasHost, identisch positioniert (position:absolute;inset:0 im selben Elternteil
-   .stage) — dadurch bekommen Hintergrund und Canvas garantiert exakt dieselbe Box, kein
-   größenbedingter Versatz zwischen "Avatar-Fenster" und "Hintergrund-Fenster" mehr möglich. Ohne
-   backgroundImageUrl bleibt es transparent (kein eigenes background-color) — die Landingpage nutzt
-   diese Komponente z.B. ohne umgebende .avatarStage-Box und braucht weiterhin echte Transparenz,
-   den grauen Standard-Fallback stellt in dem Fall die jeweils umgebende Stelle selbst (siehe
-   PublicChat.module.css/Step4Preview.module.css, .avatarStage). */
+/* Sibling of .canvasHost, positioned identically (position:absolute;inset:0 in the same parent
+   .stage) — so background and canvas are guaranteed exactly the same box, and a size-related
+   offset between "avatar window" and "background window" is no longer possible. Without
+   backgroundImageUrl it stays transparent (no background-color of its own) — the landing page,
+   for example, uses this component without a surrounding .avatarStage box and still needs real
+   transparency; in that case the surrounding place provides the grey default fallback itself
+   (see PublicChat.module.css/Step4Preview.module.css, .avatarStage). */
 .backdrop {
   position: absolute;
   inset: 0;
@@ -26,14 +26,14 @@
 
 .canvasHost canvas {
   display: block;
-  /* TalkingHead setzt beim Erzeugen (renderer.setSize) feste Pixelmaße direkt als Inline-Style auf
-     den Canvas, gemessen an container.clientWidth/Height zu genau diesem Zeitpunkt — verschiebt
-     sich das Layout danach noch (z.B. durch den Fix in .avatarStage weiter oben in der Baumstruktur,
-     oder einfach je nach Ladereihenfolge), bleibt der Canvas bei seiner ursprünglichen Größe stehen
-     und bildet dadurch eine eigene, kleinere "Box" mit sichtbarer eigener Kante innerhalb von
-     .canvasHost, statt bündig mit dessen (und damit dem Hintergrundbild-) Rand abzuschließen.
-     Erzwingt hier stattdessen: Canvas füllt IMMER exakt seinen Container, unabhängig vom intern
-     gesetzten Pixelmaß (das bestimmt nur noch die Render-Auflösung, nicht mehr die Anzeigegröße). */
+  /* On creation (renderer.setSize) TalkingHead sets fixed pixel sizes as an inline style directly
+     on the canvas, measured from container.clientWidth/Height at exactly that moment — if the
+     layout shifts afterwards (e.g. through the fix in .avatarStage higher up the tree, or simply
+     depending on load order), the canvas stays at its original size and forms its own, smaller
+     "box" with a visible edge inside .canvasHost, instead of lining up with its edge (and so the
+     background image's). Enforces instead: the canvas ALWAYS fills its container exactly,
+     regardless of the internally set pixel size (which then only determines the render
+     resolution, not the display size). */
   width: 100% !important;
   height: 100% !important;
 }

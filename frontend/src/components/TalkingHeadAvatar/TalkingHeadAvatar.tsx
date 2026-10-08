@@ -4,9 +4,9 @@ import { Loader2 } from "lucide-react";
 import { attachHeadAudio } from "./headAudioIntegration";
 import styles from "./TalkingHeadAvatar.module.css";
 
-// Selbst gehostet unter public/avatars/ (siehe ATTRIBUTION.md dort) statt live von GitHub
-// nachgeladen — aus demselben Datenschutzgrund wie bei den Fonts (kein Drittanbieter-Request
-// bei jedem Seitenaufruf). Alternative im selben Repo: david.glb.
+// Self-hosted under public/avatars/ (see ATTRIBUTION.md there) instead of loaded live from GitHub —
+// for the same privacy reason as the fonts (no third-party request on every page view).
+// Alternative in the same repo: david.glb.
 const DEFAULT_AVATAR_URL = "/avatars/julia.glb";
 
 type Status = "loading" | "ready" | "error" | "skipped";
@@ -73,16 +73,23 @@ export interface TalkingHeadAvatarHandle {
    * can't tell a caller apart from silent playback that never actually made a sound.
    */
   speakFromUrl: (url: string) => Promise<boolean>;
-  /** Startet den "hört zu"-Blickkontakt-Modus der Bibliothek, gespeist vom Mikrofon-Stream. */
+  /**
+   * Resumes the avatar's suspended AudioContext right away. Call it synchronously from a click
+   * handler: some browsers (Safari) only allow that during the gesture itself, and speakFromUrl
+   * only gets to its own resume() after fetching and decoding the audio. A no-op before the avatar
+   * has loaded.
+   */
+  unlockAudio: () => void;
+  /** Starts the library's "listening" eye-contact mode, fed by the microphone stream. */
   startListening: (stream: MediaStream) => void;
-  /** Beendet den Zuhör-Modus (z. B. wenn die Aufnahme gestoppt wird). */
+  /** Ends listening mode (e.g. when the recording is stopped). */
   stopListening: () => void;
-  /** Kurzer Blick-Cue für die Wartezeit zwischen Senden und Antwort ("überlegt gerade") — keine
-   * native TalkingHead-Funktion, aus lookAt() synthetisiert (siehe THINKING_LOOK_MS). */
+  /** Short gaze cue for the wait between sending and the reply ("thinking") — not a native
+   * TalkingHead feature, synthesized from lookAt() (see THINKING_LOOK_MS). */
   startThinking: () => void;
-  /** Kein Gegenstück nötig, da lookAt() sich selbst nach THINKING_LOOK_MS zurücksetzt — als
-   * benannte Stelle im Aufrufcode trotzdem vorhanden, für den Fall dass das später ein echtes
-   * Zurücksetzen braucht (z. B. bei einem Fehler kurz nach dem Senden). */
+  /** No counterpart needed, since lookAt() resets itself after THINKING_LOOK_MS — kept as a named
+   * hook in the calling code anyway, in case this later needs a real reset (e.g. on an error
+   * shortly after sending). */
   stopThinking: () => void;
   /** Starts (or restarts) one FPS/dropped-frame measurement window — see stopFpsTracking. */
   startFpsTracking: () => void;
@@ -94,9 +101,9 @@ export interface TalkingHeadAvatarHandle {
 }
 
 interface TalkingHeadAvatarProps {
-  /** Wird während des Ladens gezeigt, bei Fehlern, und wenn prefers-reduced-motion aktiv ist. */
+  /** Shown while loading, on errors, and when prefers-reduced-motion is active. */
   fallback: ReactNode;
-  /** Für Konfigurator-Vorschau (1e) und öffentlichen Chat (1i) statt des Landingpage-Defaults. */
+  /** For the configurator preview (1e) and the public chat (1i) instead of the landing-page default. */
   avatarUrl?: string;
   /** Called once the avatar has actually finished loading (status "ready") — e.g. to trigger
    * autoplay of a project's spoken greeting, see pages/PublicChat/index.tsx. */
@@ -109,24 +116,24 @@ interface TalkingHeadAvatarProps {
    */
   revealed?: boolean;
   /**
-   * Aktiviert HeadAudio (echtzeit-audiobasiertes Lipsync, siehe headAudioIntegration.ts) für
-   * echtes Sprechen. Weggelassen (Landingpage-Nutzung): kein AudioWorklet-/Modell-Ladeoverhead,
-   * da dort nie gesprochen wird.
+   * Enables HeadAudio (real-time audio-driven lipsync, see headAudioIntegration.ts) for actual
+   * speech. Left out (landing-page use): no AudioWorklet/model loading overhead, since nothing is
+   * ever spoken there.
    */
   speechEnabled?: boolean;
   /**
-   * Optionales Hintergrundbild — wird HIER (nicht vom Elternelement) gerendert, als Geschwister-Div
-   * direkt neben dem Canvas, beide mit identischem `position:absolute;inset:0` im selben Elternteil.
-   * Dadurch haben beide IMMER exakt dieselbe Box, unabhängig davon, welche Größe der Canvas intern
-   * gerade hat — ein Größen-Mismatch zwischen "Avatar-Fenster" und "Hintergrund-Fenster" (siehe
-   * vorherige, gescheiterte Versuche mit dem Hintergrund auf dem äußeren .avatarStage-Element) ist
-   * so strukturell ausgeschlossen statt nur zufällig zu passen.
+   * Optional background image — rendered HERE (not by the parent), as a sibling div right next to
+   * the canvas, both with the same `position:absolute;inset:0` in the same parent. That way both
+   * ALWAYS have exactly the same box, regardless of the canvas's current internal size — a size
+   * mismatch between "avatar window" and "background window" (see earlier, failed attempts with the
+   * background on the outer .avatarStage element) is ruled out structurally instead of only
+   * happening to fit.
    */
   backgroundImageUrl?: string;
 }
 
-// 3D-Avatar-Rendering (met4citizen/TalkingHead). Auf der Landingpage rein idle (kein Sprechen);
-// in 1e/1i mit speechEnabled für echtes Sprechen über HeadAudio (siehe headAudioIntegration.ts).
+// 3D avatar rendering (met4citizen/TalkingHead). Purely idle on the landing page (no speech);
+// in 1e/1i with speechEnabled for actual speech via HeadAudio (see headAudioIntegration.ts).
 export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHeadAvatarProps>(
   function TalkingHeadAvatar(
     { fallback, avatarUrl = DEFAULT_AVATAR_URL, onReady, revealed = true, speechEnabled = false, backgroundImageUrl },
@@ -149,8 +156,8 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           return head.audioCtx.decodeAudioData(bytes.buffer);
         },
         speakBuffer(audioBuffer: AudioBuffer) {
-          // Kein words/wtimes/wdurations nötig — HeadAudio treibt die Mundbewegung live aus
-          // dem hier abgespielten Audiosignal, unabhängig von diesem Aufruf.
+          // No words/wtimes/wdurations needed — HeadAudio drives the mouth live from the audio
+          // played here, independently of this call.
           headRef.current?.speakAudio({ audio: audioBuffer });
         },
         stopSpeaking() {
@@ -207,11 +214,18 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           }
           return true;
         },
+        unlockAudio() {
+          const audioCtx = headRef.current?.audioCtx;
+          if (audioCtx?.state === "suspended") {
+            // A refusal just leaves it suspended — speakFromUrl reports that as "not audible".
+            audioCtx.resume().catch(() => {});
+          }
+        },
         startListening(stream: MediaStream) {
           const head = headRef.current;
           if (!head) return;
-          // Selbe Quelle wie der MediaRecorder für die Aufnahme — kein zweiter getUserMedia-Aufruf,
-          // und derselbe AudioContext, den TalkingHead ohnehin schon für die Sprachausgabe hält.
+          // Same source as the MediaRecorder for the recording — no second getUserMedia call, and
+          // the same AudioContext TalkingHead already holds for speech output.
           const source = head.audioCtx.createMediaStreamSource(stream);
           const analyzer = head.audioCtx.createAnalyser();
           source.connect(analyzer);
@@ -221,13 +235,13 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           headRef.current?.stopListening();
         },
         startThinking() {
-          // x/y = null: Blick geht zum Kamera-Augenpunkt statt zu festen Bildschirmkoordinaten —
-          // braucht keine Viewport-Berechnung und passt zum ohnehin schon stärkeren Blickkontakt
-          // der Bibliothek bei isSpeaking/isListening.
+          // x/y = null: the gaze goes to the camera's eye point instead of fixed screen
+          // coordinates — needs no viewport calculation and matches the library's already
+          // stronger eye contact during isSpeaking/isListening.
           headRef.current?.lookAt(null, null, THINKING_LOOK_MS);
         },
         stopThinking() {
-          // Kein Aufruf nötig — siehe Kommentar am Interface oben.
+          // No call needed — see the comment on the interface above.
         },
         startFpsTracking() {
           const now = performance.now();
@@ -267,17 +281,18 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             cameraRotateEnable: false,
             cameraPanEnable: false,
             cameraZoomEnable: false,
-            // "upper" zielt standardmäßig auf 2/3 der Körperhöhe (Brust) — das lässt in einem eher
-            // breiten/kurzen Rahmen (wie hier) oben und unten sichtbaren Leerraum. cameraY schiebt
-            // den Zielpunkt der Kamera nach unten (0 = Standard, größer = tiefer/mehr Oberkörper
-            // und weniger Kopf-/Hintergrundraum oben sichtbar) — steuert die tatsächliche 3D-Kamera,
-            // nicht nur einen nachträglichen Bildausschnitt (das war der vorherige, gescheiterte
-            // CSS-transform-Ansatz auf .canvasHost — der konnte am eigentlichen Rahmenverhältnis
-            // nichts ändern, siehe TalkingHeadAvatar.module.css).
+            // "upper" targets 2/3 of the body height (chest) by default — in a rather wide/short
+            // frame (like this one) that leaves visible empty space at the top and bottom. cameraY
+            // moves the camera's target point down (0 = default, larger = lower, more upper body
+            // and less head/background space visible at the top) — it steers the actual 3D
+            // camera, not just a crop applied afterwards (that was the earlier, failed CSS
+            // transform approach on .canvasHost — it couldn't change the actual aspect ratio, see
+            // TalkingHeadAvatar.module.css).
             cameraY: 0,
-            // Lipsync kommt entweder gar nicht (Landingpage, idle) oder über HeadAudio direkt aus
-            // dem Audiosignal (siehe speechEnabled unten) — TalkingHeads eigener text-basierter
-            // Lipsync-Pfad (lipsyncModules) wird nie gebraucht, da speakText() nie aufgerufen wird.
+            // Lipsync either doesn't happen at all (landing page, idle) or comes from HeadAudio
+            // directly from the audio signal (see speechEnabled below) — TalkingHead's own
+            // text-based lipsync path (lipsyncModules) is never needed, since speakText() is never
+            // called.
             lipsyncModules: [],
             modelFPS: MODEL_FPS,
           });
@@ -336,9 +351,8 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
         // releases the WebGL context (WEBGL_lose_context) instead of just leaving it idle.
         head?.dispose();
       };
-      // onReady absichtlich nicht in den Deps: eine neue Inline-Funktion bei jedem Render des
-      // Elternteils darf keinen Avatar-Reload auslösen (siehe avatarUrl/speechEnabled oben, die
-      // tatsächlichen Trigger).
+      // onReady deliberately not in the deps: a new inline function on every parent render must
+      // not trigger an avatar reload (see avatarUrl/speechEnabled above, the actual triggers).
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [avatarUrl, speechEnabled]);
 

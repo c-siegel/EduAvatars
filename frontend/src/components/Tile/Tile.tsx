@@ -4,7 +4,7 @@ import styles from "./Tile.module.css";
 
 interface TileDelta {
   value: number;
-  /** Richtung, die als positiv gilt — z.B. "down" für Kosten/Fehlerraten. Default "up". */
+  /** Direction that counts as positive — e.g. "down" for costs/error rates. Default "up". */
   goodDirection?: "up" | "down";
 }
 
@@ -15,8 +15,8 @@ interface TileProps {
   children?: ReactNode;
 }
 
-// Statistik-Kachel, z.B. "Projekte" -> 6 (Screen 1d) oder mit Trend-Delta (Screen 1f).
-// Delta trägt Vorzeichen + Icon zusätzlich zur Farbe (nie Farbe allein), siehe dataviz-Skill.
+// Stat tile, e.g. "Projects" -> 6 (screen 1d) or with a trend delta (screen 1f).
+// The delta carries a sign + icon in addition to colour (never colour alone), see the dataviz skill.
 export function Tile({ label, value, delta, children }: TileProps) {
   const isGood = delta ? (delta.goodDirection === "down" ? delta.value <= 0 : delta.value >= 0) : null;
   const DeltaIcon = delta && delta.value >= 0 ? TrendingUp : TrendingDown;

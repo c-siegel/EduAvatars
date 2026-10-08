@@ -3,14 +3,14 @@ import { apiKeysApi } from "@/api/apiKeys";
 import i18n from "@/i18n";
 import type { ApiKey, ProviderSpec } from "@/types/apiKey";
 
-// Anbieter, Endpunkt-Vorbelegungen und kuratierte Modelle kommen aus der Backend-Registry
-// (backend/app/core/providers.py) statt aus einer zweiten Liste hier — sonst kann das Frontend
-// Anbieter oder Modelle anbieten, für die es serverseitig keinen Aufrufpfad gibt.
+// Providers, endpoint defaults and curated models come from the backend registry
+// (backend/app/core/providers.py) instead of a second list here — otherwise the frontend could
+// offer providers or models that have no call path on the server.
 export function useProviders() {
   return useQuery({
     queryKey: ["api-key-providers"],
     queryFn: apiKeysApi.listProviders,
-    // Stammdaten ändern sich nur mit einem Deployment.
+    // This reference data only changes with a deployment.
     staleTime: Infinity,
   });
 }
@@ -35,6 +35,16 @@ export function useBrowserSttStatus() {
   });
 }
 
+/** The deployment's default server STT engine and whether Parakeet's model files are present —
+ * drives the Configurator's server-engine choice (see Step2Technical.tsx). */
+export function useServerSttStatus() {
+  return useQuery({
+    queryKey: ["server-stt-status"],
+    queryFn: apiKeysApi.serverSttStatus,
+    staleTime: Infinity,
+  });
+}
+
 export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
   return specs.find((spec) => spec.value === value);
 }
@@ -43,12 +53,12 @@ export function providerLabel(specs: ProviderSpec[], value: string): string {
   return findProvider(specs, value)?.label ?? value;
 }
 
-/** Anzeigename eines Schlüssels: der individuelle Name der Lehrkraft, sonst das Anbieter-Label. */
+/** Display name of a key: the teacher's own name for it, otherwise the provider label. */
 export function keyDisplayName(key: ApiKey, specs: ProviderSpec[]): string {
   return key.label?.trim() || providerLabel(specs, key.provider);
 }
 
-/** Anzeigename des hinterlegten Modells — kuratierter Titel, sonst die eingetragene Modell-ID. */
+/** Display name of the stored model — the curated title, otherwise the entered model ID. */
 export function modelLabel(key: ApiKey, specs: ProviderSpec[]): string | null {
   const spec = findProvider(specs, key.provider);
   if (!key.modelId) {

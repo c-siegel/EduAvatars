@@ -8,9 +8,9 @@ import { authApi } from "@/api/auth";
 import { AuthShell } from "@/pages/AuthShell";
 import styles from "@/pages/AuthShell.module.css";
 
-// Screen 1b (Erweiterung) — Passwort-vergessen-Formular. Antwortet immer mit derselben Meldung,
-// egal ob die E-Mail existiert (siehe backend/app/features/auth/password_reset.py) — verhindert
-// Enumeration registrierter Konten, deshalb gibt es hier bewusst keinen Fehlerzustand für "unbekannte E-Mail".
+// Screen 1b (extension) — forgot-password form. Always responds with the same message, whether or
+// not the email exists (see backend/app/features/auth/password_reset.py) — prevents enumeration of
+// registered accounts, which is why there's deliberately no error state for "unknown email" here.
 export function ForgotPasswordPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");

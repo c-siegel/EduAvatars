@@ -20,15 +20,15 @@ function filterParams(filters: AnalyticsFilters): URLSearchParams {
 export const analyticsApi = {
   stats: (filters: AnalyticsFilters) => apiClient.get<AnalyticsStats>(`/analytics/stats?${filterParams(filters)}`),
 
-  // { items, total } statt einer nackten Liste, damit "1–4 von 1.284" echte Pagination ist.
+  // { items, total } instead of a bare list, so "1–4 of 1,284" is real pagination.
   sessions: (filters: AnalyticsFilters, page: number) => {
     const params = filterParams(filters);
     params.set("page", String(page));
     return apiClient.get<SessionsPage>(`/conversations?${params}`);
   },
 
-  // Alle zum Filter passenden Konversations-IDs, unabhängig von der Seite — für den "Wähle alle"-
-  // Knopf, siehe pages/Dashboard/Analytics/index.tsx.
+  // All conversation IDs matching the filter, regardless of page — for the "Select all" button,
+  // see pages/Dashboard/Analytics/index.tsx.
   sessionIds: (filters: AnalyticsFilters) => apiClient.get<string[]>(`/conversations/ids?${filterParams(filters)}`),
 
   // Full transcript for one session's "view" action (see pages/Dashboard/Analytics/index.tsx) —
@@ -41,8 +41,8 @@ export const analyticsApi = {
     return apiClient.get<TimeseriesPoint[]>(`/analytics/timeseries?${params}`);
   },
 
-  // Lädt eine .csv (eine ausgewählte Konversation) oder .zip (mehrere) direkt als Datei herunter,
-  // statt sie wie die übrigen Endpunkte als JSON zu parsen.
+  // Downloads a .csv (one selected conversation) or .zip (several) directly as a file, instead of
+  // parsing it as JSON like the other endpoints.
   exportConversations: async (conversationIds: string[]) => {
     const body: ConversationIdsRequest = { conversationIds };
     const res = await fetch(`${API_BASE_URL}/conversations/export`, {

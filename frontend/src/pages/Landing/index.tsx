@@ -104,8 +104,8 @@ export function LandingPage() {
             <ButtonLink to="/login">{t("common.login")}</ButtonLink>
           </div>
         </div>
-        {/* 3D-Avatar (met4citizen/TalkingHead) statt eines statischen Bild-Mockups; zeigt den
-            textuellen Platzhalter, solange das Modell lädt bzw. bei reduced-motion/Fehlern. */}
+        {/* 3D avatar (met4citizen/TalkingHead) instead of a static image mockup; shows the text
+            placeholder while the model loads, and on reduced-motion/errors. */}
         <div className={styles.heroImage} aria-hidden="true">
           <TalkingHeadAvatar fallback={t("landing.avatarLoading")} />
         </div>

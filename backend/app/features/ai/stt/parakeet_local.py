@@ -172,6 +172,12 @@ _loaded_model: ParakeetModel | None = None
 _missing_model_logged = False
 
 
+def model_available() -> bool:
+    """Whether the model files are there (cheap check, loads nothing) — the Configurator only
+    offers Parakeet once they are, see features/api_keys/providers_router.py::server_stt_status."""
+    return (Path(settings.stt_parakeet_model_dir) / "manifest.json").is_file()
+
+
 def _model() -> ParakeetModel:
     """Load (once per process) and cache the model. Raises FileNotFoundError while its files
     aren't there yet — retried on the next call, so it starts working as soon as they appear."""

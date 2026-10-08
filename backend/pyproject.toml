@@ -33,12 +33,11 @@ dependencies = [
 dev = ["pytest>=8.0"]
 
 [tool.setuptools]
-# Ohne diese explizite Angabe bricht "pip install ." bzw. "pip install -e ." ab,
-# weil setuptools bei backend/ als Flat-Layout sowohl app/ als auch alembic/ als mögliche
-# Top-Level-Pakete erkennt und die automatische Erkennung deshalb verweigert
-# ("Multiple top-level packages discovered in a flat-layout"). alembic/ ist absichtlich
-# ausgeschlossen — es wird über "python -m alembic" aus dem Arbeitsverzeichnis heraus aufgerufen,
-# nicht als installiertes Package importiert.
+# Without this explicit list, "pip install ." / "pip install -e ." fails: setuptools sees both app/
+# and alembic/ as possible top-level packages of a flat layout under backend/ and refuses to
+# auto-discover ("Multiple top-level packages discovered in a flat-layout"). alembic/ is left out on
+# purpose — it is run via "python -m alembic" from the working directory, not imported as an
+# installed package.
 packages = ["app"]
 
 [tool.pytest.ini_options]

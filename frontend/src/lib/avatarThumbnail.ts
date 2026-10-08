@@ -3,11 +3,11 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const SIZE = 256;
 
-// Rendert einmalig eine Kopf-Nahaufnahme eines .glb-Avatars in ein PNG — für die Vorschau-Kacheln
-// der Avatar-Bibliothek (Step1Appearance.tsx), damit dort ein echtes Bild statt der Initialen steht.
-// Eigener, schlanker three.js-Aufbau statt Wiederverwendung von TalkingHeadAvatar: dessen Renderer
-// läuft in einer Endlos-Animationsschleife ohne `preserveDrawingBuffer`, ein `toBlob()`-Schnappschuss
-// zu einem beliebigen Zeitpunkt würde dort zuverlässig ein leeres Bild liefern.
+// Renders a head close-up of a .glb avatar into a PNG once — for the preview tiles of the avatar
+// library (Step1Appearance.tsx), so a real image is shown there instead of initials.
+// A separate, lean three.js setup instead of reusing TalkingHeadAvatar: its renderer runs in an
+// endless animation loop without `preserveDrawingBuffer`, so a `toBlob()` snapshot at an
+// arbitrary moment would reliably return a blank image there.
 export async function captureAvatarThumbnail(glbUrl: string): Promise<Blob> {
   const canvas = document.createElement("canvas");
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
@@ -26,8 +26,8 @@ export async function captureAvatarThumbnail(glbUrl: string): Promise<Blob> {
     const model = gltf.scene;
     scene.add(model);
 
-    // Grob auf den Kopf zoomen: Bounding-Box des ganzen Modells nehmen und die Kamera auf den
-    // oberen Bereich (Ready-Player-Me-Avatare stehen aufrecht, Kopf ist ganz oben) ausrichten.
+    // Roughly zoom in on the head: take the bounding box of the whole model and aim the camera at
+    // the upper part (Ready Player Me avatars stand upright, the head is at the very top).
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const headY = box.max.y - size.y * 0.09;

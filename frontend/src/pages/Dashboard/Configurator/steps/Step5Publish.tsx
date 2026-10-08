@@ -21,9 +21,9 @@ interface Step5Props extends StepProps {
   onSaveDraft: () => Promise<Project>;
 }
 
-// Schritt 5 — Veröffentlichung: Aufzeichnung, Umfragen und das eigentliche Publizieren.
-// Checkbox und URL der Umfragen sind bewusst getrennte Felder: eine URL kann stehen bleiben,
-// während die Umfrage vorübergehend deaktiviert ist, ohne den Text löschen zu müssen.
+// Step 5 — publishing: recording, surveys and the actual publishing.
+// The surveys' checkbox and URL are deliberately separate fields: a URL can stay in place while
+// the survey is temporarily disabled, without having to delete the text.
 export function Step5Publish({ draft, onChange, project, projectId, hasUnsavedChanges, onSaveDraft }: Step5Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -147,8 +147,8 @@ export function Step5Publish({ draft, onChange, project, projectId, hasUnsavedCh
           <Button
             variant={project.published ? "default" : "accent"}
             onClick={() => publishMutation.mutate(!project.published)}
-            // Ohne eingerichtetes Modell würde der öffentliche Chat nur ein "momentan nicht
-            // verfügbar" zeigen — Depublizieren bleibt selbstverständlich immer möglich.
+            // Without a configured model the public chat would only show "currently
+            // unavailable" — unpublishing of course always stays possible.
             disabled={publishMutation.isPending || (!project.published && !draft.llmApiKeyId)}
           >
             {project.published ? t("configurator.step5.unpublish") : t("configurator.step5.publish")}

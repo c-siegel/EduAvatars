@@ -19,7 +19,7 @@ const STATUS_VARIANT: Record<ApiKeyStatus, "accent" | "default" | "danger"> = {
   error: "danger",
 };
 
-// Screen 1g — Tab API-Dashboard
+// Screen 1g — API dashboard tab
 export function ApiDashboardPage() {
   const { t } = useTranslation();
   const STATUS_LABEL: Record<ApiKeyStatus, string> = {
@@ -35,7 +35,7 @@ export function ApiDashboardPage() {
 
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  // Ergebnis des zuletzt gedrückten "Test"-Buttons, je Key — enthält bei Fehlschlag die Ursache.
+  // Result of the most recently pressed "Test" button, per key — contains the cause on failure.
   const [testResult, setTestResult] = useState<{ id: string; status: string; message: string | null } | null>(null);
 
   function closeForm() {
@@ -48,7 +48,7 @@ export function ApiDashboardPage() {
       editingKey ? apiKeysApi.update(editingKey.id, input) : apiKeysApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      // Ein Modellwechsel am Key ändert den gespeicherten Modellstring der Projekte.
+      // Changing a key's model changes the stored model string of its projects.
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       closeForm();
     },
@@ -71,8 +71,8 @@ export function ApiDashboardPage() {
   });
 
   function handleRemove(key: ApiKey) {
-    // Absichtlich ein zweiter, expliziter Schritt (siehe Wireframe-Annotation zu 1g) —
-    // "Entfernen" widerruft einen Key für alle Projekte, das braucht bewusste Reibung.
+    // Deliberately a second, explicit step (see the wireframe annotation on 1g) — "Remove" revokes
+    // a key for all projects, which needs deliberate friction.
     const used = key.usedByProjects > 0 ? `\n\n${t("apiDashboard.removeUsedByProjects", { count: key.usedByProjects })}` : "";
     if (window.confirm(t("apiDashboard.removeConfirm", { name: keyDisplayName(key, specs) }) + used)) {
       removeMutation.mutate(key.id);
@@ -111,7 +111,7 @@ export function ApiDashboardPage() {
       {testResult?.status === "active" && <Callout variant="success">{t("apiDashboard.testSucceeded")}</Callout>}
 
       <div className={styles.card}>
-        {/* Sieben Spalten passen auf schmaleren Desktops nicht immer — scrollen statt überlaufen. */}
+        {/* Seven columns don't always fit on narrower desktops — scroll instead of overflowing. */}
         <div className={styles.tableScroll}>
         <table className={styles.table}>
           <thead>
@@ -214,8 +214,8 @@ export function ApiDashboardPage() {
         {specs.length > 0 &&
           (formOpen ? (
             <ApiKeyForm
-              // Beim Wechsel zwischen Anlegen und Bearbeiten sollen die Felder neu aus dem
-              // jeweiligen Datensatz initialisiert werden, nicht die alte Eingabe behalten.
+              // When switching between create and edit, the fields should be re-initialized from
+              // the respective record instead of keeping the old input.
               key={editingKey?.id ?? "new"}
               specs={specs}
               editing={editingKey ?? undefined}

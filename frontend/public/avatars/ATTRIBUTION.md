@@ -7,6 +7,9 @@ configurator (see `BUILTIN_AVATARS` in `frontend/src/pages/Dashboard/Configurato
 and `julia.glb` also doubles as the landing page's idle hero placeholder. Both source repos are
 MIT-licensed (Copyright (c) Mika Suominen).
 
+`julia.png` and `david.png` are 256x256 head close-ups of those models, rendered with
+`captureAvatarThumbnail()` (`frontend/src/lib/avatarThumbnail.ts`) and used as the library tile icons.
+
 ```
 MIT License
 

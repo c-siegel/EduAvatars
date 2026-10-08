@@ -1,10 +1,10 @@
 /*
- * Design-Tokens, extrahiert aus design/EduAvatars_Wireframes__standalone_.html.
- * Nicht hart codieren — alle Komponenten referenzieren ausschließlich diese Custom Properties.
- * Der Wireframe-Accent ist konfigurierbar (nur Wireframe-Werkzeug); im Produkt ist --color-accent fix.
+ * Design tokens, extracted from design/EduAvatars_Wireframes__standalone_.html.
+ * Don't hard-code — all components reference only these custom properties.
+ * The wireframe accent is configurable (wireframe tool only); in the product --color-accent is fixed.
  */
 :root {
-  /* Emerald-Skala */
+  /* Emerald scale */
   --emerald-50: #ecfdf5;
   --emerald-100: #d1fae5;
   --emerald-200: #a7f3d0;
@@ -16,7 +16,7 @@
   --emerald-800: #065f46;
   --emerald-900: #064e3b;
 
-  /* Teal-Skala */
+  /* Teal scale */
   --teal-50: #f0fdfa;
   --teal-100: #ccfbf1;
   --teal-200: #99f6e4;
@@ -28,7 +28,7 @@
   --teal-800: #115e59;
   --teal-900: #134e4a;
 
-  /* Neutral-Skala */
+  /* Neutral scale */
   --neutral-0: #ffffff;
   --neutral-50: #fafafa;
   --neutral-100: #f5f5f5;
@@ -42,7 +42,7 @@
   --neutral-900: #171717;
   --neutral-950: #0a0a0a;
 
-  /* Zusätzliche Akzentfarben für Status-Badges u.ä. */
+  /* Additional accent colours for status badges etc. */
   --amber-100: #fef3c7;
   --amber-500: #f59e0b;
   --amber-700: #b45309;
@@ -54,21 +54,21 @@
   --blue-500: #3b82f6;
   --blue-700: #1d4ed8;
 
-  /* Marken-/Akzentfarben (im Produkt fix, nicht konfigurierbar) */
+  /* Brand/accent colours (fixed in the product, not configurable) */
   --gradient-brand: linear-gradient(135deg, var(--emerald-500), var(--teal-600));
   --gradient-brand-soft: linear-gradient(135deg, var(--emerald-50), var(--teal-50));
   --color-accent: var(--emerald-500);
   --color-accent-strong: var(--teal-600);
   --color-accent-contrast: var(--neutral-0);
 
-  /* Oberflächen */
+  /* Surfaces */
   --surface-page: var(--neutral-50);
   --surface-card: var(--neutral-0);
   --surface-sunken: var(--neutral-100);
   --surface-inverse: var(--neutral-900);
   --surface-accent-soft: var(--emerald-50);
 
-  /* Ränder */
+  /* Borders */
   --border-default: var(--neutral-200);
   --border-strong: var(--neutral-300);
   --border-accent: var(--emerald-500);
@@ -82,7 +82,7 @@
   --text-link: var(--teal-700);
   --text-link-hover: var(--teal-900);
 
-  /* Semantische Farben */
+  /* Semantic colours */
   --color-success: var(--emerald-600);
   --color-success-bg: var(--emerald-50);
   --color-warning: var(--amber-700);
@@ -94,7 +94,7 @@
 
   --focus-ring: 0 0 0 3px rgba(16, 185, 129, 0.35);
 
-  /* Spacing-Skala */
+  /* Spacing scale */
   --space-0: 0;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
