@@ -34,8 +34,10 @@ retrieved, no reference answer) is left out with a reason instead of counting as
 call costs one cell, not the run. Answer relevancy embeds through the knowledge service's `/embed`,
 so the knowledge base's own model is used and this service needs no model of its own.
 
-For German material, the examples in Ragas' prompts are translated once (by the judge) and
-cached in `$RAG_EVAL_DATA_DIR/prompt-cache/`; the instructions stay English.
+For German material, the examples in Ragas' prompts are translated once per judge model and
+endpoint (by that judge) and cached in `$RAG_EVAL_DATA_DIR/prompt-cache/`; the instructions stay
+English. The cache isn't shared between endpoints, because the examples steer every later score
+and a teacher can point a judge at an endpoint of their own.
 
 Test questions are drafted one per sampled passage, in a single judge call each, instead of with
 Ragas' own test set generator: that one builds a knowledge graph over all documents first, which

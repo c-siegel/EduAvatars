@@ -79,7 +79,7 @@ class _Metrics:
             self.correctness,
         ):
             if metric is not None:
-                await adapt_metric(metric, self.request.language, self.llm)
+                await adapt_metric(metric, self.request.language, self.llm, self.request.judge)
 
 
 async def _run(metric_name: str, call) -> MetricScore:

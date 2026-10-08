@@ -4,18 +4,23 @@ Judge Prompts in the Material's Language
 Ragas' prompts are English, with English few-shot examples. For German material the judge then
 tends to extract English statements from German answers and compare them against German
 passages — which works, but less reliably. Ragas can translate a prompt's examples; that costs
-judge calls, so each translated prompt is cached on disk (one JSON file per metric, prompt and
-language) and reused by every later run, whichever teacher's key it uses.
+judge calls, so each translated prompt is cached on disk (one JSON file per metric, prompt,
+language and judge) and reused by later runs.
+
+The cache is per judge model and endpoint, not shared across all of them: the examples steer
+every later score, and a teacher can point a judge at their own endpoint. Its translations must
+only ever be used for runs judged through that same endpoint.
 
 The instructions themselves stay English: models follow English meta-instructions reliably, and
 translating them would change what the metric measures.
 
 How to use:
-    await adapt_metric(metric, "de", llm)
+    await adapt_metric(metric, "de", llm, judge_config)
 """
 
 import asyncio
 import copy
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -23,6 +28,7 @@ from pathlib import Path
 from ragas.prompt.metrics.base_prompt import BasePrompt
 
 from app.config import settings
+from app.schemas import JudgeConfig
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +46,18 @@ def _prompts(metric) -> dict[str, BasePrompt]:
     return {name: value for name, value in vars(metric).items() if isinstance(value, BasePrompt)}
 
 
-async def adapt_metric(metric, language: str, llm) -> None:
-    """Swap the metric's prompts for versions with translated examples (cached)."""
+def judge_cache_id(judge: JudgeConfig) -> str:
+    """Identifies the judge by model and endpoint — never by its key."""
+    return hashlib.sha256(f"{judge.model}|{judge.api_base or ''}".encode()).hexdigest()[:16]
+
+
+async def adapt_metric(metric, language: str, llm, judge: JudgeConfig) -> None:
+    """Swap the metric's prompts for versions with translated examples (cached per judge)."""
     target = _LANGUAGE_NAMES.get(language)
     if target is None:
         return
     for attribute, prompt in _prompts(metric).items():
-        key = f"{type(metric).__name__}.{attribute}.{language}"
+        key = f"{type(metric).__name__}.{attribute}.{language}.{judge_cache_id(judge)}"
         lock = _locks.setdefault(key, asyncio.Lock())
         async with lock:
             path = _cache_dir() / f"{key}.json"

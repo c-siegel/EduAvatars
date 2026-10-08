@@ -125,7 +125,7 @@ def test_german_prompts_are_translated_once_and_cached(client, judge, tmp_path):
     client.post("/score", json=body, headers=AUTH)
     translations = [c for c in judge.calls if "Statements to translate:" in c["messages"][-1]["content"]]
     assert translations
-    cache = list((tmp_path / "data" / "prompt-cache").glob("Faithfulness.*.de.json"))
+    cache = list((tmp_path / "data" / "prompt-cache").glob("Faithfulness.*.de.*.json"))
     assert cache and settings.rag_eval_data_dir == str(tmp_path / "data")
     assert any("[de]" in json.dumps(json.loads(p.read_text(encoding="utf-8"))) for p in cache)
 
@@ -164,3 +164,13 @@ def test_generation_reports_a_judge_that_always_fails(client, judge):
     response = client.post("/generate-testset", json=body, headers=AUTH)
     assert response.status_code == 502
     assert response.json()["detail"]["code"] == "JUDGE_FAILED"
+
+
+def test_prompt_translations_are_not_shared_across_judge_endpoints(client, judge):
+    # A teacher's own endpoint could return crafted examples; they must not steer other judges.
+    body = score_body(metrics=["faithfulness"], language="de")
+    client.post("/score", json=body, headers=AUTH)
+    judge.calls.clear()
+    own_endpoint = {**JUDGE, "api_base": "https://judge.example.org/v1"}
+    client.post("/score", json=score_body(metrics=["faithfulness"], language="de", judge=own_endpoint), headers=AUTH)
+    assert [c for c in judge.calls if "Statements to translate:" in c["messages"][-1]["content"]]
