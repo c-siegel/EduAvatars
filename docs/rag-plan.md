@@ -8,6 +8,16 @@ RAG stands for *retrieval-augmented generation*: before each reply, the passages
 documents that best match the student's message are looked up and handed to the LLM together with
 the system prompt.
 
+### Decisions so far
+
+| Topic | Decision |
+|---|---|
+| On/off switches | Environment variables only (`RAG_ENABLED`, `RAG_EVALUATION_ENABLED`, Compose profiles). No runtime toggle in the admin dashboard. |
+| Limits (file size, quotas, pages, …) | The defaults below are fine. An **admin can change them in the dashboard** (§5.5). The env variables only set the initial values and hard ceilings. |
+| Docling licences | Confirmed: code MIT (GitHub, PyPI), model weights on Hugging Face Apache-2.0 and CDLA-Permissive-2.0. Both are permissive. |
+| Embedding model preset for GWDG SAIA | Not now. API embeddings use the generic provider entries. |
+| Quality evaluation | Ragas is part of the plan as its own optional module (§7). |
+
 ## 1. Goals and constraints
 
 | Requirement | How this plan meets it |
@@ -15,12 +25,15 @@ the system prompt.
 | **Separate, optional module, off by default** | A new `rag` service in its own container (`rag/` folder, `docker/rag.Dockerfile`), started only with the Compose profile `rag` and switched on in the backend with `RAG_ENABLED=true`. A deployment without it behaves exactly as today. |
 | **Local embeddings first, API models possible** | The `rag` service computes embeddings on the CPU with fastembed (ONNX) by default. A teacher can instead pick one of their own API keys of the new key type `embedding` (OpenAI, Mistral, Gemini, Ollama, OpenAI-compatible, GWDG SAIA) per knowledge base. |
 | **Light parsing by default, Docling optional** | `pypdf` (PDF), `python-docx` (DOCX) and plain-text/Markdown parsing are built in. Docling runs as a second optional service (`docling-serve`, Compose profile `docling`) and is used only when `DOCLING_URL` is set. |
-| **Only open-licensed dependencies** | Every dependency and model is listed with its licence in §9. A CI licence gate rejects copyleft (GPL/AGPL/SSPL) and non-commercial (CC-BY-NC) licences. |
+| **Only open-licensed dependencies** | Every dependency and model is listed with its licence in §10. A CI licence gate rejects strong copyleft (GPL/LGPL/AGPL/SSPL) and non-commercial (CC-BY-NC) licences. |
 | **Upload safety** | Limits, type sniffing, archive and decompression-bomb checks, sandboxed parsing in a resource-limited subprocess, no original files kept or served (§6). |
-| **MVP from the assessment** | Knowledge library per teacher, background indexing, hybrid search, retrieval into the system prompt, per-project mode, logging of retrieved chunks (§10). |
+| **MVP from the assessment** | Knowledge library per teacher, background indexing, hybrid search, retrieval into the system prompt, per-project mode, logging of retrieved chunks (§11). |
+| **Admin-adjustable limits** | Limits are stored in the existing `SiteSettings` row and edited on the admin settings page; both the backend and the `rag` service enforce them (§5.5). |
+| **Quality evaluation** | A third optional service, `rag-eval` (Compose profile `rag-eval`, `RAG_EVALUATION_ENABLED=true`), scores a project's answers with Ragas against a test set of questions (§7). |
 
 Non-goals for the MVP: OCR of scanned PDFs without Docling, web/URL crawling, showing sources in the
-public chat, automatic re-indexing on model change, quality evaluation (Ragas). They are in §11.
+public chat, automatic re-indexing on model change, and evaluating saved student conversations.
+They are in §12.
 
 ## 2. Architecture
 
@@ -42,6 +55,9 @@ public chat, automatic re-indexing on model change, quality evaluation (Ragas). 
                    └─────────────────────────┬──────────────────────────────────────────────────┘
                                              ▼ optional (profile "docling")
                                    docling-serve (layout analysis, tables, OCR)
+
+ evaluation (profile "rag-eval"): backend answers the test questions through the normal path,
+ then sends {question, answer, contexts, reference} batches to rag-eval (Ragas) for scoring.
 ```
 
 **Who owns what**
@@ -81,7 +97,7 @@ rag/
   README.md
   app/
     main.py          FastAPI app, routes, token check, lifespan (starts the ingest worker)
-    config.py        pydantic-settings (env variables in §7)
+    config.py        pydantic-settings (env variables in §8)
     store.py         SQLite schema, sqlite-vec / FTS5 access, per-KB embedding metadata
     ingest.py        job queue + worker: parse → chunk → embed → index, status updates
     parsing/
@@ -112,6 +128,8 @@ All routes except `/health` require `Authorization: Bearer ${RAG_SERVICE_TOKEN}`
 | `DELETE /knowledge-bases/{id}` | Removes everything for that KB. Idempotent. |
 | `POST /query` | `{knowledge_base_ids, query, top_k, embedding}`, returns `[{chunk_id, document_id, text, page, heading, score}]`. |
 | `POST /embedding-test` | Embeds one short string with the given API config, used by the key test in the API dashboard. |
+| `POST /embed` | Embeds a list of strings with a KB's model. Only `rag-eval` uses it (§7.4). |
+| `GET /knowledge-bases/{id}/chunks?sample=N` | A random sample of chunk texts, for test set generation (§7.3). |
 
 API embedding keys are passed **per request** in the `embedding` object and kept only in memory
 for the duration of that request or job. The `rag` service never writes a key to disk or logs.
@@ -164,7 +182,7 @@ to the `rag` service; the `rag` service calls `litellm.embedding()`. The existin
 **One model per knowledge base, fixed at creation.** Vectors from different models can't be
 compared. The KB stores `embedding_mode`, `embedding_model` and `embedding_dim`, and the `rag`
 service refuses a query or document whose embedding config doesn't match. Changing the model means
-creating a new KB. Automatic re-indexing is §11 work.
+creating a new KB. Automatic re-indexing is §12 work.
 
 If a project links several KBs, the query is embedded once per distinct model.
 
@@ -303,10 +321,47 @@ claims to be grounded when it isn't.
 | `RAG_SERVICE_URL` | `http://rag:8090` | Internal address of the `rag` service. |
 | `RAG_SERVICE_TOKEN` | – | Shared secret; required when `RAG_ENABLED=true`, startup fails with a clear message otherwise. |
 | `RAG_QUERY_TIMEOUT_MS` | `1500` | Retrieval budget per chat turn. |
-| `RAG_MAX_UPLOAD_MB` | `20` | Per-file limit (also enforced in `rag`). |
-| `RAG_MAX_DOCUMENTS_PER_KB` | `50` | |
-| `RAG_MAX_KB_PER_USER` | `20` | |
-| `RAG_USER_QUOTA_MB` | `200` | Sum of uploaded file sizes per teacher. |
+| `RAG_EVALUATION_ENABLED` | `false` | Switch for the evaluation module (§7); only takes effect together with `RAG_ENABLED`. |
+| `RAG_EVAL_SERVICE_URL` | `http://rag-eval:8091` | Internal address of the `rag-eval` service. |
+
+The upload limits are **not** backend env variables anymore. They live in the site settings
+(§5.5).
+
+### 5.5 Admin-adjustable limits
+
+The existing singleton `SiteSettings` row (`features/site_settings/models.py`), which already holds
+registration and retention settings, gets these new columns (same migration as §5.1, each with a
+`server_default`):
+
+| Column | Default | Hard ceiling | Enforced by |
+|---|---|---|---|
+| `rag_max_upload_mb` | 20 | `RAG_HARD_MAX_UPLOAD_MB` (100) | backend + `rag` |
+| `rag_max_pages` | 500 | `RAG_HARD_MAX_PAGES` (2000) | `rag` |
+| `rag_max_chars_per_document` | 2,000,000 | `RAG_HARD_MAX_CHARS` (10,000,000) | `rag` |
+| `rag_max_documents_per_kb` | 50 | – | backend |
+| `rag_max_kb_per_user` | 20 | – | backend |
+| `rag_user_quota_mb` | 200 | – | backend |
+| `rag_upload_rate_per_10min` | 30 | – | backend |
+| `rag_eval_max_cases_per_run` | 50 | 500 | backend |
+
+- **Admin UI**: a new "Knowledge base" section on the admin settings page
+  (`pages/Dashboard/Admin/Settings`), shown only when RAG is enabled. It has number inputs with the
+  allowed range next to each one, and a note that changes apply to new uploads only.
+- **Validation**: `features/site_settings/schemas.py` enforces `1 ≤ value ≤ hard ceiling`. The
+  ceilings come from the `rag` service's `/capabilities`, so they can't drift apart, and the admin
+  API rejects values above them.
+- **How the `rag` service learns the current values**: the backend sends the current file limits
+  (`max_upload_mb`, `max_pages`, `max_chars`) in each `POST /documents` `meta`. The `rag` service
+  applies `min(meta value, its own hard ceiling)`, so even a compromised or buggy caller can't push
+  it past what the operator configured.
+- **Caddy**: the request-body cap on the upload path is set to the hard ceiling, not the
+  admin value. The admin value is enforced one layer further in.
+- **Existing data**: lowering a limit never deletes or re-checks existing documents. Lowering the
+  quota below a teacher's current usage only blocks new uploads, and the knowledge page shows
+  "quota exceeded" with the current usage.
+- Sandbox resources (`RAG_PARSE_MEMORY_MB`, `RAG_PARSE_TIMEOUT_S`) and the hard ceilings stay
+  env-only. They protect the host and belong to whoever runs the containers, not to the app
+  admin.
 
 ## 6. Upload safety
 
@@ -317,8 +372,8 @@ never trust its caller), and the actual parsing of untrusted bytes is isolated.
 
 - Authenticated teacher, KB ownership checked (404 otherwise).
 - Rate limit: per user, e.g. 30 uploads per 10 minutes (`core/rate_limit.py`).
-- Size: read at most `RAG_MAX_UPLOAD_MB + 1` bytes and reject if over, like
-  `voices_router.py`. Request bodies over the limit are also capped in Caddy (`request_body
+- Size: read at most `rag_max_upload_mb + 1` MB (admin setting, §5.5) and reject if over, like
+  `voices_router.py`. Request bodies are also capped in Caddy at the hard ceiling (`request_body
   max_size` for the knowledge upload path).
 - Quotas: documents per KB, KBs per user, MB per user.
 - Allowed types: `.pdf`, `.docx`, `.txt`, `.md` only. The extension **and** the magic bytes must
@@ -342,8 +397,8 @@ The same type, magic-byte and size checks again, plus:
 - **XML**: parsed with external entity resolution, DTD loading and network access disabled
   (lxml `XMLParser(resolve_entities=False, no_network=True, load_dtd=False, huge_tree=False)`;
   defusedxml as a guard). This blocks XXE and "billion laughs".
-- **PDF**: page count read from the trailer; more than `RAG_MAX_PAGES` (default 500) is rejected
-  before full parsing.
+- **PDF**: page count read from the trailer; more than the page limit (default 500, §5.5) is
+  rejected before full parsing.
 
 ### 6.3 Sandboxed parsing
 
@@ -361,7 +416,7 @@ Each parse runs in a **separate short-lived subprocess** (`multiprocessing` with
 
 ### 6.4 Container hardening (Compose)
 
-- `rag` and `docling` have **no published ports** and run as the unprivileged `PUID:PGID` user
+- `rag`, `docling` and `rag-eval` have **no published ports** and run as the unprivileged `PUID:PGID` user
   with `read_only: true` root filesystems, `tmpfs` for `/tmp`, `cap_drop: [ALL]`,
   `security_opt: [no-new-privileges:true]`, and memory and CPU limits.
 - They live on an internal Compose network shared only with the backend. `docling` gets no
@@ -372,7 +427,7 @@ Each parse runs in a **separate short-lived subprocess** (`multiprocessing` with
 ### 6.5 After parsing
 
 - Extracted text is normalised: Unicode NFC, control characters and NUL stripped, whitespace
-  runs collapsed. It's capped at `RAG_MAX_CHARS_PER_DOCUMENT` (default 2,000,000) and truncated
+  runs collapsed. It's capped at the character limit (default 2,000,000, §5.5), and truncated
   documents are flagged in the UI.
 - An empty result (e.g. a scanned PDF with no text layer) becomes `failed` with
   `NO_EXTRACTABLE_TEXT` and a hint: "use Docling (OCR) or upload a text-based PDF".
@@ -392,9 +447,142 @@ Each parse runs in a **separate short-lived subprocess** (`multiprocessing` with
   rule it out. The teacher is responsible for what they upload, and the test search box lets them
   see what will be retrieved.
 
-## 7. Docker and configuration
+## 7. Quality evaluation with Ragas
 
-`docker/docker-compose.yml`, two new services alongside `tts-local`:
+Teachers and researchers need to know whether the avatar actually answers from the material, and
+whether a change (another LLM, another embedding model, `strict` vs. `supplement`, a different
+`top_k`) makes it better or worse. [Ragas](https://pypi.org/project/ragas/) (Apache-2.0)
+provides standard metrics for that. It uses an LLM as a judge.
+
+### 7.1 What gets measured
+
+A **test set** is a list of questions, each with an optional **reference answer**. An
+**evaluation run** sends every question through the project's real answer path and scores the
+result:
+
+| Metric (Ragas) | Question it answers | Needs reference answer |
+|---|---|---|
+| Faithfulness | Is every claim in the answer supported by the retrieved passages? (Detects made-up content.) | no |
+| Response relevancy | Does the answer actually address the question? | no |
+| Context precision | Are the retrieved passages relevant, and are the relevant ones ranked first? | yes (a no-reference variant is used when it's missing) |
+| Context recall | Did retrieval find everything needed for the reference answer? | yes |
+| Factual correctness | Does the answer agree with the reference answer? | yes |
+
+Next to the Ragas scores, every run also records retrieval and LLM latency per question, from the
+same timing code as the latency test page. Quality and speed can then be compared in one table.
+
+### 7.2 Where it runs
+
+- **Answers are generated by the backend.** For each question it calls the same function the
+  preview chat uses (retrieval → `build_messages()` → LLM), without TTS and without saving a
+  conversation. So the run measures exactly what students get, including the retrieval timeout
+  and fallback. The questions, contexts and answers are collected in the backend.
+- **Scoring runs in a separate optional service, `rag-eval`** (folder `rag-eval/`, Compose
+  profile `rag-eval`). Ragas pulls in LangChain, `datasets`/`pyarrow` and more (§10). Keeping them
+  out of both the backend and the `rag` image means a deployment that doesn't evaluate never
+  installs or loads them.
+- **The backend runs the job.** An evaluation run is a background task in the backend's thread
+  pool (like streamed TTS), with its state in the DB (`queued` / `answering` / `scoring` / `done`
+  / `failed` / `interrupted`). Questions are answered one after another, so a run never competes
+  with a class's chats for more than one request slot. If the backend restarts mid-run, the run
+  ends as `interrupted` and can be restarted.
+
+`rag-eval` internal API (same bearer-token scheme as `rag`):
+
+| Route | Purpose |
+|---|---|
+| `GET /health` | Liveness, Ragas version. |
+| `POST /score` | `{items: [{question, answer, contexts, reference?}], metrics, judge, embedding, language}`, returns per-item scores plus Ragas' per-metric explanation where available. Synchronous, up to the batch size; the backend sends batches of 10. |
+| `POST /generate-testset` | `{chunks: [...], size, judge, embedding, language}`, returns generated `{question, reference}` pairs (§7.3). |
+
+### 7.3 Test sets
+
+A test set belongs to a knowledge base, so it can be reused for every project that links it. Ways
+to fill it:
+- **Manual**: add or edit questions and reference answers in the dashboard.
+- **CSV import/export**: columns `question,reference`; the same upload limits and text checks as
+  for `.txt` (§6) apply.
+- **Generated**: Ragas' test set generator writes questions and reference answers from the KB's
+  chunks, using the teacher's judge LLM key. The chunks come from the `rag` service (new internal
+  route `GET /knowledge-bases/{id}/chunks?sample=N`), and only a sample of N chunks (default 30)
+  is sent, to keep cost bounded. Generated questions show up as drafts the teacher reviews before
+  using them, because they're often too literal or too easy.
+
+### 7.4 Judge LLM, embeddings and cost
+
+- **Judge LLM**: one of the teacher's own LLM keys, chosen per run. It may differ from the
+  project's key, and a stronger judge than the answering model is recommended. Arcana keys can't be
+  judges, because Arcana adds its own RAG to every call. The backend decrypts the key and passes it
+  to `rag-eval` per request. `rag-eval` holds it in memory only and never logs it, as in §3.1. Ragas
+  gets an explicit LLM via its litellm/instructor adapter, and **never** its built-in OpenAI
+  default.
+- **Embeddings** (needed by response relevancy and the test set generator): the KB's own model,
+  served by the `rag` service through a new internal `POST /embed` route. Local models stay local;
+  API models use the KB's embedding key.
+- **Cost**: every metric costs several judge calls per question. Before starting, the dashboard
+  shows an estimate: questions × metrics × typical calls, about 4–8 calls per question per metric
+  (to be refined in step 1). The teacher has to confirm it. `rag_eval_max_cases_per_run` (admin
+  setting, §5.5) caps the size of a run.
+- **Language**: Ragas' judge prompts are English. For German material, Ragas' prompt adaptation is
+  run once per language and cached in the `rag-eval` data volume. LLM judges are measurably less
+  reliable than humans, especially outside English. The results page says so, and the scores are
+  presented for comparing runs, not as absolute grades.
+- **Telemetry**: Ragas sends anonymous usage analytics by default. The `rag-eval` image sets
+  `RAGAS_DO_NOT_TRACK=true`, and the container has outbound access only to the judge LLM
+  providers (same network rules as `rag`).
+
+### 7.5 Data model (backend, part of the knowledge migration)
+
+```python
+class EvalTestSet(SQLModel, table=True):
+    id: str; user_id: str; knowledge_base_id: str; name: str; language: str; created_at: datetime
+
+class EvalTestCase(SQLModel, table=True):
+    id: str; test_set_id: str; question: str; reference: str | None
+    origin: str                  # "manual" | "csv" | "generated"
+    approved: bool               # generated drafts start as False
+
+class EvalRun(SQLModel, table=True):
+    id: str; user_id: str; project_id: str; test_set_id: str
+    judge_api_key_id: str        # FK userapikey.id
+    config_json: str             # snapshot: LLM model, embedding model, knowledge_mode, top_k, metrics
+    status: str; error_code: str | None
+    summary_json: str | None     # mean / median per metric, latency percentiles
+    created_at: datetime; finished_at: datetime | None
+
+class EvalRunItem(SQLModel, table=True):
+    id: str; run_id: str; test_case_id: str | None
+    question: str; answer: str; contexts_json: str     # passages as used, for inspection
+    scores_json: str; retrieval_ms: float | None; llm_ms: float
+```
+
+- Runs store a **snapshot** of the configuration and the question text, so an old run stays
+  readable after the project or test set changes.
+- Deleting a KB deletes its test sets and every run that used them. Run items contain copies of
+  the passages, and copies must not outlive their source. Deleting a project deletes its runs.
+  Deleting an account deletes everything.
+- Evaluation never touches student data: test sets are written or generated by the teacher, and
+  runs aren't saved as conversations. Evaluating saved student conversations is a separate topic
+  in §12.
+
+### 7.6 Evaluation UI
+
+- **Knowledge page → KB → "Test sets" tab**: list, edit questions, CSV import/export, "Generate
+  questions" (with a cost estimate), and approve drafts.
+- **New page `/dashboard/evaluation`** (nav item only when `RAG_EVALUATION_ENABLED`):
+  - Start a run: choose a project, a test set, a judge key and metrics, see the cost estimate,
+    confirm.
+  - Progress while it runs.
+  - Results: a summary card per metric, a table per question (answer, retrieved passages,
+    scores, the judge's reasoning where Ragas provides it), and filtering to the
+    worst-scoring questions.
+  - **Compare** two or more runs side by side, e.g. `supplement` vs. `strict`, or local vs. API
+    embeddings, using the stored config snapshots as column headers.
+  - Export a run as CSV/JSON, in the same style as the analytics export.
+
+## 8. Docker and configuration
+
+`docker/docker-compose.yml`, three new services alongside `tts-local`, each behind its own profile:
 
 ```yaml
   # Optional knowledge base (RAG) — see rag/ and docs/rag-plan.md. Only started with the "rag"
@@ -430,62 +618,103 @@ Each parse runs in a **separate short-lived subprocess** (`multiprocessing` with
     security_opt: ["no-new-privileges:true"]
     mem_limit: 6g
     restart: unless-stopped
+
+  # Optional answer-quality evaluation with Ragas (§7). Only with COMPOSE_PROFILES=rag,rag-eval
+  # and RAG_EVALUATION_ENABLED=true.
+  rag-eval:
+    image: chsiegel/eduavatars:rag-eval
+    pull_policy: always
+    profiles: ["rag-eval"]
+    env_file: ../.env
+    user: "${PUID:-568}:${PGID:-568}"
+    environment:
+      RAG_EVAL_DATA_DIR: /data          # cached prompt adaptations per language
+      RAG_SERVICE_URL: http://rag:8090  # for the KB's embedding model (POST /embed)
+      RAGAS_DO_NOT_TRACK: "true"
+    volumes:
+      - ${EDUAVATARS_DATA_DIR}/rag-eval:/data
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 2g
+    restart: unless-stopped
 ```
 
-The backend does **not** `depends_on` `rag`. When `rag` is down, uploads fail with a clear error and
-chats continue without retrieval.
+The backend does **not** `depends_on` these services. When `rag` is down, uploads fail with a
+clear error and chats continue without retrieval. When `rag-eval` is down, starting a run fails
+with a clear error.
+
+Typical setups:
+
+| Goal | `.env` |
+|---|---|
+| No RAG (default) | nothing |
+| RAG, light parsing | `COMPOSE_PROFILES=rag`, `RAG_ENABLED=true`, `RAG_SERVICE_TOKEN=…` |
+| + Docling | `COMPOSE_PROFILES=rag,docling`, `DOCLING_URL=http://docling:5001` |
+| + Evaluation | add `rag-eval` to `COMPOSE_PROFILES`, `RAG_EVALUATION_ENABLED=true` |
+
+(Combine with `local-tts` as before, e.g. `COMPOSE_PROFILES=local-tts,rag,rag-eval`.)
 
 `rag` service environment (`rag/app/config.py`):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `RAG_SERVICE_TOKEN` | – | Same value as the backend's, required. |
+| `RAG_SERVICE_TOKEN` | – | Same value as the backend's, required. `rag-eval` uses the same token. |
 | `RAG_LOCAL_EMBEDDING_MODEL` | `jinaai/jina-embeddings-v2-base-de` | Must be on the allowlist (§4). |
 | `DOCLING_URL` | unset | Enables the "Docling" parser option. |
-| `RAG_MAX_UPLOAD_MB` / `RAG_MAX_PAGES` / `RAG_MAX_CHARS_PER_DOCUMENT` | 20 / 500 / 2,000,000 | §6 |
+| `RAG_HARD_MAX_UPLOAD_MB` / `RAG_HARD_MAX_PAGES` / `RAG_HARD_MAX_CHARS` | 100 / 2000 / 10,000,000 | Ceilings for the admin-adjustable limits (§5.5). |
 | `RAG_PARSE_MEMORY_MB` / `RAG_PARSE_TIMEOUT_S` | 1024 / 120 | Sandbox limits (§6.3). |
 | `RAG_INGEST_WORKERS` | 1 | Parallel indexing jobs; 1 keeps the CPU free for the local embedder at query time. |
 
-New entries go into `.env.example` (with "Deploy B (Docker)" / "both paths" notes), `docker/README.md`,
-the root README feature list, and a `rag/README.md` for running the service by hand in local
-development (`RAG_SERVICE_URL=http://127.0.0.1:8090`).
+New entries go into `.env.example` (with "Deploy B (Docker)" / "both paths" notes),
+`docker/README.md`, the root README feature list, and `rag/README.md` / `rag-eval/README.md` for
+running the services by hand in local development (`RAG_SERVICE_URL=http://127.0.0.1:8090`,
+`RAG_EVAL_SERVICE_URL=http://127.0.0.1:8091`).
 
-`.github/workflows/docker-publish.yml`: a `rag` matrix entry (`docker/rag.Dockerfile`), a
-`rag-tests` job (pytest in `rag/`), and the licence gate (§9).
+`.github/workflows/docker-publish.yml`: `rag` and `rag-eval` matrix entries
+(`docker/rag.Dockerfile`, `docker/rag-eval.Dockerfile`), `rag-tests` and `rag-eval-tests` jobs, and
+the licence gate (§10).
 
-`docker/rag.Dockerfile`: `python:3.12-slim`, install `rag/` with pinned versions, non-root user, no
-compilers in the final stage. The local model is **not** baked in by default; it downloads into the
-cache volume on first start, like the STT model. A build arg allows baking it in for offline
-installs.
+`docker/rag.Dockerfile` and `docker/rag-eval.Dockerfile`: `python:3.12-slim`, pinned versions,
+non-root user, no compilers in the final stage. The local embedding model is **not** baked in by
+default; it downloads into the cache volume on first start, like the STT model. A build arg allows
+baking it in for offline installs.
 
-## 8. Frontend
+## 9. Frontend
 
 - **`/dashboard/knowledge`**, a new nav item, shown only when `GET /providers/rag-status` says
   `available`. Modelled on the Voices page (`pages/Dashboard/Voices/`):
   - Knowledge base list: create (name, description, embedding choice: "On this server (default)" or
     one of the teacher's `embedding` keys with the data-sharing notice), rename, delete (with a
     "used by N projects" warning).
-  - Per KB: an upload area (drag and drop, multiple files, client-side type and size pre-check),
-    the copyright/public-access confirmation checkbox, a parser choice ("Standard" / "Docling –
-    better for tables and scans", shown only when `docling_available`), and a document table with
-    status badges, pages, chunks, a "truncated" flag, the error message, retry and delete. It polls
-    while any document is in progress.
+  - Per KB: an upload area (drag and drop, multiple files, client-side type and size pre-check
+    against the current admin limits), the copyright/public-access confirmation checkbox, a
+    parser choice ("Standard" / "Docling – better for tables and scans", shown only when
+    `docling_available`), and a document table with status badges, pages, chunks, a "truncated"
+    flag, the error message, retry and delete. It polls while any document is in progress. Quota
+    usage is shown as "x of y MB".
   - A test search box: type a question and see the passages that would be retrieved, with file and
     page.
+  - A "Test sets" tab, when evaluation is enabled (§7.6).
+- **`/dashboard/evaluation`**, when evaluation is enabled (§7.6).
+- **Admin settings page**: a "Knowledge base" section with the limits from §5.5.
 - **Configurator, Step 3 (Behaviour)**: a "Knowledge" section with the mode (`off` / `supplement`
   / `strict`, with explanations), multi-select of the teacher's KBs, and an advanced `top_k`
   setting. It's disabled with an explanation for Arcana keys and hidden when RAG isn't available.
 - **API dashboard**: the new key type "Embedding" in the key form and the provider list (from the
-  backend registry, as today). The key test calls `/embedding-test`.
+  backend registry, as today; no provider-specific presets). The key test calls `/embedding-test`.
 - **Analytics transcript view**: assistant messages with `sources` show a small "Sources" line
   (file name + page) for the teacher. The CSV export gets a `sources` column. Deleted documents
   show as "(deleted document)".
 - **Latency test page**: a "Retrieval" column.
 - All strings through `t()` in **both** `de.json` and `en.json`.
 
-## 9. Licences
+## 10. Licences
 
-All runtime dependencies of the `rag` service and new backend code, checked on PyPI on 2026-10-08:
+Licences checked on PyPI on 2026-10-08; Docling's model licences confirmed by the maintainer.
+
+**`rag` service and new backend code**
 
 | Package | Licence | Used for |
 |---|---|---|
@@ -502,98 +731,153 @@ All runtime dependencies of the `rag` service and new backend code, checked on P
 | charset-normalizer | MIT | encoding detection for .txt/.md |
 | litellm | MIT | API embeddings (already a backend dependency) |
 | numpy | BSD-3-Clause | vectors |
-| docling, docling-serve, docling-core, docling-ibm-models | MIT | optional parsing service |
 
-Models: `jina-embeddings-v2-base-de` (Apache-2.0), `multilingual-e5-large` (MIT),
-`paraphrase-multilingual-mpnet-base-v2` (Apache-2.0). To be verified in step 1 of §10 before
-pinning: the licences of the **Docling model weights** (layout and TableFormer models) and of the
-OCR engine bundled in the chosen `docling-serve` image tag. If any isn't permissive, choose an image
-variant or OCR engine that is (e.g. RapidOCR or Tesseract, Apache-2.0) or leave OCR off.
+**`docling` service (optional)**
 
-Deliberately avoided:
+| Component | Licence |
+|---|---|
+| docling, docling-serve, docling-core, docling-ibm-models (code) | MIT |
+| Docling model weights (Hugging Face) | Apache-2.0 and CDLA-Permissive-2.0 |
+| OCR engine in the chosen image tag | to be pinned to a permissive one (e.g. RapidOCR, EasyOCR or Tesseract, all Apache-2.0) in step 1 |
+
+**`rag-eval` service (optional)**
+
+| Package | Licence |
+|---|---|
+| ragas 0.4.x | Apache-2.0 |
+| langchain, langchain-core, langchain-community, langchain-openai | MIT |
+| datasets, pyarrow, diskcache, openai | Apache-2.0 |
+| instructor, typer, rich, appdirs, tiktoken | MIT |
+| networkx, scikit-network, nest-asyncio | BSD |
+| pillow | MIT-CMU (HPND) |
+| tqdm | MPL-2.0 AND MIT |
+
+**Models**: `jina-embeddings-v2-base-de` (Apache-2.0), `multilingual-e5-large` (MIT),
+`paraphrase-multilingual-mpnet-base-v2` (Apache-2.0).
+
+**About MPL-2.0 and CDLA-Permissive-2.0.** MPL-2.0 (tqdm here, and `certifi`, which the project
+already uses through httpx) is a file-level copyleft. It only requires sharing changes to the MPL
+files themselves, and we use them unmodified. CDLA-Permissive-2.0 is a permissive licence for data
+and model weights; it only asks that the licence text be passed on. Both are open licences that
+don't affect EduAvatars' MIT licence. The images ship a `THIRD_PARTY_LICENSES` file to satisfy the
+attribution requirements of Apache-2.0, CDLA and MPL.
+
+**Deliberately avoided**
 - **PyMuPDF/fitz**: AGPL-3.0.
 - **pdftotext/poppler bindings**: GPL.
 - **jina-embeddings-v3**: CC-BY-NC.
 - **unstructured's hi-res extras**: they pull in mixed-licence models.
 - **ClamAV**: GPL-2.0. A network sidecar wouldn't infect our licence, but it's unnecessary here
   because files are never stored or served back.
+- **Ragas extras** (`ragas[all]`, `[tracing]`, …): only the base package is installed. The extras
+  bring in many more packages (llama-index, r2r, mlflow, …) that we don't need.
 
-**Licence gate in CI.** In the `rag-tests` and `backend-tests` jobs, run
-`pip-licenses --fail-on="GPL;AGPL;LGPL;SSPL;CC-BY-NC"` (with `--partial-match`) against the installed
-environment. pip-licenses is MIT and is used only in CI. An explicit allow-list file documents any
-exception with a reason. Model licences are enforced in code by the allowlist in
-`rag/app/embedding.py`.
+**Licence gate in CI.** In the `backend-tests`, `rag-tests` and `rag-eval-tests` jobs, run
+`pip-licenses --fail-on="GPL;AGPL;LGPL;SSPL;CC-BY-NC;Commons Clause"` (with `--partial-match`)
+against the installed environment. pip-licenses is MIT and is used only in CI. A small allow-list
+file (`ci/licence-allowlist.txt`) documents each reviewed exception with a reason, e.g. packages
+that publish their licence only as full text instead of an SPDX identifier (tiktoken, ragas).
+Model licences are enforced in code by the allowlist in `rag/app/embedding.py`.
 
-## 10. MVP implementation steps
+## 11. Implementation steps
 
 Each step is one or more focused commits on `claude/working-branch`, with tests, so the branch
-stays green after every step. Steps 2–4 don't touch user-visible behaviour, and everything stays
-behind `RAG_ENABLED=false`.
+stays green after every step. Everything stays behind `RAG_ENABLED=false` /
+`RAG_EVALUATION_ENABLED=false`.
 
-1. **Licence and model verification spike.** Pin versions. Confirm the Docling weights and OCR
-   licences. Measure local embedding speed for the default model on a 4-core CPU (target: under
-   50 ms per query, about 20 chunks/s indexing). Fix the defaults in this plan if the numbers
-   disagree.
+**Part A: knowledge base (MVP)**
+
+1. **Spike**: pin versions, choose the `docling-serve` image tag and its OCR engine, and measure
+   local embedding speed for the default model on a 4-core CPU (target: under 50 ms per query,
+   about 20 chunks/s indexing). Fix the defaults in this plan if the numbers disagree.
 2. **`rag` service skeleton**: config, token auth, `/health`, `/capabilities`, SQLite store with
    sqlite-vec + FTS5, `rag.Dockerfile`, Compose `rag` profile, CI job, licence gate.
-3. **Parsing + safety**: checks (§6.2), sandbox (§6.3), pypdf/docx/text parsers, normalisation.
-   Tests with a malicious corpus generated in the tests (zip bomb, deep-nesting XML, XXE,
-   billion-laughs, wrong extension, encrypted PDF, too many pages, NUL-laden text, empty scanned
-   PDF). No downloads in tests.
+3. **Parsing + safety**: checks (§6.2), sandbox (§6.3), pypdf/docx/text parsers, normalisation,
+   per-request limits with ceilings (§5.5). Tests with a malicious corpus generated in the tests
+   (zip bomb, deep-nesting XML, XXE, billion-laughs, wrong extension, encrypted PDF, too many pages,
+   NUL-laden text, empty scanned PDF). No downloads in tests.
 4. **Chunking, embedding, ingest worker, search**: local embedder behind an interface faked in
    tests, API embedder via litellm (faked at the litellm seam like the backend tests), hybrid
-   search + RRF, delete routes, status routes.
+   search + RRF, delete/status/embed/chunk-sample routes.
 5. **Backend data model + knowledge feature**: migration, models, service, `rag_client`, routes,
    quotas, rate limit, upload checks (§6.1), deletion cascade + pending-deletion retry, new key
    type `embedding` in the provider registry, `/providers/rag-status`, config validation, OpenAPI
    snapshot update.
-6. **Chat integration**: `ChatRequest.context_passages`, `build_messages()`, retrieval in
+6. **Admin limits**: the `SiteSettings` columns, schema validation against the `rag` ceilings, the
+   admin settings section, and passing the limits to `rag` (§5.5).
+7. **Chat integration**: `ChatRequest.context_passages`, `build_messages()`, retrieval in
    `reply_turn`/`stream_turn` with the timeout and fallback, Arcana exclusion, `sources` in saved
    turns, project fields + export/import.
-7. **Frontend**: Knowledge page, configurator section, embedding key type, transcript sources, CSV
+8. **Frontend**: Knowledge page, configurator section, embedding key type, transcript sources, CSV
    column, latency column, i18n (de/en).
-8. **Docling option**: `docling` Compose profile, `docling.py` client with its own timeout and
+9. **Docling option**: `docling` Compose profile, `docling.py` client with its own timeout and
    size cap, parser choice in UI and API.
-9. **Docs**: `rag/README.md`, root README ("Ground answers in your own material" now covers every
-   provider), `docker/README.md`, `.env.example`, AGENTS.md (new folder and commands), backend
-   README.
-10. **End-to-end check**: run the stack with the `rag` profile and verify
-    upload → ready → test search → preview chat that cites the material → saved transcript with
-    sources → delete, which removes chunks. Check latency in the latency test page. Run the
-    `security-privacy-auditor` and `migration-reviewer` agents over the changes.
 
-**Definition of done for the MVP**
-- With `RAG_ENABLED=false` (the default), nothing changes: no new nav item, no new outbound
-  calls, and existing tests pass unchanged.
-- Backend and `rag` tests pass, the frontend build passes, and the licence gate passes.
+**Part B: evaluation**
+
+10. **`rag-eval` service**: skeleton, token auth, Ragas with explicit judge LLM and embeddings,
+    telemetry off, `/score` and `/generate-testset`, prompt adaptation cache, Dockerfile, Compose
+    profile, CI job with the licence gate. Tests fake the judge at the litellm seam, so no real LLM
+    calls are made.
+11. **Backend evaluation feature**: tables (§7.5), test set CRUD + CSV import/export, generation
+    with review, run orchestration in the background (answers through the preview path, then
+    batched scoring), cost estimate, cascade deletes, admin cap.
+12. **Evaluation UI**: the test sets tab, the evaluation page with run start, progress, results,
+    comparison and export, i18n.
+
+**Part C: wrap-up**
+
+13. **Docs**: `rag/README.md`, `rag-eval/README.md`, root README ("Ground answers in your own
+    material" now covers every provider; new "Evaluate answer quality" item for researchers),
+    `docker/README.md`, `.env.example`, AGENTS.md (new folders and commands), backend README.
+14. **End-to-end check**: run the stack with `rag,rag-eval` and verify
+    upload → ready → test search → preview chat that cites the material → saved transcript with
+    sources → evaluation run with a small test set → delete, which removes chunks, test sets and
+    runs. Check latency in the latency test page. Change an admin limit and confirm it's enforced
+    by both services. Run the `security-privacy-auditor` and `migration-reviewer` agents over the
+    changes.
+
+Part A can be merged and used on its own; Part B builds on it.
+
+**Definition of done**
+- With `RAG_ENABLED=false` (the default), nothing changes: no new nav items, no new outbound
+  calls, and existing tests pass unchanged. The same holds for evaluation with
+  `RAG_EVALUATION_ENABLED=false`.
+- Backend, `rag` and `rag-eval` tests pass, the frontend build passes, and the licence gate
+  passes.
 - Retrieval adds at most ~150 ms to time-to-first-audio with the local model on the reference
   machine; anything above `RAG_QUERY_TIMEOUT_MS` falls back without breaking the turn.
 
-## 11. After the MVP
+## 12. Later
 
 - Show sources in the public chat bubble (text only; never sent to TTS, cf. Arcana's reference
   stripping).
 - Re-index a KB with a different embedding model from the stored text.
 - More formats: PPTX (python-pptx, MIT), HTML, EPUB, all with the same sandbox.
-- Retrieval quality evaluation for researchers (Ragas, Apache-2.0) and an analytics view of
-  "questions the material didn't answer" (low retrieval scores).
+- **Evaluating saved student conversations** (faithfulness and relevancy need no reference
+  answer). This sends student messages to the judge LLM, so it needs its own opt-in, a privacy
+  note, and pseudonymisation. It's out of scope until that's designed.
+- An analytics view of "questions the material didn't answer" (low retrieval scores).
 - Shared knowledge bases between teachers of one institution (needs an ownership model first).
 - Optional reranker (e.g. `BAAI/bge-reranker-v2-m3`, Apache-2.0) if retrieval quality needs it
   and the latency budget allows.
+- A GWDG SAIA embedding preset, if wanted later.
 
-## 12. Risks and open questions
+## 13. Risks and open questions
 
 | Risk | Mitigation |
 |---|---|
-| CPU contention: local embedding at query time competes with Whisper/Parakeet STT and local TTS on the same host. | One ingest worker by default; embedding a single query is cheap. Measure in step 1 and step 10; document recommended cores. |
+| CPU contention: local embedding at query time competes with Whisper/Parakeet STT and local TTS on the same host. | One ingest worker by default; embedding a single query is cheap. Measure in steps 1 and 14; document recommended cores. |
 | sqlite-vec is pre-1.0. | Access goes only through `store.py`, so a swap to LanceDB (Apache-2.0, also embedded) stays local to one file. |
 | Docling image size (several GB) and memory. | Separate optional profile; the light parser stays the default. |
 | Teachers upload copyrighted or personal data. | Confirmation checkbox, clear wording, password option, originals not kept, deletion that really deletes. |
-| Weaker models ignore the "strict" instruction. | Documented as best effort; the test search and the preview chat let teachers check behaviour before publishing. |
+| Weaker models ignore the "strict" instruction. | Documented as best effort; the test search, the preview chat and the evaluation runs let teachers check behaviour before publishing. |
+| Ragas' API changes between minor versions (0.1 → 0.2 → 0.3 → 0.4 each changed it). | Pin `ragas` to a minor version with a comment, and keep all Ragas calls in one adapter module in `rag-eval`. |
+| LLM-judge scores are noisy and less reliable outside English. | Present scores for comparing runs, show the judge's reasoning, recommend a stronger judge model, and allow repeated runs. |
+| Evaluation costs money on the teacher's key. | Cost estimate with confirmation, an admin cap on questions per run, generation from a bounded chunk sample. |
 
 Open questions for the maintainer:
-1. Default quotas (20 MB/file, 200 MB/teacher): suitable for your pilot?
-2. Should an admin be able to turn RAG on or off per instance at runtime (site settings), or is the
-   env variable enough?
-3. Is a GWDG SAIA embedding model desired as a preset in the provider registry, to keep API
-   embeddings within the academic cloud?
+1. Should evaluation also be available to the preview of unpublished projects? (The plan assumes
+   yes: any of the teacher's projects.)
+2. Default judge recommendation: should the UI suggest a specific model per provider, or just say
+   "use your strongest model"?
