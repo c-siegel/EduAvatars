@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   AudioLines,
   LayoutDashboard,
+  Timer,
   BarChart3,
   KeyRound,
   Settings2,
@@ -52,6 +53,12 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
     href: "/dashboard/voices",
     icon: AudioLines,
     isActive: (p) => p.startsWith("/dashboard/voices"),
+  },
+  {
+    labelKey: "nav.latencyLab",
+    href: "/dashboard/latency",
+    icon: Timer,
+    isActive: (p) => p.startsWith("/dashboard/latency"),
   },
   {
     labelKey: "nav.profile",

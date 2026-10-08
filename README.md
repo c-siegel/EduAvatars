@@ -91,7 +91,10 @@ you, none of the setup below applies — just:
 - **Measure latency.** Every response is timed server-side (LLM, TTS, STT stage-by-stage) and
   the frontend can log matching client-side timings — see
   [backend/README.md](backend/README.md#latency-monitoring) — useful if you're studying
-  response-time perception or comparing infrastructure choices.
+  response-time perception or comparing infrastructure choices. The dashboard's **Latency test**
+  page runs scripted student conversations on any device and compares configurations (speech
+  recognition on the device or the server, LLM, streaming, speech output, avatar on/off) — see
+  [docs/latency-test.md](docs/latency-test.md).
 
 ## Project status
 
