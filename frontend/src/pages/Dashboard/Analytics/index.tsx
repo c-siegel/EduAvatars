@@ -370,7 +370,23 @@ export function AnalyticsPage() {
               {sessionDetailQuery.isLoading && <p>{t("common.loading")}</p>}
               {sessionDetailQuery.isError && <Callout variant="danger">{t("analytics.transcript.loadError")}</Callout>}
               {sessionDetailQuery.data?.messages.map((message, index) => (
-                <ChatBubble key={index} role={message.role === "assistant" ? "assistant" : "user"} content={message.content} />
+                <div key={index}>
+                  <ChatBubble role={message.role === "assistant" ? "assistant" : "user"} content={message.content} />
+                  {message.sources && message.sources.length > 0 && (
+                    <p className={styles.transcriptSources}>
+                      {t("analytics.transcript.sources")}{" "}
+                      {[
+                        ...new Set(
+                          message.sources.map(
+                            (source) =>
+                              (source.filename ?? t("knowledge.deletedDocument")) +
+                              (source.page ? ` (${t("knowledge.page", { page: source.page })})` : ""),
+                          ),
+                        ),
+                      ].join(", ")}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           </div>

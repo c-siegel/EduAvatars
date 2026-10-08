@@ -206,6 +206,7 @@ export async function runTurn(ctx: TurnContext, input: TurnInput, runId: string,
     sttMs: null,
     sttServerMs: null,
     sttEngine: null,
+    retrievalMs: null,
     llmFirstTokenMs: null,
     llmTotalMs: null,
     firstChunkTextReadyMs: null,
@@ -310,6 +311,7 @@ export async function runTurn(ctx: TurnContext, input: TurnInput, runId: string,
       ctx.signal,
     );
     result.replyCompleteMs = performance.now() - t0;
+    result.retrievalMs = done.retrievalMs ?? null;
     result.llmFirstTokenMs = done.llmFirstTokenMs;
     result.llmTotalMs = done.llmMs;
     result.firstChunkTextReadyMs = done.firstChunkTextReadyMs;

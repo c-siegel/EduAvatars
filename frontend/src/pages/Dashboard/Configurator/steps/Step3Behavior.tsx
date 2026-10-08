@@ -11,6 +11,7 @@ import { projectsApi } from "@/api/projects";
 import { errorMessage } from "@/api/client";
 import type { Project } from "@/types/project";
 import type { StepProps } from "../types";
+import { KnowledgeSection } from "./KnowledgeSection";
 import styles from "./Step3Behavior.module.css";
 
 const START_PROMPT_MAX_LENGTH = 1000;
@@ -29,7 +30,8 @@ interface Step3Props extends StepProps {
   onSaveDraft: () => Promise<Project>;
 }
 
-// Step 3 — behaviour: target audience, preprompt (with a generic default text) and start message.
+// Step 3 — behaviour: target audience, preprompt (with a generic default text), start message and
+// the knowledge bases the avatar may draw on.
 export function Step3Behavior({
   draft,
   onChange,
@@ -187,6 +189,8 @@ export function Step3Behavior({
           )}
         </div>
       </div>
+
+      <KnowledgeSection draft={draft} onChange={onChange} />
     </div>
   );
 }

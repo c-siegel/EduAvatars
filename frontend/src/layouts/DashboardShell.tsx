@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AudioLines,
+  BookOpen,
   LayoutDashboard,
   Timer,
   BarChart3,
@@ -23,6 +24,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -68,6 +70,14 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
   },
 ];
 
+// Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
+const KNOWLEDGE_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.knowledge",
+  href: "/dashboard/knowledge",
+  icon: BookOpen,
+  isActive: (p) => p.startsWith("/dashboard/knowledge"),
+};
+
 const ADMIN_NAV_ITEM: NavConfigItem = {
   labelKey: "nav.admin",
   href: "/dashboard/admin",
@@ -106,7 +116,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
+  const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
+  // Knowledge sits right after Voices — both are the teacher's libraries.
+  const baseItems = knowledgeAvailable
+    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, KNOWLEDGE_NAV_ITEM] : [item]))
+    : BASE_NAV_ITEMS;
+  const navItems = user?.isAdmin ? [...baseItems, ADMIN_NAV_ITEM] : baseItems;
   const activeItem = navItems.find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 

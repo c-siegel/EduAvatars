@@ -71,6 +71,11 @@ export interface Project {
   // pages/PublicChat/index.tsx's "name-gate" stage) — the entered value shows up next to that
   // visitor's saved conversation in the analytics export, but only if saveConversations is also on.
   requireVisitorName: boolean;
+  // Knowledge bases (see pages/Dashboard/Knowledge): how the avatar uses them, how many passages
+  // it gets per turn, and which of the teacher's knowledge bases are attached.
+  knowledgeMode: KnowledgeMode;
+  knowledgeTopK: number;
+  knowledgeBaseIds: string[];
   createdAt: string;
 }
 
@@ -81,6 +86,10 @@ export type ProjectUpdate = Partial<
 > & { chatPassword?: string | null };
 
 export type SpokenLanguage = "de" | "en";
+
+// "supplement": use the material where it helps; "strict": answer only from it.
+export type KnowledgeMode = "off" | "supplement" | "strict";
+export const KNOWLEDGE_MODES: KnowledgeMode[] = ["off", "supplement", "strict"];
 
 // The local server STT engines (backend Settings.stt_engine / Project.stt_server_engine).
 export type SttServerEngine = "whisper" | "parakeet";

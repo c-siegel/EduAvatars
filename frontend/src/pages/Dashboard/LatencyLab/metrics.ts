@@ -37,6 +37,8 @@ export interface TurnResult {
   sttServerMs: number | null;
   sttEngine: string | null;
 
+  /** Server: knowledge-base lookup before the LLM call (null without a knowledge base). */
+  retrievalMs: number | null;
   /** Server-side, since the backend received the message. */
   llmFirstTokenMs: number | null;
   llmTotalMs: number | null;
@@ -70,6 +72,7 @@ export const METRIC_COLUMNS = [
   "sttFirstPartialMs",
   "sttMs",
   "sttServerMs",
+  "retrievalMs",
   "llmFirstTokenMs",
   "llmTotalMs",
   "firstChunkTextReadyMs",

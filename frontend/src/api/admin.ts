@@ -23,6 +23,22 @@ export interface SiteSettings {
   registrationEnabled: boolean;
   // 0 = keep saved student conversations forever.
   conversationRetentionDays: number;
+  // Knowledge-base (RAG) limits; the first three can't exceed KnowledgeCeilings.
+  ragMaxUploadMb: number;
+  ragMaxPages: number;
+  ragMaxCharsPerDocument: number;
+  ragMaxDocumentsPerKb: number;
+  ragMaxKbPerUser: number;
+  ragUserQuotaMb: number;
+  ragUploadRatePer10Min: number;
+}
+
+// The operator's ceilings for the knowledge limits (RAG_HARD_MAX_* in the knowledge service).
+export interface KnowledgeCeilings {
+  enabled: boolean;
+  maxUploadMb: number;
+  maxPages: number;
+  maxChars: number;
 }
 
 export const adminApi = {
@@ -35,4 +51,5 @@ export const adminApi = {
     apiClient.post<void>(`/admin/users/${userId}/reset-password`, { newPassword }),
   getSettings: () => apiClient.get<SiteSettings>("/admin/settings"),
   updateSettings: (data: Partial<SiteSettings>) => apiClient.put<SiteSettings>("/admin/settings", data),
+  getKnowledgeCeilings: () => apiClient.get<KnowledgeCeilings>("/admin/settings/knowledge-ceilings"),
 };

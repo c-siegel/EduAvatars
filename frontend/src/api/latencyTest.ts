@@ -37,6 +37,8 @@ export interface LatencyDoneEvent {
   firstChunkMs: number | null;
   firstChunkTextReadyMs: number | null;
   ttsMs: number | null;
+  /** Knowledge-base lookup before the LLM call; null when the project uses no knowledge base. */
+  retrievalMs?: number | null;
 }
 
 export interface LatencyTranscription {

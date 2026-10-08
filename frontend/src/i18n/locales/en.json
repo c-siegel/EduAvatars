@@ -21,7 +21,8 @@
     "logout": "Log out",
     "closeMenu": "Close menu",
     "openMenu": "Open menu",
-    "latencyLab": "Latency test"
+    "latencyLab": "Latency test",
+    "knowledge": "Knowledge"
   },
   "auth": {
     "tabsAriaLabel": "Log in or sign up",
@@ -246,10 +247,47 @@
       "registrationText": "When off, only an admin can create new accounts.",
       "save": "Save settings",
       "saveError": "Save failed. Please try again.",
-      "saved": "Settings saved."
+      "saved": "Settings saved.",
+      "knowledgeTitle": "Knowledge bases",
+      "knowledgeHint": "Limits for teachers' uploads. Changes apply to new uploads only; documents that are already indexed stay.",
+      "knowledgeCeiling": "At most {{max}} on this server",
+      "knowledgeLimits": {
+        "ragMaxUploadMb": "Max. file size (MB)",
+        "ragMaxPages": "Max. pages per PDF",
+        "ragMaxCharsPerDocument": "Max. characters per document",
+        "ragMaxDocumentsPerKb": "Max. documents per knowledge base",
+        "ragMaxKbPerUser": "Max. knowledge bases per teacher",
+        "ragUserQuotaMb": "Storage per teacher (MB)",
+        "ragUploadRatePer10Min": "Uploads per teacher per 10 minutes"
+      }
     }
   },
   "configurator": {
+    "knowledge": {
+      "title": "Knowledge",
+      "intro": "Let the avatar answer from your own documents. Before each reply, the passages that best match the student's question are looked up and handed to the language model.",
+      "arcanaHint": "GWDG Arcana brings its own knowledge base, so these settings don't apply to this project's language model.",
+      "modeLabel": "How the avatar uses the material",
+      "modes": {
+        "off": "Off",
+        "supplement": "As additional material",
+        "strict": "Only from the material"
+      },
+      "modeHints": {
+        "off": "The avatar answers from its language model alone.",
+        "supplement": "Uses the material where it fits the question, otherwise answers as usual.",
+        "strict": "Only answers what the material covers and says so when it doesn't. Language models don't always stick to this — check it in the preview."
+      },
+      "noBases": "You don't have a knowledge base yet.",
+      "manageLink": "Create one",
+      "basesLabel": "Knowledge bases",
+      "baseMeta_one": "{{count}} document",
+      "baseMeta_other": "{{count}} documents",
+      "noneSelected": "Select at least one knowledge base, otherwise nothing is looked up.",
+      "topK": "Passages per answer",
+      "topKHint": "More passages give more context but make answers slower and more expensive. 4 is a good start.",
+      "publicNotice": "Anyone who can open this project's link can ask the avatar to quote the attached material."
+    },
     "steps": {
       "appearance": "Appearance",
       "technical": "Technical",
@@ -420,7 +458,8 @@
     "apiKeyEditing": "API key (leave empty to keep unchanged)",
     "apiKey": "API key",
     "apiKeyOptional": "API key (optional)",
-    "defaultModel": "Default model"
+    "defaultModel": "Default model",
+    "embeddingHint": "For knowledge bases that should be indexed with this provider's model instead of the one on this server."
   },
   "apiDashboard": {
     "title": "API keys",
@@ -494,7 +533,8 @@
     },
     "transcript": {
       "title": "Conversation",
-      "loadError": "Couldn't load the conversation."
+      "loadError": "Couldn't load the conversation.",
+      "sources": "Sources:"
     },
     "pagination": {
       "zero": "0 of 0",
@@ -700,7 +740,8 @@
       "replyCompleteMs": "Reply complete",
       "playbackEndMs": "Avatar finished speaking",
       "playbackGapMs": "Pauses in the speech",
-      "avatarFps": "Avatar FPS"
+      "avatarFps": "Avatar FPS",
+      "retrievalMs": "Knowledge lookup"
     },
     "metricHelp": {
       "sttFirstPartialMs": "On-device speech recognition only: from the start of speaking until the first live text appears.",
@@ -716,7 +757,8 @@
       "replyCompleteMs": "This device: until the whole reply text has arrived.",
       "playbackEndMs": "This device: until the avatar has finished speaking.",
       "playbackGapMs": "Silence in the middle of the answer because the next sentence wasn't ready in time. 0 means smooth speech.",
-      "avatarFps": "Frames per second of the 3D avatar while it was speaking (target: 30)."
+      "avatarFps": "Frames per second of the 3D avatar while it was speaking (target: 30).",
+      "retrievalMs": "Server: looking up the passages from the project's knowledge bases before the language model is asked. Empty without a knowledge base."
     }
   },
   "sttTest": {
@@ -829,7 +871,113 @@
     "monthsAgo_one": "{{count}} month ago",
     "monthsAgo_other": "{{count}} months ago"
   },
+  "knowledge": {
+    "title": "Knowledge",
+    "subtitle": "Upload your own material — scripts, worksheets, notes — so your avatars can answer from it. Attach a knowledge base to a project in the configurator (step 3).",
+    "disabled": "This instance doesn't run the knowledge service. Ask your administrator if you'd like to use your own documents.",
+    "unreachable": "The knowledge service isn't responding right now. Uploads and searches will fail until it's back; chats keep working without your material.",
+    "usage": "{{used}} of {{total}} used",
+    "listTitle": "Your knowledge bases",
+    "empty": "No knowledge bases yet.",
+    "createTitle": "New knowledge base",
+    "name": "Name",
+    "namePlaceholder": "e.g. Biology year 9",
+    "descriptionOptional": "Description (optional)",
+    "embedding": "How documents are indexed",
+    "embeddingLocal": "On this server ({{model}}) — recommended",
+    "embeddingHint": "Fixed for this knowledge base. On this server, your documents never leave this instance. A provider model needs an embedding key from the API dashboard.",
+    "embeddingApiNotice": "With a provider model, the full text of every document you upload is sent to that provider when it's indexed — not just the students' questions.",
+    "createFailed": "The knowledge base couldn't be created.",
+    "create": "Create",
+    "kbMeta_one": "{{count}} document · {{size}} · used by {{projects}} project(s)",
+    "kbMeta_other": "{{count}} documents · {{size}} · used by {{projects}} project(s)",
+    "embeddingBadgeLocal": "On this server",
+    "embeddingBadgeApi": "Provider model",
+    "remove": "Delete knowledge base",
+    "removeConfirm": "Delete \"{{name}}\" with all its documents? This cannot be undone.",
+    "removeConfirmUsed_one": "\"{{name}}\" is used by {{count}} project. Delete it with all its documents? The project will answer without it.",
+    "removeConfirmUsed_other": "\"{{name}}\" is used by {{count}} projects. Delete it with all its documents? The projects will answer without it.",
+    "removeFailed": "Deleting failed.",
+    "embeddingUnavailable": "The embedding key this knowledge base was built with has been deleted, so it can't be searched. Create a new knowledge base and upload the documents again.",
+    "uploadTitle": "Add documents",
+    "uploadHint": "PDF, Word (.docx), text or Markdown, up to {{mb}} MB and {{pages}} pages per file. Scanned PDFs need text recognition (Docling).",
+    "chooseFiles": "Choose files",
+    "parser": "Reading documents",
+    "parserLight": "Standard (fast)",
+    "parserDocling": "Docling — better for tables, columns and scans (slower)",
+    "consent": "I may make this material available to everyone who can open a project using it. Students can ask the avatar to quote it — use a chat password for material that mustn't leave the course.",
+    "uploadFailed": "Upload failed.",
+    "uploading": "Uploading…",
+    "uploadNone": "Upload",
+    "upload_one": "Upload {{count}} file",
+    "upload_other": "Upload {{count}} files",
+    "noDocuments": "No documents in this knowledge base yet.",
+    "table": {
+      "file": "File",
+      "status": "Status",
+      "details": "Details",
+      "actions": "Actions"
+    },
+    "status": {
+      "queued": "Waiting",
+      "processing": "Indexing",
+      "ready": "Ready",
+      "failed": "Failed"
+    },
+    "pages_one": "{{count}} page",
+    "pages_other": "{{count}} pages",
+    "chunks_one": "{{count}} passage",
+    "chunks_other": "{{count}} passages",
+    "truncated": "too long, only the beginning was indexed",
+    "failedGeneric": "Could not be indexed.",
+    "inProgress": "Being read and indexed…",
+    "removeDocument": "Delete document",
+    "removeDocumentConfirm": "Delete \"{{name}}\"? The avatar won't use it any more.",
+    "searchTitle": "Try a question",
+    "searchHint": "Shows the passages a student's question would hand to the avatar.",
+    "searchPlaceholder": "e.g. What happens during photosynthesis?",
+    "searchButton": "Search",
+    "searchFailed": "The search failed.",
+    "searchEmpty": "Nothing in this knowledge base matches. The avatar would answer without your material.",
+    "deletedDocument": "(deleted document)",
+    "page": "p. {{page}}"
+  },
   "errors": {
+    "EMBEDDING_KEY_MISSING_MODEL": "This embedding key has no model.",
+    "KNOWLEDGE_DISABLED": "Knowledge bases aren't available on this instance.",
+    "KNOWLEDGE_SERVICE_UNAVAILABLE": "The knowledge service isn't responding. Please try again later.",
+    "KNOWLEDGE_SERVICE_ERROR": "The knowledge service reported an error.",
+    "KNOWLEDGE_BASE_NOT_FOUND": "Knowledge base not found.",
+    "KNOWLEDGE_BASE_NAME_REQUIRED": "Please enter a name.",
+    "KNOWLEDGE_BASE_LIMIT_REACHED": "You've reached the maximum number of knowledge bases.",
+    "KNOWLEDGE_DOCUMENT_NOT_FOUND": "Document not found.",
+    "KNOWLEDGE_DOCUMENT_LIMIT_REACHED": "This knowledge base has reached its maximum number of documents.",
+    "KNOWLEDGE_DOCUMENT_DUPLICATE": "This file is already in the knowledge base.",
+    "KNOWLEDGE_QUOTA_EXCEEDED": "Your storage for knowledge bases is full. Delete documents to make room.",
+    "KNOWLEDGE_UPLOAD_CONSENT_REQUIRED": "Please confirm that you may make this material available.",
+    "KNOWLEDGE_EMBEDDING_KEY_INVALID": "The embedding key for this knowledge base no longer exists.",
+    "KNOWLEDGE_LIMIT_ABOVE_CEILING": "A value is above the maximum this server allows.",
+    "RATE_LIMIT_KNOWLEDGE_UPLOAD": "Too many uploads. Please wait a few minutes.",
+    "KNOWLEDGE_UNSUPPORTED_FILE_TYPE": "Only PDF, Word (.docx), text and Markdown files are supported.",
+    "KNOWLEDGE_FILE_TYPE_MISMATCH": "The file's content doesn't match its extension.",
+    "KNOWLEDGE_FILE_TOO_LARGE": "The file is too large.",
+    "KNOWLEDGE_FILE_EMPTY": "The file is empty.",
+    "KNOWLEDGE_DOCX_INVALID": "The Word file is damaged or not a valid .docx file.",
+    "KNOWLEDGE_DOCX_MACROS": "Word files with macros aren't accepted. Save it as a normal .docx file.",
+    "KNOWLEDGE_ARCHIVE_TOO_LARGE": "The Word file unpacks to an implausible size and was rejected.",
+    "KNOWLEDGE_PDF_ENCRYPTED": "The PDF is password-protected. Remove the password and upload it again.",
+    "KNOWLEDGE_TOO_MANY_PAGES": "The document has more pages than allowed.",
+    "KNOWLEDGE_NO_EXTRACTABLE_TEXT": "No text found — probably a scanned PDF. Use Docling (text recognition) or upload a PDF with selectable text.",
+    "KNOWLEDGE_FILE_TOO_COMPLEX": "The file was too complex to read safely.",
+    "KNOWLEDGE_PARSE_TIMEOUT": "Reading the file took too long.",
+    "KNOWLEDGE_PARSE_FAILED": "The file couldn't be read.",
+    "KNOWLEDGE_DOCLING_UNAVAILABLE": "Docling isn't available on this server.",
+    "KNOWLEDGE_DOCLING_FAILED": "Docling couldn't convert the file.",
+    "KNOWLEDGE_EMBEDDING_FAILED": "The embedding model couldn't be reached or refused the request. Check the key.",
+    "KNOWLEDGE_EMBEDDING_MODEL_NOT_ALLOWED": "This knowledge base was built with a model the server no longer runs. Create a new one.",
+    "KNOWLEDGE_EMBEDDING_KEY_MISSING": "No key for the embedding model.",
+    "KNOWLEDGE_EMBEDDING_MISMATCH": "The knowledge base uses a different embedding model.",
+    "KNOWLEDGE_INTERRUPTED": "Indexing was interrupted. Delete the document and upload it again.",
     "NOT_AUTHENTICATED": "Not logged in.",
     "SESSION_EXPIRED": "Session expired.",
     "PROJECT_NOT_FOUND": "Project not found.",
