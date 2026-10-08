@@ -25,7 +25,8 @@ local-tts/.cache/
 # Editors / OS
 .DS_Store
 
-#Agents (shared subagent definitions in .claude/agents/ are versioned)
+# Agents: AGENTS.md (repo root) and the subagents in .claude/agents/ are versioned;
+# everything else in .claude/ and a local CLAUDE.md stay untracked.
 .claude/*
 !.claude/agents/
 CLAUDE.md
