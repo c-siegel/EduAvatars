@@ -1,0 +1,46 @@
+name: Sync main into working-branch
+
+# Releases go working-branch → main via PR, so main gains merge commits (and the odd hotfix) that
+# working-branch lacks. Merging main back after every push keeps working-branch from falling behind.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: sync-working-branch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout working-branch
+        uses: actions/checkout@v4
+        with:
+          ref: working-branch
+          fetch-depth: 0
+
+      - name: Merge main into working-branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "working-branch already contains main — nothing to do."
+            exit 0
+          fi
+
+          # Fast-forwards when possible, otherwise creates a merge commit.
+          if ! git merge --no-edit origin/main; then
+            git merge --abort
+            echo "::error::main and working-branch conflict. Merge main into working-branch by hand and resolve the conflicts."
+            exit 1
+          fi
+
+          git push origin HEAD:working-branch
