@@ -41,6 +41,7 @@ from app.schemas import (
     HardLimits,
     QueryRequest,
     QueryResponse,
+    RetryRequest,
     StatusRequest,
 )
 from app.search import hybrid_search
@@ -143,7 +144,22 @@ def upload_document(request: Request, file: UploadFile = File(...), meta: str = 
 
 @app.post("/documents/status", response_model=list[DocumentStatus], dependencies=[Depends(require_token)])
 def document_statuses(body: StatusRequest, request: Request) -> list[DocumentStatus]:
-    return _store(request).statuses(body.document_ids)
+    ingestor: Ingestor = request.app.state.ingestor
+    statuses = _store(request).statuses(body.document_ids)
+    for status in statuses:
+        status.retryable = status.status == "failed" and ingestor.retryable(status.document_id)
+    return statuses
+
+
+@app.post("/documents/{document_id}/retry", status_code=202, response_model=DocumentStatus, dependencies=[Depends(require_token)])
+def retry_document(document_id: str, body: RetryRequest, request: Request) -> DocumentStatus:
+    """Index a failed document again from its kept original, optionally with another parser."""
+    if body.embedding.mode == "local" and body.embedding.model != settings.rag_local_embedding_model:
+        raise RagError(errors.EMBEDDING_MODEL_NOT_ALLOWED)
+    if body.parser == "docling" and not docling_available():
+        raise RagError(errors.DOCLING_UNAVAILABLE)
+    request.app.state.ingestor.retry(document_id, body.parser, body.embedding, body.limits.clamped())
+    return DocumentStatus(document_id=document_id, status="queued")
 
 
 @app.delete("/documents/{document_id}", status_code=204, dependencies=[Depends(require_token)])

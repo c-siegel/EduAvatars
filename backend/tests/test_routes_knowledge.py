@@ -434,3 +434,38 @@ def test_long_file_names_keep_their_extension(client, teacher, fake_rag):
     stored = response.json()["filename"]
     assert len(stored) <= 120 and stored.endswith(".pdf")
     assert fake_rag.uploads[-1]["meta"]["filename"] == stored
+
+
+def test_failed_document_can_be_retried(client, teacher, fake_rag, engine):
+    kb = _kb(client)
+    fake_rag.upload_status = "processing"
+    document = _upload(client, kb["id"], filename="scan.pdf").json()
+    fake_rag.documents[document["id"]].update(status="failed", error_code="NO_EXTRACTABLE_TEXT", retryable=True)
+    listed = client.get(f"/knowledge-bases/{kb['id']}/documents").json()[0]
+    assert (listed["status"], listed["retryable"]) == ("failed", True)
+
+    response = client.post(f"/knowledge-documents/{document['id']}/retry", json={"parser": "docling"})
+    assert response.status_code == 202, response.text
+    assert (response.json()["status"], response.json()["parser"], response.json()["retryable"]) == ("queued", "docling", False)
+    sent = fake_rag.retries[-1]
+    assert sent["parser"] == "docling"
+    assert sent["embedding"]["mode"] == "local"
+    assert sent["limits"]["max_upload_mb"] == 20
+
+    # Only failed documents, and only while the service still has the original.
+    again = client.post(f"/knowledge-documents/{document['id']}/retry", json={})
+    assert (again.status_code, again.json()) == (409, {"detail": "KNOWLEDGE_RETRY_NOT_POSSIBLE"})
+    fake_rag.documents[document["id"]].update(status="failed", error_code="PARSE_FAILED", retryable=False)
+    client.get(f"/knowledge-bases/{kb['id']}/documents")
+    expired = client.post(f"/knowledge-documents/{document['id']}/retry", json={})
+    assert (expired.status_code, expired.json()) == (409, {"detail": "KNOWLEDGE_RETRY_NOT_POSSIBLE"})
+    assert client.get(f"/knowledge-bases/{kb['id']}/documents").json()[0]["retryable"] is False
+
+
+def test_retry_is_owner_only(client, anon, engine, teacher, fake_rag):
+    kb = _kb(client)
+    document = _upload(client, kb["id"]).json()
+    stranger = login_as(anon, make_user(engine, email="other@example.com"))
+    response = stranger.post(f"/knowledge-documents/{document['id']}/retry", json={})
+    assert (response.status_code, response.json()) == (404, {"detail": "KNOWLEDGE_DOCUMENT_NOT_FOUND"})
+    assert fake_rag.retries == []

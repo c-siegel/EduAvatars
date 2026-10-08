@@ -908,4 +908,8 @@ Where the code differs from the plan above, and why:
   deterministic stand-in), and docling-serve itself (its API was taken from the published package;
   the image tag in `docker-compose.yml` must be checked before deploying). Benchmark the embedding
   latency (step 1 targets) on the first real deployment.
-
+- **Retry.** Contrary to §6.5, a failed document's original is kept in the knowledge service for
+  `RAG_FAILED_UPLOAD_RETENTION_HOURS` (24 h) so the teacher can retry with one click, optionally
+  with Docling (e.g. for a scan without a text layer). It's deleted after that, after a
+  successful retry, or when the document is deleted. Indexed documents' originals are still
+  deleted at once.

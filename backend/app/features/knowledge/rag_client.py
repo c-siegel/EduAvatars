@@ -55,6 +55,8 @@ _PASSED_ON_CODES = {
     "EMBEDDING_KEY_MISSING",
     "EMBEDDING_MISMATCH",
     "INTERRUPTED",
+    "RETRY_NOT_POSSIBLE",
+    "DOCUMENT_NOT_FOUND",
 }
 
 
@@ -132,6 +134,11 @@ def document_statuses(document_ids: list[str]) -> list[dict]:
     if not document_ids:
         return []
     return _request("POST", "/documents/status", json={"document_ids": document_ids}).json()
+
+
+def retry_document(document_id: str, parser: str, embedding: dict, limits: dict) -> dict:
+    body = {"parser": parser, "embedding": embedding, "limits": limits}
+    return _request("POST", f"/documents/{document_id}/retry", json=body).json()
 
 
 def delete_document(document_id: str) -> None:

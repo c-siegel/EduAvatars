@@ -31,8 +31,10 @@ backend's IDs; ownership, quotas and the dashboard live in the backend
 | Index | `app/store.py` | One SQLite file: chunks, FTS5 keyword index, sqlite-vec vectors. |
 | Search | `app/search.py` | Vector + keyword search, merged with reciprocal rank fusion. |
 
-Original files are deleted as soon as they've been parsed; only the extracted text, chunks and
-vectors are kept.
+Original files are deleted as soon as they've been indexed; only the extracted text, chunks and
+vectors are kept. If indexing fails, the original stays for `RAG_FAILED_UPLOAD_RETENTION_HOURS`
+(24 by default) so the teacher can retry with one click — possibly with Docling — and is deleted
+after that, or as soon as the document is deleted.
 
 ## Running it
 
@@ -75,6 +77,7 @@ RAG_SERVICE_TOKEN=test ./.venv/bin/python -m pytest
 | `RAG_HARD_MAX_UPLOAD_MB` / `RAG_HARD_MAX_PAGES` / `RAG_HARD_MAX_CHARS` | 100 / 2000 / 10,000,000 | Ceilings for the limits an admin sets in the dashboard. |
 | `RAG_PARSE_MEMORY_MB` / `RAG_PARSE_TIMEOUT_S` | 1024 / 120 | Limits for one parser subprocess. |
 | `RAG_INGEST_WORKERS` | 1 | Parallel indexing jobs. |
+| `RAG_FAILED_UPLOAD_RETENTION_HOURS` | 24 | How long a failed document's original is kept for a retry. |
 | `RAG_MAX_VECTOR_DISTANCE` | 0.75 | Vector hits further away than this (cosine distance) are dropped. |
 
 Local embedding models (only these are accepted — each one's licence is permissive):
@@ -96,6 +99,7 @@ Changing the model later doesn't convert existing knowledge bases: they have to 
 | `GET /capabilities` | Local model, file types, hard limits, whether Docling is configured. |
 | `POST /documents` | Multipart `file` + JSON `meta`; checked synchronously, indexed in the background (202). |
 | `POST /documents/status` | Status of several documents. |
+| `POST /documents/{id}/retry` | Index a failed document again from its kept original (parser may change). |
 | `DELETE /documents/{id}`, `DELETE /knowledge-bases/{id}` | Remove everything derived from them. Idempotent. |
 | `POST /query` | Hybrid search over some knowledge bases. |
 | `POST /embedding-test` | Embed one word with an API config (the dashboard's key test). |

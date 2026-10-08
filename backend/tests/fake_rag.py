@@ -27,6 +27,7 @@ class FakeRag:
         self.deleted_kbs: list[str] = []
         self.queries: list[dict] = []
         self.embedding_tests: list[dict] = []
+        self.retries: list[dict] = []
         # Set to a code (e.g. "DOCX_MACROS") to refuse the next uploads with it.
         self.reject_upload_with: str | None = None
         # Status new uploads get; "ready" indexes them immediately.
@@ -82,6 +83,15 @@ class FakeRag:
         @app.post("/documents/status")
         def statuses(body: dict):
             return [fake.documents[i] for i in body["document_ids"] if i in fake.documents]
+
+        @app.post("/documents/{document_id}/retry", status_code=202)
+        def retry(document_id: str, body: dict):
+            fake.retries.append({"document_id": document_id, **body})
+            status = fake.documents.get(document_id)
+            if status is None or not status.get("retryable"):
+                return JSONResponse(status_code=409, content={"detail": {"code": "RETRY_NOT_POSSIBLE"}})
+            status.update(status="queued", error_code=None, retryable=False)
+            return {"document_id": document_id, "status": "queued"}
 
         @app.delete("/documents/{document_id}", status_code=204)
         def delete_document(document_id: str):

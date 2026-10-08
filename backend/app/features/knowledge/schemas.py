@@ -54,7 +54,12 @@ class KnowledgeDocumentOut(CamelModel):
     page_count: int | None
     chunk_count: int | None
     truncated: bool
+    retryable: bool
     created_at: datetime
+
+
+class KnowledgeRetryIn(CamelModel):
+    parser: Literal["light", "docling"] = "light"
 
 
 class KnowledgeSearchIn(CamelModel):

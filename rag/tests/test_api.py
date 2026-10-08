@@ -200,10 +200,62 @@ def test_restart_recovers_local_jobs_and_fails_api_jobs(tmp_path):
     ingestor.stop()
     statuses = {s.document_id: (s.status, s.error_code) for s in store.statuses(["local-doc", "api-doc"])}
     assert statuses == {"local-doc": ("ready", None), "api-doc": ("failed", errors.INTERRUPTED)}
-    assert list((tmp_path / "incoming").iterdir()) == []
+    # The interrupted API document keeps its original for a retry; everything else is gone.
+    assert [p.name for p in (tmp_path / "incoming").iterdir()] == ["api-doc"]
+    assert ingestor.retryable("api-doc")
 
 
 def test_unknown_local_model_setting_fails_fast(monkeypatch):
     monkeypatch.setattr(settings, "rag_local_embedding_model", "jinaai/jina-embeddings-v3")
     with pytest.raises(RuntimeError, match="allowlist"):
         embedding.local_model_spec()
+
+
+def test_failed_document_can_be_retried_and_original_is_kept_until_then(client, monkeypatch):
+    from app.ingest import Ingestor
+    from app.parsing.types import ParseResult, Section
+
+    upload(client, "scan.pdf", make_pdf([""]))
+    status = wait_and_status(client)
+    assert (status["status"], status["retryable"]) == ("failed", True)
+    incoming = os.path.join(settings.rag_data_dir, "incoming", "doc-1")
+    assert os.path.exists(incoming)
+
+    # Retrying the same scan fails the same way, and stays retryable.
+    body = {"parser": "light", "embedding": local_config()}
+    assert client.post("/documents/doc-1/retry", headers=AUTH, json=body).status_code == 202
+    assert wait_and_status(client)["error_code"] == errors.NO_EXTRACTABLE_TEXT
+
+    # Docling isn't configured here.
+    response = client.post("/documents/doc-1/retry", headers=AUTH, json={**body, "parser": "docling"})
+    assert response.json()["detail"]["code"] == errors.DOCLING_UNAVAILABLE
+
+    # A retry that succeeds (here: the parser now finds text) indexes it and drops the original.
+    def parse_with_ocr(self, job, data):
+        return ParseResult([Section("Nach OCR lesbarer Text", page=1)], page_count=1)
+
+    monkeypatch.setattr(Ingestor, "_parse", parse_with_ocr)
+    assert client.post("/documents/doc-1/retry", headers=AUTH, json=body).status_code == 202
+    status = wait_and_status(client)
+    assert (status["status"], status["retryable"]) == ("ready", False)
+    assert not os.path.exists(incoming)
+    response = client.post("/documents/doc-1/retry", headers=AUTH, json=body)
+    assert (response.status_code, response.json()["detail"]["code"]) == (409, errors.RETRY_NOT_POSSIBLE)
+
+
+def test_kept_originals_expire(client, monkeypatch):
+    upload(client, "scan.pdf", make_pdf([""]))
+    wait_and_status(client)
+    incoming = os.path.join(settings.rag_data_dir, "incoming", "doc-1")
+    old = os.path.getmtime(incoming) - 25 * 3600
+    os.utime(incoming, (old, old))
+    client.app.state.ingestor.sweep()
+    assert not os.path.exists(incoming)
+    assert wait_and_status(client)["retryable"] is False
+
+
+def test_deleting_a_failed_document_removes_its_original(client):
+    upload(client, "scan.pdf", make_pdf([""]))
+    wait_and_status(client)
+    client.delete("/documents/doc-1", headers=AUTH)
+    assert not os.listdir(os.path.join(settings.rag_data_dir, "incoming"))

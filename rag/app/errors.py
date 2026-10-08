@@ -45,3 +45,5 @@ EMBEDDING_MISMATCH = "EMBEDDING_MISMATCH"
 INTERRUPTED = "INTERRUPTED"
 DOCUMENT_EXISTS = "DOCUMENT_EXISTS"
 DOCUMENT_NOT_FOUND = "DOCUMENT_NOT_FOUND"
+# The document isn't failed, or its original is gone (indexed, or kept past the retention time).
+RETRY_NOT_POSSIBLE = "RETRY_NOT_POSSIBLE"

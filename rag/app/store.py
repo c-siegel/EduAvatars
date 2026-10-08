@@ -171,6 +171,14 @@ class Store:
                 (status, error_code, _now(), document_id),
             )
 
+    def get_document(self, document_id: str) -> sqlite3.Row | None:
+        with self._lock:
+            return self._db.execute("SELECT * FROM documents WHERE id = ?", (document_id,)).fetchone()
+
+    def set_parser(self, document_id: str, parser: str) -> None:
+        with self._lock:
+            self._db.execute("UPDATE documents SET parser = ? WHERE id = ?", (parser, document_id))
+
     def document_exists(self, document_id: str) -> bool:
         with self._lock:
             return self._db.execute("SELECT 1 FROM documents WHERE id = ?", (document_id,)).fetchone() is not None

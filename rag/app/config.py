@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     rag_parse_timeout_s: int = 120
     """CPU and wall-clock limit for one parser subprocess."""
 
+    rag_failed_upload_retention_hours: int = 24
+    """
+    How long the original of a document that failed to index is kept, so the teacher can retry it
+    with one click (POST /documents/{id}/retry). Indexed documents' originals are deleted at once.
+    """
+
     rag_ingest_workers: int = 1
     """
     Parallel indexing jobs. One by default: the local model also embeds every chat question, and a

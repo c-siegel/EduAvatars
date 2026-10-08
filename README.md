@@ -409,8 +409,9 @@ only other outbound traffic the backend generates on its own.
 
 Knowledge bases (if enabled) stay on your server with the default local embedding model. A
 teacher who picks an API embedding model instead sends the full text of their documents to that
-provider when they're indexed. Original files are deleted as soon as they're parsed; deleting a
-document, knowledge base or account deletes its indexed text too. Material attached to a
+provider when they're indexed. Original files are deleted as soon as they're indexed — or, if
+indexing fails, kept for up to 24 hours so the teacher can retry with one click; deleting a
+document, knowledge base or account deletes its indexed text and any kept original too. Material attached to a
 published project can be quoted by anyone who can open its link — teachers confirm they may make
 it available when they upload.
 

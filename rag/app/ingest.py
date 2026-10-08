@@ -5,8 +5,10 @@ An upload is accepted (POST /documents) as soon as the cheap checks pass; the re
 chunk, embed, index — runs here, on a small pool of worker threads, while the document's status
 moves queued → processing → ready | failed. The backend polls that status.
 
-The uploaded file waits in <data_dir>/incoming/<document_id> and is deleted as soon as it has been
-parsed, whatever the outcome: only derived text is ever kept (docs/rag-plan.md §6.5).
+The uploaded file waits in <data_dir>/incoming/<document_id>. Once the document is indexed, the
+file is deleted: only derived text is kept (docs/rag-plan.md §6.5). If indexing fails, the file is
+kept for RAG_FAILED_UPLOAD_RETENTION_HOURS so the teacher can retry with one click (retry()), then
+swept away.
 
 After a restart, documents that were still queued or processing are picked up again if they use
 the local model and their file is still there. Documents embedded with an API key can't be: the
@@ -22,6 +24,7 @@ import logging
 import os
 import queue
 import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -96,16 +99,45 @@ class Ingestor:
                     )
                 )
             else:
+                # The file stays (if it's there): the teacher can retry with a fresh key.
                 self._store.set_status(row["id"], "failed", errors.INTERRUPTED)
-                path.unlink(missing_ok=True)
-        # Leftovers whose document row is gone (deleted while the service was down).
+        self.sweep()
+
+    def sweep(self) -> None:
+        """Delete originals nobody can use any more: of deleted documents, of indexed ones, and of
+        failed ones past the retention time."""
+        cutoff = time.time() - settings.rag_failed_upload_retention_hours * 3600
         for path in self._incoming.iterdir():
-            if not self._store.document_exists(path.name):
+            row = self._store.get_document(path.name)
+            if row is None or row["status"] == "ready":
                 path.unlink(missing_ok=True)
+            elif row["status"] == "failed" and path.stat().st_mtime < cutoff:
+                path.unlink(missing_ok=True)
+
+    def retryable(self, document_id: str) -> bool:
+        row = self._store.get_document(document_id)
+        return row is not None and row["status"] == "failed" and self.incoming_path(document_id).exists()
+
+    def retry(self, document_id: str, parser: str, embedding: EmbeddingConfig, limits: DocumentLimits) -> None:
+        """Queue a failed document again, from its kept original."""
+        row = self._store.get_document(document_id)
+        if row is None:
+            raise RagError(errors.DOCUMENT_NOT_FOUND, status_code=404)
+        if not self.retryable(document_id):
+            raise RagError(errors.RETRY_NOT_POSSIBLE, status_code=409)
+        self._store.register_knowledge_base(row["knowledge_base_id"], embedding)
+        self._store.set_parser(document_id, parser)
+        self._store.set_status(document_id, "queued")
+        self.submit(Job(document_id, row["knowledge_base_id"], row["file_type"], parser, embedding, limits))
 
     def _run(self) -> None:
         while True:
-            job = self._queue.get()
+            try:
+                # Waking up now and then also expires kept originals of failed documents.
+                job = self._queue.get(timeout=600)
+            except queue.Empty:
+                self.sweep()
+                continue
             try:
                 if job is None:
                     return
@@ -120,11 +152,7 @@ class Ingestor:
             return
         self._store.set_status(job.document_id, "processing")
         try:
-            try:
-                data = path.read_bytes()
-            finally:
-                # Parsed or not, the original never stays on disk.
-                path.unlink(missing_ok=True)
+            data = path.read_bytes()
             result = self._parse(job, data)
             del data
             if not result.sections:
@@ -143,6 +171,8 @@ class Ingestor:
                 char_count=result.char_count,
                 truncated=result.truncated,
             )
+            # Indexed (or deleted meanwhile): the original has no further use.
+            path.unlink(missing_ok=True)
             if stored:
                 logger.info("Indexed document %s: %d chunks", job.document_id, len(chunks))
         except RagError as exc:

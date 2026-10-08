@@ -63,10 +63,21 @@ class DocumentStatus(BaseModel):
     chunk_count: int | None = None
     char_count: int | None = None
     truncated: bool = False
+    # Failed, and the original is still here: POST /documents/{id}/retry can process it again.
+    retryable: bool = False
 
 
 class StatusRequest(BaseModel):
     document_ids: list[str] = Field(max_length=500)
+
+
+class RetryRequest(BaseModel):
+    """Like DocumentMeta, minus the IDs: the parser may change (e.g. to Docling for a scan), the
+    embedding config is needed again because API keys are never stored here."""
+
+    parser: Literal["light", "docling"] = "light"
+    embedding: EmbeddingConfig
+    limits: DocumentLimits = DocumentLimits()
 
 
 class QueryRequest(BaseModel):

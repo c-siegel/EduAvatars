@@ -1140,6 +1140,10 @@
             "title": "Parser",
             "type": "string"
           },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
           "sizeBytes": {
             "title": "Sizebytes",
             "type": "integer"
@@ -1171,6 +1175,7 @@
           "pageCount",
           "chunkCount",
           "truncated",
+          "retryable",
           "createdAt"
         ],
         "title": "KnowledgeDocumentOut",
@@ -1271,6 +1276,21 @@
           "score"
         ],
         "title": "KnowledgePassageOut",
+        "type": "object"
+      },
+      "KnowledgeRetryIn": {
+        "properties": {
+          "parser": {
+            "default": "light",
+            "enum": [
+              "light",
+              "docling"
+            ],
+            "title": "Parser",
+            "type": "string"
+          }
+        },
+        "title": "KnowledgeRetryIn",
         "type": "object"
       },
       "KnowledgeSearchIn": {
@@ -5033,6 +5053,53 @@
         ],
         "responses": {
           "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/knowledge-documents/{document_id}/retry": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeRetryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentOut"
+                }
+              }
+            },
             "description": "Successful Response"
           },
           "422": {

@@ -39,7 +39,9 @@ from app.features.projects.models import Project
 
 logger = logging.getLogger(__name__)
 
-_FINAL_STATUSES = {"ready", "failed"}
+# Statuses that never change on their own. "failed" isn't one: a failed document's original
+# expires in the knowledge service, which turns its retry button off.
+_FINAL_STATUSES = {"ready"}
 _MAX_NAME_LENGTH = 100
 _MAX_DESCRIPTION_LENGTH = 500
 
@@ -279,7 +281,7 @@ def list_documents(session: Session, kb: KnowledgeBase) -> list[KnowledgeDocumen
 
 
 def refresh_statuses(session: Session, documents: list[KnowledgeDocument]) -> None:
-    """Copy the knowledge service's status onto documents that aren't finished yet.
+    """Copy the knowledge service's status onto documents that aren't indexed yet.
 
     The dashboard polls the document list while anything is in progress, so this is the only
     sync needed — no callback from the service. A document the service doesn't know at all
@@ -296,12 +298,14 @@ def refresh_statuses(session: Session, documents: list[KnowledgeDocument]) -> No
         status = remote.get(document.id)
         if status is None:
             document.status, document.error_code = "failed", ErrorCode.KNOWLEDGE_INTERRUPTED
+            document.retryable = False
         else:
             document.status = status["status"]
             document.error_code = rag_client.knowledge_code(status["error_code"]) if status.get("error_code") else None
             document.page_count = status.get("page_count")
             document.chunk_count = status.get("chunk_count")
             document.truncated = bool(status.get("truncated"))
+            document.retryable = bool(status.get("retryable"))
         document.updated_at = _now()
         session.add(document)
     session.commit()
@@ -374,6 +378,35 @@ def upload_document(
         if isinstance(exc, rag_client.RagRejected):
             raise KnowledgeError(exc.code) from exc
         raise KnowledgeServiceUnavailable() from exc
+    return document
+
+
+def retry_document(
+    session: Session, kb: KnowledgeBase, document: KnowledgeDocument, *, parser: str, limits: KnowledgeLimits
+) -> KnowledgeDocument:
+    """Index a failed document again from the original the knowledge service kept, optionally
+    with another parser (Docling for a scan without a text layer)."""
+    if document.status != "failed":
+        raise KnowledgeError(ErrorCode.KNOWLEDGE_RETRY_NOT_POSSIBLE, status_code=409)
+    if parser == "docling" and document.file_type not in ("pdf", "docx"):
+        parser = "light"
+    try:
+        rag_client.retry_document(document.id, parser, embedding_config(session, kb), limits.for_service())
+    except rag_client.RagRejected as exc:
+        if exc.code in (ErrorCode.KNOWLEDGE_RETRY_NOT_POSSIBLE, ErrorCode.KNOWLEDGE_DOCUMENT_NOT_FOUND):
+            document.retryable = False
+            session.add(document)
+            session.commit()
+            raise KnowledgeError(ErrorCode.KNOWLEDGE_RETRY_NOT_POSSIBLE, status_code=409) from exc
+        raise KnowledgeError(exc.code) from exc
+    except rag_client.RagUnavailable as exc:
+        raise KnowledgeServiceUnavailable() from exc
+    document.status, document.error_code, document.retryable = "queued", None, False
+    document.parser = parser
+    document.updated_at = _now()
+    session.add(document)
+    session.commit()
+    session.refresh(document)
     return document
 
 

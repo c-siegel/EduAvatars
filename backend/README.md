@@ -252,6 +252,7 @@ knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
 | `DELETE /knowledge-bases/{kb_id}` | Login required, own resource | Delete it with all documents, including their indexed text in the knowledge service. |
 | `GET /knowledge-bases/{kb_id}/documents` | Login required, own resource | Its documents with their current indexing status. |
 | `POST /knowledge-bases/{kb_id}/documents` | Login required, own resource | Upload one document (multipart `file`, `parser`, `consent`); indexed in the background. Rate-limited, size- and quota-checked. |
+| `POST /knowledge-documents/{document_id}/retry` | Login required, own resource | Index a failed document again (optionally with Docling) while the knowledge service still keeps its original. Counts against the upload rate limit. |
 | `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
 | `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
 

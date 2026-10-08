@@ -28,6 +28,7 @@ from app.features.knowledge.schemas import (
     KnowledgeDocumentOut,
     KnowledgeLimitsOut,
     KnowledgePassageOut,
+    KnowledgeRetryIn,
     KnowledgeSearchIn,
     KnowledgeStatusOut,
 )
@@ -177,6 +178,28 @@ def upload_document(
         limits=limits,
     )
     return _document_out(document)
+
+
+@router.post(
+    "/knowledge-documents/{document_id}/retry",
+    response_model=KnowledgeDocumentOut,
+    status_code=202,
+    dependencies=[Depends(_enabled)],
+)
+def retry_document(
+    document_id: str,
+    data: KnowledgeRetryIn,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Index a failed document again — no re-upload needed while the knowledge service still has
+    the original (see KnowledgeDocumentOut.retryable)."""
+    document = service.get_owned_document(session, current_user.id, document_id)
+    kb = _owned_kb(document.knowledge_base_id, current_user, session)
+    limits = current_limits(session)
+    # Indexing again costs the same as an upload, so it counts against the same limit.
+    enforce_knowledge_upload_rate_limit(current_user.id, limits.upload_rate_per_10min)
+    return _document_out(service.retry_document(session, kb, document, parser=data.parser, limits=limits))
 
 
 @router.delete("/knowledge-documents/{document_id}", status_code=204, dependencies=[Depends(_enabled)])

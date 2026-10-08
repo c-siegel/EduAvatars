@@ -61,6 +61,9 @@ class KnowledgeDocument(SQLModel, table=True):
     page_count: int | None = None
     chunk_count: int | None = None
     truncated: bool = False
+    # Failed, and the knowledge service still has the original (it keeps it for a while after a
+    # failure), so POST /knowledge-documents/{id}/retry can index it again without a re-upload.
+    retryable: bool = False
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
