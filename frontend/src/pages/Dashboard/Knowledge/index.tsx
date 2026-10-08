@@ -5,7 +5,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
@@ -51,7 +51,7 @@ export function KnowledgePage() {
     <div className={styles.page}>
       <Header />
       {!status.reachable && <Callout variant="warning">{t("knowledge.unreachable")}</Callout>}
-      <Usage status={status} />
+      <Usage status={status} knowledgeBaseCount={knowledgeBases.length} />
       <CreateKnowledgeBase status={status} onCreated={setOpenId} />
 
       <div className={styles.card}>
@@ -84,19 +84,52 @@ function Header() {
   );
 }
 
-function Usage({ status }: { status: KnowledgeStatus }) {
+/** A labelled bar for how much of a limit is used — amber from 80 %, red when it's full. */
+function QuotaMeter({ label, used, total, text }: { label: string; used: number; total: number; text: string }) {
+  const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  const level = percent >= 100 ? styles.meterFull : percent >= 80 ? styles.meterHigh : "";
+  return (
+    <div className={styles.meter}>
+      <div className={styles.meterLabel}>
+        <span>{label}</span>
+        <span>{text}</span>
+      </div>
+      <div
+        className={`${styles.meterBar} ${level}`}
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span style={{ width: `${Math.max(percent, used > 0 ? 2 : 0)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/** The teacher's limits at a glance: storage and number of knowledge bases. */
+function Usage({ status, knowledgeBaseCount }: { status: KnowledgeStatus; knowledgeBaseCount: number }) {
   const { t } = useTranslation();
   if (!status.limits) return null;
   const quotaBytes = status.limits.userQuotaMb * 1024 * 1024;
-  const percent = Math.min(100, Math.round((status.usageBytes / quotaBytes) * 100));
   return (
-    <div className={styles.usage}>
-      <div className={styles.usageBar} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-        <span style={{ width: `${percent}%` }} />
+    <div className={styles.card}>
+      <h3>{t("knowledge.quotaTitle")}</h3>
+      <div className={styles.meters}>
+        <QuotaMeter
+          label={t("knowledge.quotaStorage")}
+          used={status.usageBytes}
+          total={quotaBytes}
+          text={t("knowledge.usage", { used: formatBytes(status.usageBytes), total: formatBytes(quotaBytes) })}
+        />
+        <QuotaMeter
+          label={t("knowledge.quotaBases")}
+          used={knowledgeBaseCount}
+          total={status.limits.maxKbPerUser}
+          text={t("knowledge.quotaCount", { used: knowledgeBaseCount, total: status.limits.maxKbPerUser })}
+        />
       </div>
-      <span className={styles.hint}>
-        {t("knowledge.usage", { used: formatBytes(status.usageBytes), total: formatBytes(quotaBytes) })}
-      </span>
     </div>
   );
 }
@@ -224,6 +257,16 @@ function KnowledgeBaseItem({
             {kb.description && <span className={styles.hint}>{kb.description}</span>}
           </span>
         </button>
+        {status.limits && (
+          <div className={styles.kbMeter}>
+            <QuotaMeter
+              label={t("knowledge.quotaDocuments")}
+              used={kb.documentCount}
+              total={status.limits.maxDocumentsPerKb}
+              text={t("knowledge.quotaCount", { used: kb.documentCount, total: status.limits.maxDocumentsPerKb })}
+            />
+          </div>
+        )}
         <div className={styles.kbActions}>
           <Badge variant={kb.embeddingMode === "local" ? "default" : "accent"} title={kb.embeddingModel}>
             {kb.embeddingMode === "local" ? t("knowledge.embeddingBadgeLocal") : t("knowledge.embeddingBadgeApi")}
@@ -261,7 +304,7 @@ function KnowledgeBaseDetail({ kb, status }: { kb: KnowledgeBase; status: Knowle
   return (
     <div className={styles.detail}>
       <UploadDocuments kb={kb} status={status} />
-      <DocumentTable kb={kb} documents={documents} loading={documentsQuery.isLoading} />
+      <DocumentTable kb={kb} documents={documents} loading={documentsQuery.isLoading} doclingAvailable={status.doclingAvailable} />
       {documents.some((d) => d.status === "ready") && <TestSearch kb={kb} />}
     </div>
   );
@@ -367,9 +410,24 @@ function UploadDocuments({ kb, status }: { kb: KnowledgeBase; status: KnowledgeS
   );
 }
 
-function DocumentTable({ kb, documents, loading }: { kb: KnowledgeBase; documents: KnowledgeDocument[]; loading: boolean }) {
+function DocumentTable({
+  kb,
+  documents,
+  loading,
+  doclingAvailable,
+}: {
+  kb: KnowledgeBase;
+  documents: KnowledgeDocument[];
+  loading: boolean;
+  doclingAvailable: boolean;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  const retryMutation = useMutation({
+    mutationFn: ({ id, parser }: { id: string; parser: "light" | "docling" }) => knowledgeApi.retry(id, parser),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["knowledge-documents", kb.id] }),
+  });
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => knowledgeApi.removeDocument(id),
@@ -417,8 +475,35 @@ function DocumentTable({ kb, documents, loading }: { kb: KnowledgeBase; document
                     {doc.truncated && <span className={styles.warning}> · {t("knowledge.truncated")}</span>}
                   </>
                 )}
-                {doc.status === "failed" && doc.errorCode && (
-                  <span className={styles.warning}>{t(`errors.${doc.errorCode}`, t("knowledge.failedGeneric"))}</span>
+                {doc.status === "failed" && (
+                  <>
+                    <span className={styles.warning}>
+                      {doc.errorCode ? t(`errors.${doc.errorCode}`, t("knowledge.failedGeneric")) : t("knowledge.failedGeneric")}
+                    </span>
+                    {doc.retryable ? (
+                      <span className={styles.retryRow}>
+                        <Button
+                          size="sm"
+                          onClick={() => retryMutation.mutate({ id: doc.id, parser: doc.parser })}
+                          disabled={retryMutation.isPending}
+                        >
+                          <RotateCcw size={14} /> {t("knowledge.retry")}
+                        </Button>
+                        {/* A scan without a text layer needs OCR — that's what Docling adds. */}
+                        {doclingAvailable && doc.parser !== "docling" && (doc.fileType === "pdf" || doc.fileType === "docx") && (
+                          <Button
+                            size="sm"
+                            onClick={() => retryMutation.mutate({ id: doc.id, parser: "docling" })}
+                            disabled={retryMutation.isPending}
+                          >
+                            <RotateCcw size={14} /> {t("knowledge.retryDocling")}
+                          </Button>
+                        )}
+                      </span>
+                    ) : (
+                      <span className={styles.hint}>{t("knowledge.retryReupload")}</span>
+                    )}
+                  </>
                 )}
                 {(doc.status === "queued" || doc.status === "processing") && t("knowledge.inProgress")}
               </td>
@@ -443,6 +528,9 @@ function DocumentTable({ kb, documents, loading }: { kb: KnowledgeBase; document
       </table>
       {removeMutation.isError && (
         <Callout variant="danger">{errorMessage(removeMutation.error, t("knowledge.removeFailed"))}</Callout>
+      )}
+      {retryMutation.isError && (
+        <Callout variant="danger">{errorMessage(retryMutation.error, t("knowledge.retryFailed"))}</Callout>
       )}
     </div>
   );

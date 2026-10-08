@@ -53,6 +53,9 @@ export interface KnowledgeDocument {
   pageCount: number | null;
   chunkCount: number | null;
   truncated: boolean;
+  // Failed, and the knowledge service still keeps the original (for a day): retry() works
+  // without a re-upload.
+  retryable: boolean;
   createdAt: string;
 }
 
@@ -84,6 +87,8 @@ export const knowledgeApi = {
     formData.append("consent", String(consent));
     return apiClient.upload<KnowledgeDocument>(`/knowledge-bases/${id}/documents`, formData);
   },
+  retry: (documentId: string, parser: "light" | "docling") =>
+    apiClient.post<KnowledgeDocument>(`/knowledge-documents/${documentId}/retry`, { parser }),
   removeDocument: (documentId: string) => apiClient.delete<void>(`/knowledge-documents/${documentId}`),
   search: (id: string, query: string) => apiClient.post<KnowledgePassage[]>(`/knowledge-bases/${id}/search`, { query }),
 };
