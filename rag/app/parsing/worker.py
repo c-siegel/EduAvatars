@@ -85,8 +85,11 @@ def main() -> int:
     except Exception:
         payload = {"ok": False, "error": errors.PARSE_FAILED}
 
-    sys.stdout.write(json.dumps(payload, ensure_ascii=False))
-    sys.stdout.flush()
+    # Bytes, not sys.stdout.write: stdout's text encoding is the platform's (cp1252 on Windows,
+    # where PYTHONIOENCODING can't help — `-I` ignores it), and a single "ﬁ" ligature or emoji
+    # in a document then crashed the whole parse. The parent always decodes UTF-8.
+    sys.stdout.buffer.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+    sys.stdout.buffer.flush()
     return 0
 
 

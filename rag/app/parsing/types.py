@@ -34,6 +34,10 @@ class ParseResult:
 _INVISIBLE_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f​-‏‪-‮⁠-⁩﻿]")
 _SPACES_RE = re.compile(r"[ \t ]+")
 _BLANK_LINES_RE = re.compile(r"\n{3,}")
+# Typographic ligatures (ﬀ ﬁ ﬂ ﬃ ﬄ ﬅ ﬆ) that PDFs keep as single characters: "Deﬁnition" would
+# never match a search for "Definition". Only these are expanded — full NFKC would also turn
+# "m²" into "m2" and "½" into "1⁄2", which changes the meaning of teaching material.
+_LIGATURES = str.maketrans({"\ufb00": "ff", "\ufb01": "fi", "\ufb02": "fl", "\ufb03": "ffi", "\ufb04": "ffl", "\ufb05": "st", "\ufb06": "st"})
 # Only the opening "#"s and the space after them are matched by a regex; the rest of the heading
 # is trimmed with plain string methods. The previous single pattern, ^(#{1,6})\s+(.+?)\s*#*\s*$,
 # backtracked quadratically on a heading line with a long run of spaces: a 29 KB file used up
@@ -55,8 +59,9 @@ def _markdown_heading(line: str) -> str | None:
 
 
 def normalize_text(text: str) -> str:
-    """NFC, no invisible/control characters, collapsed whitespace — what gets indexed and shown."""
-    text = unicodedata.normalize("NFC", text.replace("\r\n", "\n").replace("\r", "\n"))
+    """NFC, ligatures expanded, no invisible/control characters, collapsed whitespace — what gets
+    indexed and shown."""
+    text = unicodedata.normalize("NFC", text.replace("\r\n", "\n").replace("\r", "\n")).translate(_LIGATURES)
     text = _INVISIBLE_RE.sub("", text)
     text = "\n".join(_SPACES_RE.sub(" ", line).strip() for line in text.split("\n"))
     return _BLANK_LINES_RE.sub("\n\n", text).strip()

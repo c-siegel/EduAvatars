@@ -171,3 +171,25 @@ def test_crash_without_sigxcpu_is_reported_cleanly(monkeypatch):
         sandbox.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, b"", b"Traceback ...")
     )
     assert _code("txt", b"hello") == errors.FILE_TOO_COMPLEX
+
+
+def test_worker_output_is_utf8_whatever_the_console_encoding(monkeypatch):
+    # Regression: on Windows stdout is cp1252 (and `-I` ignores PYTHONIOENCODING), so a single
+    # "ﬁ" ligature crashed the parse with UnicodeEncodeError.
+    import io
+    import json
+
+    from app.parsing import worker
+
+    stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(worker.sys, "stdout", stdout)
+    monkeypatch.setattr(worker.sys, "stdin", io.TextIOWrapper(io.BytesIO("Deﬁnition 😀 m²".encode())))
+    monkeypatch.setattr(worker.sys, "argv", ["worker", "txt", "500", "100000", "1024", "120"])
+    monkeypatch.setattr(worker, "_limit_resources", lambda *args: None)
+    assert worker.main() == 0
+    payload = json.loads(stdout.buffer.getvalue().decode("utf-8"))
+    assert payload["sections"][0]["text"] == "Definition 😀 m²"
+
+
+def test_ligatures_are_expanded_but_superscripts_kept():
+    assert normalize_text("Deﬁnition, Eﬀekt, Fläche in m²") == "Definition, Effekt, Fläche in m²"

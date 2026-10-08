@@ -56,7 +56,8 @@ def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> Par
         str(settings.rag_parse_memory_mb),
         str(cpu_seconds),
     ]
-    env = {"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8", "PYTHONIOENCODING": "utf-8"}
+    # No PYTHONIOENCODING: `-I` ignores it; worker.py writes UTF-8 bytes itself.
+    env = {"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8"}
     # Windows' Python needs SYSTEMROOT to initialise (random numbers, sockets) in a bare environment.
     if "SYSTEMROOT" in os.environ:
         env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
