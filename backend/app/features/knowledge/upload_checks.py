@@ -48,5 +48,12 @@ def safe_display_name(filename: str, max_length: int = 120) -> str:
     """The file name without directories, control or bidi-override characters, cut to length —
     shown in the dashboard and in transcripts' source lines, never used as a path."""
     name = (filename or "").replace("\\", "/").rsplit("/", 1)[-1]
-    name = "".join(ch for ch in name if unicodedata.category(ch) not in ("Cc", "Cf"))
-    return name.strip()[:max_length] or "document"
+    name = "".join(ch for ch in name if unicodedata.category(ch) not in ("Cc", "Cf")).strip()
+    if len(name) > max_length:
+        # Shorten the name, never the extension: the file type is decided by it, and a long
+        # literature-manager name ("Becker et al. (2025). …. 8XH7TH2V.pdf") cut to length used to
+        # lose ".pdf" and be rejected as an unsupported type.
+        stem, extension = posixpath.splitext(name)
+        extension = extension[:10]
+        name = stem[: max_length - len(extension)].rstrip() + extension
+    return name or "document"

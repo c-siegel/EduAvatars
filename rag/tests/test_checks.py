@@ -76,3 +76,9 @@ def test_safe_display_name_strips_paths_and_invisible_characters():
     assert safe_display_name("../../etc/passwd") == "passwd"
     assert safe_display_name("evil\u202etxt.pdf") == "eviltxt.pdf"
     assert safe_display_name("\x00\x01") == "document"
+
+
+def test_safe_display_name_keeps_the_extension_when_shortening():
+    name = safe_display_name("Becker et al. (2025). " + "Was wir heute übers Klima wissen " * 5 + "8XH7TH2V.pdf")
+    assert len(name) <= 120 and name.endswith(".pdf")
+    assert detect_file_type(name, make_pdf(["x"])) == "pdf"

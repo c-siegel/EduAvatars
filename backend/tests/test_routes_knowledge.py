@@ -422,3 +422,15 @@ def test_enabling_rag_requires_a_token():
     with pytest.raises(ValidationError, match="RAG_SERVICE_TOKEN"):
         Settings(rag_enabled=True, rag_service_token="change-me")
     assert Settings(rag_enabled=True, rag_service_token="a-real-random-token").rag_enabled
+
+
+def test_long_file_names_keep_their_extension(client, teacher, fake_rag):
+    # Regression: the display name was cut to 120 characters before the type check, so a long
+    # Zotero-style name lost ".pdf" and was rejected as an unsupported file type.
+    kb = _kb(client)
+    name = "Müller et al. (2024). " + "Klimawandel und Bildung – Grundlagen, Befunde und Perspektiven " * 2 + "ABCD1234.pdf"
+    response = _upload(client, kb["id"], filename=name)
+    assert response.status_code == 202, response.text
+    stored = response.json()["filename"]
+    assert len(stored) <= 120 and stored.endswith(".pdf")
+    assert fake_rag.uploads[-1]["meta"]["filename"] == stored
