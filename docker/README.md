@@ -71,6 +71,15 @@ root, then fill in the required secrets).
      | grep -i -E 'content-encoding|content-length'
    # expect: content-encoding: gzip, content-length around 151000000
    ```
+
+   Behind Cloudflare, also let Cloudflare cache the model. It doesn't by default: `.onnx` isn't
+   on its list of cacheable file extensions, so every device's ~175 MB comes through the tunnel
+   from your own server, and a whole class downloading at once is limited by that server's
+   upload speed. In the Cloudflare dashboard, add a **Cache Rule**: *URI Path starts with
+   `/models/`* → *Eligible for cache*, edge TTL *Use cache-control header if present* (Caddy
+   already marks these files immutable for a year). Every file stays below Cloudflare's 512 MB
+   per-file cache limit. Check it by running the `curl` above twice, with `cf-cache-status` added
+   to the `grep` pattern: the second response should say `cf-cache-status: HIT`.
 2. Start the stack from the repo root:
    ```bash
    docker compose -f docker/docker-compose.yml --env-file .env up -d
