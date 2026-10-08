@@ -34,7 +34,24 @@ class ParseResult:
 _INVISIBLE_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f​-‏‪-‮⁠-⁩﻿]")
 _SPACES_RE = re.compile(r"[ \t ]+")
 _BLANK_LINES_RE = re.compile(r"\n{3,}")
-_MARKDOWN_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+# Only the opening "#"s and the space after them are matched by a regex; the rest of the heading
+# is trimmed with plain string methods. The previous single pattern, ^(#{1,6})\s+(.+?)\s*#*\s*$,
+# backtracked quadratically on a heading line with a long run of spaces: a 29 KB file used up
+# the parser's whole CPU budget and was reported as "too complex".
+_MARKDOWN_HEADING_START_RE = re.compile(r"#{1,6}[ \t]+")
+# Longer "headings" are really text that happens to start with "# " — kept as content, not
+# shortened into a label (which would drop everything past this length).
+_MAX_HEADING_LENGTH = 200
+
+
+def _markdown_heading(line: str) -> str | None:
+    """The heading text if `line` is an ATX heading ("## Title ##"), else None."""
+    stripped = line.strip()
+    match = _MARKDOWN_HEADING_START_RE.match(stripped)
+    if not match:
+        return None
+    title = stripped[match.end() :].rstrip("#").strip()
+    return title if 0 < len(title) <= _MAX_HEADING_LENGTH else None
 
 
 def normalize_text(text: str) -> str:
@@ -56,11 +73,11 @@ def split_markdown(text: str, page: int | None = None, heading: str | None = Non
             sections.append(Section(body, page, heading))
 
     for line in text.split("\n"):
-        match = _MARKDOWN_HEADING_RE.match(line.strip())
-        if match:
+        title = _markdown_heading(line)
+        if title is not None:
             flush()
             current = []
-            heading = normalize_text(match.group(2))[:200] or heading
+            heading = normalize_text(title) or heading
         else:
             current.append(line)
     flush()

@@ -11,7 +11,9 @@ How to use:
 """
 
 import json
+import logging
 import os
+import signal
 import subprocess
 import sys
 
@@ -20,6 +22,8 @@ from app.config import settings
 from app.errors import RagError
 from app.parsing.types import ParseResult, Section
 from app.schemas import DocumentLimits
+
+logger = logging.getLogger(__name__)
 
 
 def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> ParseResult:
@@ -53,8 +57,20 @@ def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> Par
         raise RagError(errors.PARSE_TIMEOUT) from exc
 
     if completed.returncode != 0 or not completed.stdout:
-        # Killed by a signal (SIGXCPU from RLIMIT_CPU, SIGKILL from the kernel) or died while the
-        # interpreter couldn't even allocate memory to report a MemoryError.
+        # Only the tail of stderr and no document text: enough for an operator to see why (a
+        # traceback, "MemoryError"), without copying the teacher's material into the logs.
+        logger.warning(
+            "Parser subprocess for a %s file ended with code %s: %s",
+            file_type,
+            completed.returncode,
+            completed.stderr.decode("utf-8", errors="replace")[-500:].strip() or "(no output)",
+        )
+        if completed.returncode == -signal.SIGXCPU:
+            # RLIMIT_CPU is the only source of SIGXCPU (the worker sets soft = hard, so it's sent
+            # before any SIGKILL) — the teacher should read "took too long", not "too complex".
+            raise RagError(errors.PARSE_TIMEOUT)
+        # Otherwise killed for memory (RLIMIT_AS → MemoryError the interpreter couldn't even
+        # report) or crashed outright.
         raise RagError(errors.FILE_TOO_COMPLEX)
     try:
         payload = json.loads(completed.stdout.decode("utf-8"))

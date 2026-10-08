@@ -121,3 +121,33 @@ def test_pdf_decompression_bomb_is_contained():
 
     # The page is skipped, not inflated; the ingest worker then reports NO_EXTRACTABLE_TEXT.
     assert parse_in_sandbox("pdf", buffer.getvalue(), LIMITS).sections == []
+
+
+def test_heading_with_long_whitespace_parses_quickly():
+    # Regression: the old heading regex backtracked quadratically here and ran into the CPU limit
+    # (reported as FILE_TOO_COMPLEX after two minutes).
+    import time
+
+    start = time.monotonic()
+    result = parse_in_sandbox("md", ("# Titel" + " " * 30000 + "Ende\nText darunter").encode(), LIMITS)
+    assert time.monotonic() - start < 10
+    assert result.sections[0].text.startswith("# Titel")
+
+
+def test_closing_hashes_and_overlong_headings():
+    sections = split_markdown("## Klima ##\nText\n# " + "Wort " * 100 + "\nmehr")
+    # Too long for a label: kept as content of the current section rather than cut down to 200
+    # characters as a new heading.
+    assert len(sections) == 1 and sections[0].heading == "Klima"
+    assert sections[0].text.startswith("Text\n# Wort Wort") and sections[0].text.endswith("mehr")
+
+
+def test_cpu_limit_reports_a_timeout(monkeypatch):
+    import signal
+    import subprocess
+
+    def killed(*args, **kwargs):
+        return subprocess.CompletedProcess(args, -signal.SIGXCPU, b"", b"")
+
+    monkeypatch.setattr(sandbox.subprocess, "run", killed)
+    assert _code("txt", b"hello") == errors.PARSE_TIMEOUT
