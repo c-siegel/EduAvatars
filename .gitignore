@@ -25,8 +25,9 @@ local-tts/.cache/
 # Editors / OS
 .DS_Store
 
-#Agents
-.claude
+#Agents (shared subagent definitions in .claude/agents/ are versioned)
+.claude/*
+!.claude/agents/
 CLAUDE.md
 
 # On-device STT model files (see scripts/fetch-stt-model.sh)
