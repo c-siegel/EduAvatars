@@ -262,6 +262,45 @@ network (e.g. a school's LAN GPU box) — the backend only rejects addresses tha
 real LLM/TTS server, like a cloud metadata endpoint, to close off that one otherwise-easy misuse of
 a "bring your own endpoint" field.
 
+### Requirements for on-device speech recognition
+
+Voice input is transcribed in the visitor's browser only when **all** of the following hold.
+Otherwise the chat shows a short notice and voice input goes through the server instead, so it
+keeps working, just without live text while speaking and with a bit more delay.
+
+**On the server**
+- The model files are in place: `scripts/fetch-stt-model.sh` (Deploy A) or the `stt-model`
+  service (Deploy B, automatic). Check: `/models/parakeet-redux/v1/manifest.json` loads.
+- `BROWSER_STT_ENABLED` is not set to `false`, and the project has voice input enabled.
+- The site is served over **HTTPS** (or opened as `localhost`). Browsers turn off WebGPU and the
+  microphone on plain HTTP.
+
+**On the visitor's device**
+- **A browser with WebGPU that finds a usable GPU.** The API being there isn't enough: the app asks
+  for a GPU adapter, and the device falls back to the server if it doesn't get one.
+  - iPad / iPhone: **iPadOS / iOS 26 or newer** (Safari 26 is the first Safari with WebGPU on by
+    default). Older iPads that can't update to 26 (or are held back by device management) always
+    use the server. This is the most likely reason some iPads in the pilot didn't support it.
+    Lockdown Mode also turns WebGPU off.
+  - Windows, macOS, ChromeOS: current Chrome or Edge. Safari 26 on macOS.
+  - Android: current Chrome on Android 12 or newer; some GPUs are still left out.
+  - Firefox: only on Windows so far.
+- **Enough memory.** The model takes ~350 MB of GPU memory next to the 3D avatar. iPadOS reloads
+  tabs that use too much, which hits older iPads with little RAM first.
+- **~400 MB of free storage** for the browser's cache. Private browsing keeps nothing, so the
+  model downloads again on every visit.
+- **Microphone permission** for the site.
+
+**Network.** A device's first visit downloads ~175 MB. A class of 25 iPads opening the chat at
+the same time therefore pulls ~4.4 GB through the school's network, so let the devices open the
+chat link once before the lesson (the model then comes from the browser cache, and the chat is
+ready in a few seconds). Safari can delete a site's stored data after 7 days without a visit, so
+on iPads used only weekly, expect the download again now and then. On Deploy B behind Cloudflare, also see
+[docker/README.md](docker/README.md#deploying) for letting Cloudflare cache the model.
+
+To check a specific device, open `/stt-test` on it and follow
+[docs/stt-device-test.md](docs/stt-device-test.md).
+
 ## Tech stack
 
 | Layer | Technology |
