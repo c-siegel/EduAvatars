@@ -1,0 +1,69 @@
+"""
+Sandboxed Parsing
+
+Untrusted documents are parsed in a short-lived child interpreter (worker.py) with limits on
+memory, CPU time, open files and file writes, plus a wall-clock timeout enforced here. A PDF
+that explodes into gigabytes when decompressed, a pathological XML tree or a parser bug that
+spins forever costs one killed child process — never the service, the index or other jobs.
+
+How to use:
+    result = parse_in_sandbox("pdf", data, limits)   # ParseResult, or raises RagError
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+from app import errors
+from app.config import settings
+from app.errors import RagError
+from app.parsing.types import ParseResult, Section
+from app.schemas import DocumentLimits
+
+
+def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> ParseResult:
+    cpu_seconds = settings.rag_parse_timeout_s
+    command = [
+        sys.executable,
+        # Isolated mode: no PYTHON* environment variables, no user site-packages, and the current
+        # directory isn't put on sys.path — the child only imports the installed app package.
+        "-I",
+        "-m",
+        "app.parsing.worker",
+        file_type,
+        str(limits.max_pages),
+        str(limits.max_chars),
+        str(settings.rag_parse_memory_mb),
+        str(cpu_seconds),
+    ]
+    env = {"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8", "PYTHONIOENCODING": "utf-8"}
+    try:
+        completed = subprocess.run(
+            command,
+            input=data,
+            capture_output=True,
+            # A little longer than the CPU limit: a child that's blocked rather than busy (it
+            # shouldn't be, it does no I/O) still gets killed.
+            timeout=cpu_seconds + 15,
+            env=env,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RagError(errors.PARSE_TIMEOUT) from exc
+
+    if completed.returncode != 0 or not completed.stdout:
+        # Killed by a signal (SIGXCPU from RLIMIT_CPU, SIGKILL from the kernel) or died while the
+        # interpreter couldn't even allocate memory to report a MemoryError.
+        raise RagError(errors.FILE_TOO_COMPLEX)
+    try:
+        payload = json.loads(completed.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RagError(errors.PARSE_FAILED) from exc
+    if not payload.get("ok"):
+        raise RagError(payload.get("error") or errors.PARSE_FAILED)
+    return ParseResult(
+        sections=[Section(s["text"], s.get("page"), s.get("heading")) for s in payload["sections"]],
+        page_count=payload.get("page_count"),
+        truncated=bool(payload.get("truncated")),
+    )
