@@ -169,6 +169,27 @@ uses it — see that file for the full list (SMTP, `SITE_ADDRESS`, `EDUAVATARS_D
 
 Run the backend and frontend directly on your machine — no Docker needed.
 
+**Quick start: one script for all services.** [`scripts/dev.py`](scripts/dev.py) does the steps
+below for you, on Linux, macOS and Windows alike (it needs only Python ≥ 3.11 and Node.js):
+
+```bash
+python3 scripts/dev.py setup   # once, and again after dependencies change: venvs, installs, migrations
+python3 scripts/dev.py         # start everything; Ctrl+C stops all of it
+```
+On Windows, use `py -3.11 scripts/dev.py …` instead of `python3 scripts/dev.py …`. You don't need
+to activate a virtual environment.
+
+It starts the backend (migrations first, then auto-reload) and the frontend. It also starts each
+optional service that `.env` switches on: the knowledge service (`RAG_ENABLED`), answer-quality
+evaluation (`RAG_EVALUATION_ENABLED`) and local text-to-speech (`LOCAL_TTS_ENABLED`). Ports come
+from the matching `*_URL` variables. Their output is interleaved, each line prefixed with the
+service name. To pick services yourself, name them, e.g.
+`python3 scripts/dev.py start backend frontend rag` (same for `setup`). The services get `.env`
+passed in, so `RAG_SERVICE_TOKEN` only needs to be set there once. Their data goes into `.data/`
+or `.cache/` inside each service folder.
+
+The manual steps for each service follow.
+
 **1. Backend** (full details: [backend/README.md](backend/README.md))
 ```bash
 cd backend

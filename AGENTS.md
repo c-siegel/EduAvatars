@@ -36,6 +36,10 @@ RAG_SERVICE_TOKEN=test python -m pytest
 pip install -e ".[dev]"
 RAG_SERVICE_TOKEN=test python -m pytest
 
+# Everything at once (from repo root): set up / start backend, frontend and the services enabled in .env
+python scripts/dev.py setup
+python scripts/dev.py
+
 # Licence gate (in an environment with one component installed, plus pip-licenses)
 sh scripts/check-licences.sh
 
@@ -134,6 +138,17 @@ Project subagents live in `.claude/agents/`:
 | `frontend-verifier` | frontend changed — build + Playwright screenshots |
 | `security-privacy-auditor` | auth, public chat, API keys, uploads, analytics/export changed |
 | `docs-sync` | settings, env variables, providers or features changed |
+
+## Skills
+
+Project skills live in `.claude/skills/`:
+
+- `ui-ux-pro-max` — searchable UI/UX guidance (styles, palettes, typography, UX/accessibility
+  rules, React and three.js stack tips). Use it when designing or reviewing frontend UI. Vendored
+  from [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+  (MIT, see its `LICENSE`); only the runtime files are copied. Its suggestions don't override the
+  rules above (e.g. every string still goes through `t()`). With `--persist`, pass
+  `--output-dir` explicitly; the generated `design-system/` folder is not committed by default.
 
 ## Known pitfalls
 

@@ -9,6 +9,9 @@
     "close": "Schließen",
     "replyBeingWritten": "Antwort wird geschrieben …"
   },
+  "languageSwitcher": {
+    "switchTo": "Auf Deutsch wechseln"
+  },
   "nav": {
     "voices": "Stimmen",
     "overview": "Übersicht",
@@ -77,7 +80,6 @@
   },
   "publicChat": {
     "unavailable": "Dieser Chat ist nicht verfügbar.",
-    "online": "Online",
     "endChat": "Chat beenden",
     "surveyBeforeTitle": "Umfrage vor dem Chat",
     "continueToChat": "Weiter zum Chat",

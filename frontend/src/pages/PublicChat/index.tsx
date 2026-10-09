@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { HelpCircle, Loader2, Mic, MessageCircle, Play, Send, Square, LogOut, Lock, User, X } from "lucide-react";
+import { Loader2, Mic, MessageCircle, Play, Send, Square, LogOut, Lock, User, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
@@ -26,6 +26,7 @@ import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import type { ChatMessage } from "@/types/chat";
 import type { ChatLayout } from "@/types/project";
+import { ModelInfoButton } from "./ModelInfoButton";
 import styles from "./PublicChat.module.css";
 
 type Stage = "locked" | "name-gate" | "before-survey" | "chat" | "after-survey" | "done";
@@ -1230,10 +1231,9 @@ export function PublicChatPage() {
         <Avatar name={tutor.title} size="md" />
         <div className={styles.headerInfo}>
           <h1>{tutor.title}</h1>
-          <p className={styles.headerStatus}>{t("publicChat.online")}</p>
         </div>
         <div className={styles.headerActions}>
-          <LanguageSwitcher />
+          <LanguageSwitcher compact />
           {stage === "chat" && (
             <button
               type="button"
@@ -1246,18 +1246,7 @@ export function PublicChatPage() {
               <LogOut size={24} />
             </button>
           )}
-          {/* Speech bubble instead of a title attribute: it has to be reachable by keyboard and on
-              touch (where hover doesn't exist), so it opens on hover AND focus via CSS. */}
-          <span className={styles.infoTip}>
-            <button type="button" className={styles.infoButton} aria-label={t("publicChat.whichModel")}>
-              <HelpCircle size={24} />
-            </button>
-            <span className={styles.infoTipBubble} role="tooltip">
-              {tutor.llmModel
-                ? t("publicChat.modelTooltip", { model: tutor.llmModel })
-                : t("publicChat.modelTooltipUnknown")}
-            </span>
-          </span>
+          <ModelInfoButton llmModel={tutor.llmModel} />
         </div>
       </header>
 

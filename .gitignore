@@ -25,10 +25,11 @@ local-tts/.cache/
 # Editors / OS
 .DS_Store
 
-# Agents: AGENTS.md (repo root) and the subagents in .claude/agents/ are versioned;
-# everything else in .claude/ and a local CLAUDE.md stay untracked.
+# Agents: AGENTS.md (repo root), the subagents in .claude/agents/ and the skills in
+# .claude/skills/ are versioned; everything else in .claude/ and a local CLAUDE.md stay untracked.
 .claude/*
 !.claude/agents/
+!.claude/skills/
 CLAUDE.md
 
 # On-device STT model files (see scripts/fetch-stt-model.sh)
@@ -36,3 +37,5 @@ models/
 
 # Knowledge service local data (see rag/README.md)
 rag/.data/
+rag-eval/.data/
+local-tts/.data/
