@@ -959,3 +959,184 @@ therefore have a kind (`EvalTestCase.kind`, copied to `EvalRunItem.kind`):
 Run summaries are given overall and per kind. Test questions moved from the Knowledge page to the
 "Test questions" tab of the Answer quality page, next to the runs.
 
+
+## 16. Source metadata and citations (plan)
+
+Status: **planned**, not implemented. Two steps; the BibTeX import is part of step 2.
+
+### 16.1 Goal and decisions
+
+The avatar should be able to judge a source (is it a script, an article, a video transcript? is it
+primary or only supplementary?) and cite it properly when a student asks where something comes
+from. Metadata comes from three places and is edited in one:
+
+- **A header at the top of a `.md`/`.txt` upload** (front matter, as Arcana uses it). It is
+  stripped from the text before indexing and pre-fills the metadata.
+- **A BibTeX file** (`.bib`) that the teacher imports per knowledge base, exported from citation
+  software (Zotero with Better BibTeX, JabRef, …). Entries are linked to documents by their
+  BibTeX key.
+- **A form in the dashboard** for any file type. The teacher's input always wins.
+
+Decisions taken (with the maintainer):
+
+| Topic | Decision |
+|---|---|
+| Source of truth | The backend database. The knowledge service only strips and reports headers; it stores no metadata for search. |
+| Embedding | **Metadata is never embedded or added to the full-text index.** Embedding text stays "heading + text". So editing metadata never needs re-indexing, and the knowledge service's search is unchanged. |
+| Bulk import | BibTeX (`.bib`) with BibTeX keys, instead of CSV/JSON. |
+| `creator` | called `author` |
+| `date` | `year` (year of publication) |
+| `language` | not needed |
+
+### 16.2 Fields
+
+All optional. Only these are stored; any other key in a header or BibTeX entry is ignored.
+
+| Field | Meaning | Header keys accepted | BibTeX source |
+|---|---|---|---|
+| `title` | title of the source | `title` | `title` |
+| `author` | author(s), as one line | `author`, `creator` | `author` (`Last, First and …`, rendered "A, B & C") |
+| `year` | year of publication (1000–2100) | `year`, `publication-year`, `published` (first four digits) | `year`, or the year in `date` |
+| `container` | journal, book or publisher | `container`, `journal`, `publisher` | `journal`, `booktitle`, `publisher` |
+| `url` | link | `url`, `source-url` | `url`, or `https://doi.org/<doi>` |
+| `citation` | complete citation text; overrides the generated one | `citation` | – |
+| `source_type` | fixed list: `script`, `worksheet`, `article`, `book`, `thesis`, `report`, `web`, `transcript`, `other` | `source-type`, `content_type`, `type` (mapped, unknown → `other`) | entry type (`article` → `article`, `inproceedings` → `article`, `phdthesis` → `thesis`, …) |
+| `priority` | `primary`, `secondary`, `supplementary` | `priority`, `usage_priority` (`optional-supplementary` etc. mapped) | – |
+| `note` | how to use the source, ≤ 300 characters | `note` | `note` |
+| `bibtex_key` | links the document to a bibliography entry | `bibtex-key`, `bibtex_key`, `citekey` | the entry's key |
+
+`source_type` and `priority` are fixed vocabularies on purpose: the prompt uses the English
+word, so a header can't smuggle free text into it. A *generated* citation is
+"Short author (Year). Title. Container." — short author = "A", "A & B" or "A et al.".
+Without a year it says "n.d.".
+
+### 16.3 Where metadata lives and how it is combined
+
+On `KnowledgeDocument`:
+
+- `header_json` – what the file's own header said (filled from the knowledge service).
+- `meta_json` – what the teacher entered in the form (only keys they set).
+- `bibtex_key` – link to a bibliography entry (from the form, the header, or an automatic match).
+
+New table `KnowledgeBibEntry(id, knowledge_base_id, user_id, key, fields_json)`, unique per
+`(knowledge_base_id, key)`, deleted with the knowledge base and with the account.
+
+**Effective metadata, per field: `meta_json` > bibliography entry > `header_json`.** It is
+computed when read, never copied: re-importing a `.bib` file updates every linked document, and
+clearing a form field falls back to the next layer. The bibliography beats the header for
+bibliographic fields (title, author, year); the header usually has the only value for
+`priority`, `source_type` and `note`.
+
+### 16.4 Step 1: headers, display and labels
+
+**Knowledge service (`rag/`)**
+- `app/parsing/header.py`: recognise a header only when the file starts with `---` and a closing
+  `---` follows within 8 KB and every line in between is `key: value`, a list item or a comment;
+  otherwise it is content (a Markdown horizontal rule must not eat the first paragraph). Flat
+  subset only: `key: value`, quoted strings, `[a, b]` lists; no anchors, tags or nesting. A linear
+  scanner, not regular expressions with nested quantifiers (the Markdown heading CPU limit
+  incident). Values go through `normalize_text` (control and bidi characters) and are capped
+  (200 characters, `note` 300).
+- `parse_text` strips the header for `md` and `txt`, and returns the whitelisted fields in
+  `ParseResult.metadata`; the sandbox worker passes them to the parent.
+- `documents.header_json` column; a guarded `ALTER TABLE` in `Store` for existing databases, since
+  the schema script only creates missing tables. `DocumentStatus.metadata` reports it.
+- Bug fix that comes with it: today a header is chunked and embedded as body text.
+
+**Backend**
+- Migration: `knowledgedocument.header_json` (nullable). `refresh_statuses` copies
+  `status["metadata"]` into it at the transition to `ready`.
+- `features/knowledge/metadata.py`: field definitions, `normalize` (whitelist, caps, vocabularies,
+  year), `effective(document, entry=None)`, `citation_text`.
+- `KnowledgeDocumentOut.metadata` (effective fields); `retrieval.prepare_knowledge` puts the
+  effective metadata per document next to the file names it already loads.
+- `prompt.py`: the excerpt label gets what is present, e.g.
+  `<excerpt n="1" source="Skript.pdf, Kapitel 2, p. 3" cite="Müller & Schmidt (2020). Photosynthese." type="article" priority="primary">`.
+  Values are single-line, without `"`, `<`, `>`; the existing "reference material, not
+  instructions" framing applies. A line is added to both modes: *when asked for a source, use the
+  `cite` text and don't invent bibliographic details that aren't there*.
+
+**Frontend**: the document table shows title, author and year under the file name when known.
+
+Not in step 1: priority guidance in the prompt, the form, BibTeX.
+
+### 16.5 Step 2: form, priority guidance, BibTeX
+
+**Backend**
+- Migration: `knowledgedocument.meta_json`, `knowledgedocument.bibtex_key`, table
+  `knowledgebibentry`. SQLite-safe (`batch_alter_table`, `server_default`), real `downgrade()`.
+- `PATCH /knowledge-documents/{id}/metadata` (own document): any subset of the fields; `null`
+  clears one. Output has the effective fields and the teacher's own, so the form can show
+  inherited values as placeholders.
+- BibTeX: `features/knowledge/bibtex.py`, our own parser (the maintained libraries are LGPL or
+  newer-major only, see §10, and a small one is enough): `@type{key, field = {…} | "…" | number }`,
+  nested braces, `@string` macros, `@comment`/`@preamble` skipped, common LaTeX accents
+  (`{\"u}`, `\'e`, `\ss`), `\&`, `~`, `--`, stray commands removed, `{Protected}` braces
+  removed, author lists split at `and`. Linear scanner with limits: 1 MB, 2,000 entries per
+  knowledge base, field and key caps; binary data is refused.
+- `POST /knowledge-bases/{id}/bibliography` (multipart `.bib`; same rate limit as uploads): replaces the
+  knowledge base's entries and links documents. `GET` lists entries (key, title, author, year)
+  for the picker; `DELETE` removes them.
+- **Automatic links** (only for documents without a `bibtex_key`), also run when a document becomes
+  `ready`: (1) the header's key, (2) the entry's `file` field – Zotero (`Full Text PDF:files/12/Müller 2020.pdf:application/pdf`),
+  JabRef (`:Müller 2020.pdf:PDF`) and plain paths, several files separated by `;` – whose base name
+  equals the document's file name, (3) the key equals the file name without extension (Better BibTeX
+  can name attachments by key). The result of an import says how many were linked and which documents
+  weren't.
+- Prompt: priority guidance when any excerpt has one – *prefer primary sources, use secondary and
+  supplementary ones to add to them, and if sources disagree say so instead of choosing silently*.
+- Evaluation: the drafted topic questions use the metadata `title` instead of the file name when there is one.
+
+**Frontend** (Knowledge page)
+- Per document: "Source details" – fields, type and priority selects, a bibliography picker
+  (searchable by key, author, title) and "link from bibliography".
+- Per knowledge base: "Import bibliography (.bib)" with the result summary and the unlinked documents.
+- A note next to the fields: *the avatar can tell students this.*
+- German and English texts.
+
+### 16.6 Security and privacy
+
+- Headers and `.bib` files are untrusted text from teachers' machines or the web: size and entry
+  caps, linear parsing, whitelisted keys, normalised text, fixed vocabularies for the prompt.
+- Metadata is quoted material, not instructions; titles such as `x"></excerpt>…` can't leave
+  their attribute (tested).
+- Metadata can reach students through the avatar. Citation data is bibliographic, but the form says so.
+- No metadata values in logs. Bibliography entries are deleted with the knowledge base and the account.
+- Unchanged: consent checkbox at upload, ownership checks on every new route (404 for foreign IDs).
+
+### 16.7 Tests
+
+- **Knowledge service**: the Arcana header from the maintainer's example; quoted values, lists, CRLF
+  and BOM; unknown keys ignored; unterminated, oversized and non-header `---` files stay content;
+  header text is not in any chunk or search result; status reports the fields; retry keeps them;
+  the guarded `ALTER TABLE` on an old database.
+- **Backend**: merge order per field (form > bibliography > header, and falling back after clearing);
+  `year`, vocabulary and length validation; ownership/IDOR on every new route; prompt label with and
+  without metadata, escaping and injection attempts, the citation and priority lines; BibTeX parser
+  (accents, nested braces, `@string`, author splitting, duplicate keys, a pathological file with 100,000
+  unclosed braces finishing quickly, caps); the three automatic link rules; re-import relinks;
+  deleting a knowledge base/account removes entries; migration up and down; OpenAPI snapshot.
+- **Frontend**: build, de/en parity, and a Playwright walk-through: upload a `.md` with the Arcana
+  header, import a `.bib`, link a PDF by file name, check the preview chat's prompt via the stand-in LLM.
+
+### 16.8 Commits (one topic each)
+
+1. Knowledge service: strip headers and report them (+ tests).
+2. Backend: store the header, effective metadata, label in the prompt, display (+ migration, tests).
+3. Frontend: show metadata in the document table.
+4. Backend: metadata form route, form-level layer, priority guidance, citation rule (+ migration, tests).
+5. Backend: BibTeX parser, import and automatic links (+ tests).
+6. Frontend: form, bibliography import, texts.
+7. Docs (rag/README, backend/README, docker/README if needed, this section's notes).
+
+Steps 1 and 2 are each usable on their own. Rough size: step 1 about a day of work, step 2 two to three.
+
+### 16.9 Open questions
+
+1. **Citing proactively.** The plan keeps today's rule: the avatar names sources only when asked.
+   A per-project setting ("never / when asked / always as (Author Year)") would be easy to add
+   later, because the `cite` text is already in the label.
+2. **Generated citation style.** Simple author–year as above, not a full APA/Chicago formatter.
+   Enough, or should the teacher always write `citation`?
+3. **Existing documents** whose header was indexed as text keep it until they're uploaded again;
+   there is no original left to re-parse.
