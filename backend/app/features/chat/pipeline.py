@@ -28,12 +28,14 @@ from app.core.config import settings
 from app.core.error_codes import ErrorCode
 from app.features.ai import llm
 from app.features.ai.tts import VoiceReference, synthesize_speech
+from app.features.ai.tts.pronunciation import PronunciationMatcher
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import resolve_llm_key, resolve_tts_key
 from app.features.chat.conversation_store import save_turn
 from app.features.chat.streaming import SentenceChunker
 from app.features.media.service import voice_reference_for_project
 from app.features.projects.models import Project
+from app.features.pronunciation.service import matcher_for
 
 # Visitors deliberately only get generic error messages (no technical detail) — so the actual
 # error is still visible *somewhere* instead of being swallowed entirely, it goes into the
@@ -72,6 +74,9 @@ class ChatContext:
     # The teacher's voice clip local TTS clones the voice from (None: default voice). Resolved
     # here, while the DB session is still at hand — the reply itself is synthesized without one.
     voice_clip: VoiceReference | None = None
+    # The teacher's own pronunciation word list for spoken_language (None: empty or TTS off).
+    # Loaded once here, so a streamed reply doesn't re-read it for every chunk.
+    pronunciation: PronunciationMatcher | None = None
 
 
 @dataclass
@@ -129,6 +134,7 @@ def prepare_chat(session: Session, project: Project) -> ChatContext | None:
         spoken_language=project.spoken_language,
         save_conversations=project.save_conversations,
         voice_clip=voice_reference_for_project(session, project) if tts_api_key is None else None,
+        pronunciation=matcher_for(session, project.user_id, project.spoken_language) if project.tts_enabled else None,
     )
 
 
@@ -152,7 +158,12 @@ def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None
     synth_start = time.perf_counter()
     try:
         audio_bytes, content_type = synthesize_speech(
-            text, context.tts_voice, context.tts_key, context.spoken_language, voice_clip=context.voice_clip
+            text,
+            context.tts_voice,
+            context.tts_key,
+            context.spoken_language,
+            voice_clip=context.voice_clip,
+            pronunciation=context.pronunciation,
         )
     except Exception:
         logger.exception("TTS fehlgeschlagen (project_id=%s)", context.project_id)

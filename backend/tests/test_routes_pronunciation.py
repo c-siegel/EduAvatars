@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.features.pronunciation import service
 from app.features.pronunciation.models import PronunciationEntry
-from conftest import login_as, make_user, new_client
+from conftest import LLM_REPLY, login_as, make_user, new_client
 
 
 def add(client, term: str, spoken: str = "x", **extra):
@@ -170,3 +170,43 @@ def test_deleting_the_account_deletes_the_word_list(client, teacher, engine):
     assert response.status_code in (200, 204), response.text
     with Session(engine) as session:
         assert session.exec(select(PronunciationEntry)).all() == []
+
+
+def test_public_chat_speaks_with_the_owners_word_list(client, anon, chat_project, fake_ai, engine):
+    add(client, "Tutor", "Lehrer")
+    # Neither another teacher's list nor the owner's English list may apply to this German project.
+    other = login_as(new_client(), make_user(engine, email="other@example.com"))
+    add(other, "Antwort", "FALSCH")
+    client.post("/pronunciation/entries", json={"language": "en", "term": "Sätze", "spoken": "FALSCH"})
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+
+    response = anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
+
+    assert response.json()["reply"] == LLM_REPLY  # the displayed reply keeps the original text
+    spoken = fake_ai.speech_calls[-1]["input"]
+    assert "Lehrer" in spoken and "Tutor" not in spoken
+    assert "FALSCH" not in spoken
+
+
+def test_streamed_chat_speaks_with_the_owners_word_list(client, anon, chat_project, fake_ai):
+    add(client, "Tutor", "Lehrer")
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+
+    anon.post(f"/public/{slug}/messages/stream", json={"message": "Hallo"})
+
+    spoken = " ".join(call["input"] for call in fake_ai.speech_calls)
+    assert "Lehrer" in spoken and "Tutor" not in spoken
+
+
+def test_an_edit_applies_to_the_next_reply(client, anon, chat_project, fake_ai):
+    entry = add(client, "Tutor", "Lehrer").json()
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+    anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
+
+    client.put(f"/pronunciation/entries/{entry['id']}", json={"term": "Tutor", "spoken": "Lehrerin"})
+    anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
+
+    assert "Lehrerin" in fake_ai.speech_calls[-1]["input"]
