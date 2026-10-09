@@ -76,14 +76,16 @@
   /* Text */
   --text-primary: var(--neutral-900);
   --text-secondary: var(--neutral-600);
-  --text-tertiary: var(--neutral-400);
+  /* neutral-500, not 400: 400 is only 2.5:1 on white, below the 4.5:1 WCAG AA needs for text. */
+  --text-tertiary: var(--neutral-500);
   --text-inverse: var(--neutral-0);
   --text-accent: #0f766e;
   --text-link: var(--teal-700);
   --text-link-hover: var(--teal-900);
 
   /* Semantic colours */
-  --color-success: var(--emerald-600);
+  /* emerald-700: 600 is only 3.6:1 on --color-success-bg. */
+  --color-success: var(--emerald-700);
   --color-success-bg: var(--emerald-50);
   --color-warning: var(--amber-700);
   --color-warning-bg: var(--amber-100);
