@@ -10,6 +10,7 @@ import { Check, Download, Pencil, Sparkles, Trash2, Upload, X } from "lucide-rea
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo } from "@/components/InfoTip";
 import { apiKeysApi } from "@/api/apiKeys";
 import { errorMessage } from "@/api/client";
 import { evaluationApi, type EvaluationStatus, type TestCase, type TestSet } from "@/api/evaluation";
@@ -43,8 +44,7 @@ export function TestSets({ kb, status }: { kb: KnowledgeBase; status: Evaluation
 
   return (
     <section className={styles.search}>
-      <h4>{t("testSets.title")}</h4>
-      <p className={styles.hint}>{t("testSets.hint")}</p>
+      <HeadingWithInfo as="h4" title={t("testSets.title")} info={t("testSets.hint")} />
       {testSets.length > 0 && (
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`test-set-${kb.id}`}>

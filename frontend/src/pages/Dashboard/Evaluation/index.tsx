@@ -11,6 +11,7 @@ import { ChevronDown, ChevronRight, Download, Square, Trash2 } from "lucide-reac
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo, InfoButton, InfoPanel, LabelWithInfo, useInfoTip } from "@/components/InfoTip";
 import { apiKeysApi } from "@/api/apiKeys";
 import { errorMessage } from "@/api/client";
 import {
@@ -99,10 +100,7 @@ export function EvaluationPage() {
 function Header() {
   const { t } = useTranslation();
   return (
-    <div className={styles.header}>
-      <h2>{t("evaluation.title")}</h2>
-      <p>{t("evaluation.subtitle")}</p>
-    </div>
+    <HeadingWithInfo as="h2" className={styles.header} title={t("evaluation.title")} info={t("evaluation.subtitle")} />
   );
 }
 
@@ -157,6 +155,8 @@ function StartRun({ status, onStarted }: { status: EvaluationStatus; onStarted: 
     },
   });
 
+  const metricTip = useInfoTip();
+
   function toggleMetric(metric: MetricName) {
     setMetrics((current) => (current.includes(metric) ? current.filter((m) => m !== metric) : [...current, metric]));
     setConfirmed(false);
@@ -209,9 +209,12 @@ function StartRun({ status, onStarted }: { status: EvaluationStatus; onStarted: 
           </select>
         </div>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="eval-judge">
-            {t("evaluation.judgeKey")}
-          </label>
+          <LabelWithInfo
+            label={t("evaluation.judgeKey")}
+            htmlFor="eval-judge"
+            className={styles.label}
+            info={t("evaluation.judgeHint")}
+          />
           <select id="eval-judge" className={styles.select} value={judgeKey?.id ?? ""} onChange={(e) => setJudgeKeyId(e.target.value)}>
             {judgeKeys.map((key) => (
               <option key={key.id} value={key.id}>
@@ -222,17 +225,32 @@ function StartRun({ status, onStarted }: { status: EvaluationStatus; onStarted: 
         </div>
       </div>
       {judgeKeys.length === 0 && <Callout variant="warning">{t("evaluation.noJudgeKey")}</Callout>}
-      <p className={styles.hint}>{t("evaluation.judgeHint")}</p>
 
       <fieldset className={styles.metrics}>
-        <legend className={styles.label}>{t("evaluation.metricsTitle")}</legend>
+        <legend className={`${styles.label} ${styles.legendWithInfo}`}>
+          {t("evaluation.metricsTitle")}
+          <InfoButton
+            topic={t("evaluation.metricsTitle")}
+            open={metricTip.open}
+            panelId={metricTip.panelId}
+            onToggle={metricTip.toggle}
+          />
+        </legend>
+        <div className={styles.metricInfo}>
+          <InfoPanel id={metricTip.panelId} open={metricTip.open}>
+            <ul className={styles.metricHints}>
+              {METRICS.map((metric) => (
+                <li key={metric}>
+                  <strong>{t(`evaluation.metric.${metric}`)}:</strong> {t(`evaluation.metricHint.${metric}`)}
+                </li>
+              ))}
+            </ul>
+          </InfoPanel>
+        </div>
         {METRICS.map((metric) => (
           <label key={metric} className={styles.metricOption}>
             <input type="checkbox" checked={metrics.includes(metric)} onChange={() => toggleMetric(metric)} />
-            <span>
-              <strong>{t(`evaluation.metric.${metric}`)}</strong>
-              <span className={styles.hint}>{t(`evaluation.metricHint.${metric}`)}</span>
-            </span>
+            <strong>{t(`evaluation.metric.${metric}`)}</strong>
           </label>
         ))}
       </fieldset>

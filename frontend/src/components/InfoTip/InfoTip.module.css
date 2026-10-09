@@ -4,7 +4,9 @@
   gap: var(--space-1);
 }
 
-.heading {
+/* Two classes, so it beats page rules like ".header h2 { margin-bottom }" that would knock the
+   heading out of line with its (i). */
+.row > .heading {
   margin: 0;
 }
 

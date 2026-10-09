@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { Mic, Play, Square, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo } from "@/components/InfoTip";
 import { Input, Textarea } from "@/components/Input";
 import { AudioOnlySpeaker, TalkingHeadAvatar, type TalkingHeadAvatarHandle } from "@/components/TalkingHeadAvatar";
 import { apiKeysApi } from "@/api/apiKeys";
@@ -406,10 +407,7 @@ export function LatencyLabPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h2>{t("latencyLab.title")}</h2>
-        <p>{t("latencyLab.subtitle")}</p>
-      </div>
+      <HeadingWithInfo as="h2" className={styles.header} title={t("latencyLab.title")} info={t("latencyLab.subtitle")} />
 
       <section className={styles.card}>
         <h3>{t("latencyLab.setupTitle")}</h3>
@@ -520,12 +518,16 @@ export function LatencyLabPage() {
 
         <div className={styles.engine}>
           <div className={styles.engineHead}>
-            <strong>{t("latencyLab.soproTitle")}</strong>
+            <HeadingWithInfo
+              as="h4"
+              className={styles.engineTitle}
+              title={t("latencyLab.soproTitle")}
+              info={t("latencyLab.soproHint")}
+            />
             <Button size="sm" onClick={() => void loadSopro()} disabled={busy || sopro.status === "loading"}>
               {t("latencyLab.load")}
             </Button>
           </div>
-          <p className={styles.hint}>{t("latencyLab.soproHint")}</p>
           <Input
             label={t("latencyLab.soproModelUrl")}
             placeholder="https://huggingface.co/samuel-vitorino/sopro-v2-turbo-onnx/resolve/main"
@@ -607,7 +609,7 @@ export function LatencyLabPage() {
       {setupError && <Callout variant="warning">{setupError}</Callout>}
 
       <section className={styles.card}>
-        <h3>{t("latencyLab.singleTitle")}</h3>
+        <HeadingWithInfo title={t("latencyLab.singleTitle")} info={t("latencyLab.clipsHint")} />
         <form
           className={styles.sendRow}
           onSubmit={(e) => {
@@ -656,12 +658,10 @@ export function LatencyLabPage() {
             ))}
           </ul>
         )}
-        <p className={styles.hint}>{t("latencyLab.clipsHint")}</p>
       </section>
 
       <section className={styles.card}>
-        <h3>{t("latencyLab.scriptTitle")}</h3>
-        <p className={styles.hint}>{t("latencyLab.scriptHint")}</p>
+        <HeadingWithInfo title={t("latencyLab.scriptTitle")} info={t("latencyLab.scriptHint")} />
         <Textarea label={t("latencyLab.script")} value={script} onChange={(e) => setScript(e.target.value)} rows={6} disabled={busy} />
         <div className={styles.grid}>
           <Input
@@ -695,7 +695,7 @@ export function LatencyLabPage() {
 
       <section className={styles.card}>
         <div className={styles.engineHead}>
-          <h3>{t("latencyLab.resultsTitle")}</h3>
+          <HeadingWithInfo title={t("latencyLab.resultsTitle")} info={t("latencyLab.resultsHint")} />
           <div className={styles.buttons}>
             <Button size="sm" disabled={!results.length} onClick={() => downloadFile(toCsv(results, device), `${exportName}.csv`, "text/csv")}>
               CSV
@@ -715,11 +715,10 @@ export function LatencyLabPage() {
             </Button>
           </div>
         </div>
-        <p className={styles.hint}>{t("latencyLab.resultsHint")}</p>
 
         {summary.length > 0 && (
           <>
-            <h4>{t("latencyLab.summaryTitle")}</h4>
+            <HeadingWithInfo as="h4" title={t("latencyLab.summaryTitle")} info={t("latencyLab.summaryHint")} />
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -750,7 +749,6 @@ export function LatencyLabPage() {
                 </tbody>
               </table>
             </div>
-            <p className={styles.hint}>{t("latencyLab.summaryHint")}</p>
           </>
         )}
 

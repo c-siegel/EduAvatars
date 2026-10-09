@@ -306,3 +306,10 @@
   margin: 0;
   color: var(--text-secondary);
 }
+
+/* Engine names (e.g. Sopro) read like the bold labels they replaced, not like section headings. */
+.engineTitle h4 {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}

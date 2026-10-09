@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo, ToggleWithInfo } from "@/components/InfoTip";
 import { Input } from "@/components/Input";
 import { adminApi, type SiteSettings } from "@/api/admin";
 import { errorMessage } from "@/api/client";
@@ -130,8 +131,7 @@ export function AdminSettingsPage() {
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.card}>
-          <h3>{t("admin.settings.imprintTitle")}</h3>
-          <p className={styles.hint}>{t("admin.settings.imprintHint")}</p>
+          <HeadingWithInfo title={t("admin.settings.imprintTitle")} info={t("admin.settings.imprintHint")} />
 
           <Input
             label={t("admin.settings.providerNameLabel")}
@@ -176,26 +176,20 @@ export function AdminSettingsPage() {
             min={0}
             value={String(form.conversationRetentionDays)}
             onChange={(e) => update({ conversationRetentionDays: Math.max(0, Number(e.target.value) || 0) })}
+            info={t("admin.settings.retentionHint")}
           />
-          <p className={styles.hint}>{t("admin.settings.retentionHint")}</p>
 
-          <label className={styles.toggleRow}>
-            <input
-              type="checkbox"
-              checked={form.registrationEnabled}
-              onChange={(e) => update({ registrationEnabled: e.target.checked })}
-            />
-            <span className={styles.toggleCopy}>
-              <strong>{t("admin.settings.registrationTitle")}</strong>
-              <span>{t("admin.settings.registrationText")}</span>
-            </span>
-          </label>
+          <ToggleWithInfo
+            title={t("admin.settings.registrationTitle")}
+            checked={form.registrationEnabled}
+            onChange={(e) => update({ registrationEnabled: e.target.checked })}
+            info={t("admin.settings.registrationText")}
+          />
         </div>
 
         {ceilings?.enabled && (
           <div className={styles.card}>
-            <h3>{t("admin.settings.knowledgeTitle")}</h3>
-            <p className={styles.hint}>{t("admin.settings.knowledgeHint")}</p>
+            <HeadingWithInfo title={t("admin.settings.knowledgeTitle")} info={t("admin.settings.knowledgeHint")} />
             {KNOWLEDGE_LIMIT_FIELDS.map(({ field, ceiling, max: fixedMax, min }) => {
               const max = ceiling ? ceilings[ceiling] : fixedMax;
               return (

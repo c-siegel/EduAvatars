@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, RotateCcw, Search, Trash2 } from "lucide-rea
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo, LabelWithInfo } from "@/components/InfoTip";
 import { Input } from "@/components/Input";
 import { apiKeysApi } from "@/api/apiKeys";
 import { errorMessage } from "@/api/client";
@@ -78,10 +79,7 @@ export function KnowledgePage() {
 function Header() {
   const { t } = useTranslation();
   return (
-    <div className={styles.header}>
-      <h2>{t("knowledge.title")}</h2>
-      <p>{t("knowledge.subtitle")}</p>
-    </div>
+    <HeadingWithInfo as="h2" className={styles.header} title={t("knowledge.title")} info={t("knowledge.subtitle")} />
   );
 }
 
@@ -179,9 +177,12 @@ function CreateKnowledgeBase({ status, onCreated }: { status: KnowledgeStatus; o
         onChange={(e) => setDescription(e.target.value)}
       />
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="kb-embedding">
-          {t("knowledge.embedding")}
-        </label>
+        <LabelWithInfo
+          label={t("knowledge.embedding")}
+          htmlFor="kb-embedding"
+          className={styles.label}
+          info={t("knowledge.embeddingHint")}
+        />
         <select
           id="kb-embedding"
           className={styles.select}
@@ -195,7 +196,6 @@ function CreateKnowledgeBase({ status, onCreated }: { status: KnowledgeStatus; o
             </option>
           ))}
         </select>
-        <p className={styles.hint}>{t("knowledge.embeddingHint")}</p>
         {embeddingKeyId && <Callout variant="warning">{t("knowledge.embeddingApiNotice")}</Callout>}
       </div>
       {createMutation.isError && (
@@ -552,8 +552,7 @@ function TestSearch({ kb }: { kb: KnowledgeBase }) {
 
   return (
     <form className={styles.search} onSubmit={handleSubmit}>
-      <h4>{t("knowledge.searchTitle")}</h4>
-      <p className={styles.hint}>{t("knowledge.searchHint")}</p>
+      <HeadingWithInfo as="h4" title={t("knowledge.searchTitle")} info={t("knowledge.searchHint")} />
       <div className={styles.searchRow}>
         <input
           className={styles.searchInput}

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { LabelWithInfo } from "@/components/InfoTip";
 import { Input } from "@/components/Input";
 import { curatedModels, findProvider } from "@/lib/providers";
 import { ALL_KEY_TYPES, KEY_TYPE_LABELS, type ApiKey, type ApiKeyInput, type ApiKeyType, type ProviderSpec } from "@/types/apiKey";
@@ -99,9 +100,12 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
       {errorMessage && <Callout variant="danger">{errorMessage}</Callout>}
 
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="key-type-select">
-          {t("apiDashboard.table.type")}
-        </label>
+        <LabelWithInfo
+          label={t("apiDashboard.table.type")}
+          htmlFor="key-type-select"
+          className={styles.label}
+          info={t("apiKeyForm.keyTypeHint")}
+        />
         <select
           id="key-type-select"
           className={styles.select}
@@ -114,7 +118,6 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
             </option>
           ))}
         </select>
-        <p className={styles.hint}>{t("apiKeyForm.keyTypeHint")}</p>
       </div>
 
       <div className={styles.field}>
@@ -161,9 +164,12 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
 
       {showModelField && (
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="model-select">
-            {t("apiDashboard.table.model")}
-          </label>
+          <LabelWithInfo
+            label={t("apiDashboard.table.model")}
+            htmlFor="model-select"
+            className={styles.label}
+            info={t("apiKeyForm.modelHint")}
+          />
           <select
             id="model-select"
             className={styles.select}
@@ -193,7 +199,6 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
               required
             />
           )}
-          <p className={styles.hint}>{t("apiKeyForm.modelHint")}</p>
         </div>
       )}
 

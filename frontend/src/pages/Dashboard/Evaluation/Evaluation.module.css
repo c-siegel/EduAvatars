@@ -357,3 +357,27 @@
     grid-template-columns: 1fr;
   }
 }
+
+.legendWithInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Spans the whole metrics grid; empty (and so invisible) while the panel is closed. */
+.metricInfo {
+  grid-column: 1 / -1;
+}
+
+.metricInfo:empty {
+  display: none;
+}
+
+.metricHints {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.metricHints li + li {
+  margin-top: var(--space-1);
+}
