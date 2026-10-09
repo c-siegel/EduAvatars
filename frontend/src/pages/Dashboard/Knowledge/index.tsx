@@ -2,10 +2,10 @@
 // watch them get indexed, try a search, delete. Projects attach knowledge bases in the
 // Configurator (step 3). Only reachable when the deployment runs the knowledge service.
 
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, RotateCcw, Search, Trash2 } from "lucide-react";
+import { BookMarked, ChevronDown, ChevronRight, RotateCcw, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
@@ -23,6 +23,7 @@ import {
 import { formatBytes, numberLocale } from "@/lib/format";
 import { keyDisplayName, useKnowledgeStatus, useProviders } from "@/lib/providers";
 import styles from "./Knowledge.module.css";
+import { Bibliography, SourceForm, SourceSummary } from "./Sources";
 
 const ACCEPT = ".pdf,.docx,.txt,.md,.markdown";
 // How often the document list refreshes while something is still being indexed.
@@ -304,6 +305,7 @@ function KnowledgeBaseDetail({ kb, status }: { kb: KnowledgeBase; status: Knowle
   return (
     <div className={styles.detail}>
       <UploadDocuments kb={kb} status={status} />
+      <Bibliography kb={kb} />
       <DocumentTable kb={kb} documents={documents} loading={documentsQuery.isLoading} doclingAvailable={status.doclingAvailable} />
       {documents.some((d) => d.status === "ready") && <TestSearch kb={kb} />}
     </div>
@@ -438,6 +440,8 @@ function DocumentTable({
     },
   });
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   if (loading) return <p className={styles.hint}>{t("common.loading")}</p>;
   if (documents.length === 0) return <p className={styles.hint}>{t("knowledge.noDocuments")}</p>;
 
@@ -454,9 +458,11 @@ function DocumentTable({
         </thead>
         <tbody>
           {documents.map((doc) => (
-            <tr key={doc.id}>
+            <Fragment key={doc.id}>
+            <tr>
               <td>
                 <span className={styles.filename}>{doc.filename}</span>
+                <SourceSummary document={doc} />
                 <span className={styles.hint}>
                   {formatBytes(doc.sizeBytes)} · {new Date(doc.createdAt).toLocaleDateString(numberLocale())}
                 </span>
@@ -507,7 +513,16 @@ function DocumentTable({
                 )}
                 {(doc.status === "queued" || doc.status === "processing") && t("knowledge.inProgress")}
               </td>
-              <td>
+              <td className={styles.rowActions}>
+                <Button
+                  size="sm"
+                  onClick={() => setEditingId(editingId === doc.id ? null : doc.id)}
+                  aria-expanded={editingId === doc.id}
+                  aria-label={t("sources.edit", { name: doc.filename })}
+                  title={t("sources.editShort")}
+                >
+                  <BookMarked size={14} />
+                </Button>
                 <Button
                   size="sm"
                   onClick={() => {
@@ -523,6 +538,14 @@ function DocumentTable({
                 </Button>
               </td>
             </tr>
+            {editingId === doc.id && (
+              <tr>
+                <td colSpan={4}>
+                  <SourceForm document={doc} kb={kb} onClose={() => setEditingId(null)} />
+                </td>
+              </tr>
+            )}
+            </Fragment>
           ))}
         </tbody>
       </table>
