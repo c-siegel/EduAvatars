@@ -1,0 +1,35 @@
+[project]
+name = "eduavatars-rag"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
+    # Local embeddings on the CPU (ONNX). Capped below the next minor: fastembed renames and
+    # removes supported models between minors, and a knowledge base can only be queried with the
+    # exact model it was built with (see app/embedding.py).
+    "fastembed>=0.9,<0.10",
+    # Pre-1.0: the vec0 virtual-table syntax used in app/store.py (partition keys, "k = ?") may
+    # still change in a minor release.
+    "sqlite-vec>=0.1.9,<0.2",
+    "pypdf>=6,<7",
+    # DOCX is read directly with lxml (app/parsing/docx.py) instead of python-docx, so the XML
+    # parser settings that block XXE and entity expansion are set in this repo, not a library.
+    "lxml>=5",
+    # API embeddings (OpenAI, Mistral, Gemini, Ollama, OpenAI-compatible) — same library the
+    # backend already uses for LLM calls.
+    "litellm>=1.48",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["app", "app.parsing"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

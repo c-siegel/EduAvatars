@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo } from "@/components/InfoTip";
 import { Input } from "@/components/Input";
 import { errorMessage } from "@/api/client";
 import { voiceClipsApi, type VoiceClip } from "@/api/voiceClips";
@@ -42,10 +43,7 @@ export function VoicesPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h2>{t("voices.title")}</h2>
-        <p>{t("voices.subtitle")}</p>
-      </div>
+      <HeadingWithInfo as="h2" className={styles.header} title={t("voices.title")} info={t("voices.subtitle")} />
 
       {!localTtsAvailable && <Callout variant="warning">{t("voices.localTtsUnavailable")}</Callout>}
 

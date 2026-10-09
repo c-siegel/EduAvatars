@@ -190,7 +190,8 @@ def test_stream_sends_chunks_then_done_and_saves_conversation(client, anon, chat
     assert all(c["contentType"] == "audio/mpeg" for c in chunks)
     done = events[-1][1]
     assert done["reply"] == LLM_REPLY
-    assert set(done) == {"reply", "llmMs", "firstChunkMs", "firstChunkTextReadyMs", "ttsMs"}
+    assert set(done) == {"reply", "llmMs", "llmFirstTokenMs", "firstChunkMs", "firstChunkTextReadyMs", "ttsMs", "retrievalMs"}
+    assert done["retrievalMs"] is None  # no knowledge base attached
     assert fake_ai.completion_calls[-1]["stream"] is True
 
     sessions = client.get("/conversations").json()

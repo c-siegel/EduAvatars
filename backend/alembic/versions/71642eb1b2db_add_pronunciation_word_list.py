@@ -5,7 +5,7 @@ language (features/pronunciation). A new table only, so nothing existing needs b
 booleans get a server_default anyway so rows inserted outside the ORM stay valid.
 
 Revision ID: 71642eb1b2db
-Revises: d0e1f2a3b4c5
+Revises: c3d4e5f6a7b9
 Create Date: 2026-10-09 12:53:19.655627
 
 """
@@ -17,7 +17,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '71642eb1b2db'
-down_revision: Union[str, None] = 'd0e1f2a3b4c5'
+down_revision: Union[str, None] = 'c3d4e5f6a7b9'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

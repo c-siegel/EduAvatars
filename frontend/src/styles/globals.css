@@ -29,3 +29,16 @@ h3 {
   outline: none;
   box-shadow: var(--ring-focus);
 }
+
+/* Users who asked their OS for less motion get instant state changes instead of slides, fades and
+   spinners. The 3D avatar handles this itself (see TalkingHeadAvatar). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

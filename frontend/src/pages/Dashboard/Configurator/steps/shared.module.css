@@ -106,3 +106,10 @@
   overflow-x: auto;
   white-space: nowrap;
 }
+
+/* Card titles in step 5 (e.g. password protection) — sized like the toggle titles around them. */
+.cardTitle h4 {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}

@@ -19,6 +19,9 @@ class ChatRequest:
     top_p: float | None = None
     start_prompt: str | None = None
     history: list[dict] | None = None
+    # Retrieved knowledge-base passages, already formatted (see features/knowledge/prompt.py) —
+    # appended to the system prompt by build_messages, so every provider gets them the same way.
+    reference_material: str | None = None
 
 
 class LLMClient(Protocol):

@@ -28,6 +28,9 @@ from app.features.auth.models import PasswordResetToken
 from app.features.chat.models import Conversation, ProjectAccess
 from app.features.ai.tts.local import forget_voice
 from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
+from app.core.config import settings
+from app.features.evaluation import cleanup as evaluation_cleanup
+from app.features.knowledge import service as knowledge
 from app.features.projects.models import Project
 from app.features.pronunciation.models import PronunciationEntry
 from app.features.users.models import User
@@ -67,6 +70,11 @@ def delete_user_account(session: Session, user: User) -> None:
         forgotten_voices.append(clip.sha256)
         session.delete(clip)
 
+    # Knowledge bases: the rows here, and their indexed text in the knowledge service right
+    # after the commit below (queued, so it's retried if that service is down).
+    knowledge.delete_all_for_user(session, user.id)
+    evaluation_cleanup.delete_for_user(session, user.id)
+
     # The stored provider secrets. Encrypted at rest, but leaving them behind would mean an
     # account deletion never actually retires the key it was entrusted with.
     session.execute(delete(UserApiKey).where(UserApiKey.user_id == user.id))
@@ -80,3 +88,5 @@ def delete_user_account(session: Session, user: User) -> None:
     session.commit()
     for sha256 in forgotten_voices:
         forget_voice(sha256)
+    if settings.rag_enabled:
+        knowledge.retry_pending_deletions(session)

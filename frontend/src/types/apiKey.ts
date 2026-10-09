@@ -1,17 +1,20 @@
 export type ApiKeyStatus = "active" | "unverified" | "error";
 
-// What a key is set up for.
-export type ApiKeyType = "llm" | "tts" | "stt";
+// What a key is set up for. "embedding" keys turn knowledge-base documents into vectors with a
+// provider's model instead of the knowledge service's local one (see pages/Dashboard/Knowledge).
+export type ApiKeyType = "llm" | "tts" | "stt" | "embedding";
 
 export const KEY_TYPE_LABELS: Record<ApiKeyType, string> = {
   llm: "LLM",
   tts: "TTS",
   stt: "STT",
+  embedding: "Embedding",
 };
 
 // All key types, for the type selector in ApiKeyForm.tsx (shown before any provider is picked,
-// so it can't be derived from a single provider's supportedTypes).
-export const ALL_KEY_TYPES: ApiKeyType[] = ["llm", "tts", "stt"];
+// so it can't be derived from a single provider's supportedTypes). Types no provider currently
+// supports (embedding, while the deployment has no knowledge service) are filtered out there.
+export const ALL_KEY_TYPES: ApiKeyType[] = ["llm", "tts", "stt", "embedding"];
 
 // Generic provider for anything that mimics the OpenAI API (formerly the special case "custom").
 export const OPENAI_COMPATIBLE_PROVIDER = "openai_compatible";
@@ -65,4 +68,6 @@ export interface ProviderSpec {
   sttModelFixed: boolean;
   // Extra required field "Arcana ID" in the key form (currently only GWDG Arcana).
   requiresArcanaId: boolean;
+  // Curated models for embedding keys; empty means the model ID is typed in.
+  embeddingModels: ProviderModel[];
 }
