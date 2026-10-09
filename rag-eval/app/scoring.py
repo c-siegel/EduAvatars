@@ -10,6 +10,11 @@ Each test question gets each requested metric (0 = bad, 1 = good):
 | context_precision   | Are the retrieved passages relevant, the relevant ones first?    | passages  |
 | context_recall      | Did retrieval find what the reference answer needs?              | reference |
 | factual_correctness | Does the answer agree with the reference answer?                 | reference |
+| coverage            | Do the retrieved passages contain what the question needs?       | topic Qs  |
+| restraint           | Does the avatar admit what the material doesn't cover?           | offtopic  |
+
+coverage and restraint (app/checks.py) only apply to one question kind each — see
+app/schemas.py::QuestionKind; for the other kinds they're left out with NOT_APPLICABLE.
 
 context_precision uses the reference answer when there is one, the generated answer otherwise.
 A metric that can't apply to an item (no passages were retrieved, no reference answer) is left
@@ -25,6 +30,7 @@ How to use:
 import asyncio
 import logging
 import math
+from types import SimpleNamespace
 
 from ragas.metrics.collections import (
     AnswerRelevancy,
@@ -35,6 +41,7 @@ from ragas.metrics.collections import (
     Faithfulness,
 )
 
+from app import checks
 from app.config import settings
 from app.embeddings import RagServiceEmbedding
 from app.judge import make_judge
@@ -48,6 +55,7 @@ NO_CONTEXTS = "NO_CONTEXTS"
 NO_REFERENCE = "NO_REFERENCE"
 NO_EMBEDDING = "NO_EMBEDDING"
 NOT_SCORABLE = "NOT_SCORABLE"
+NOT_APPLICABLE = "NOT_APPLICABLE"
 JUDGE_FAILED = "JUDGE_FAILED"
 
 
@@ -95,6 +103,11 @@ async def _run(metric_name: str, call) -> MetricScore:
     return MetricScore(value=round(min(1.0, max(0.0, value)), 4))
 
 
+async def _check(awaitable) -> SimpleNamespace:
+    """Adapts one of app/checks.py's plain values to what _run reads from a Ragas result."""
+    return SimpleNamespace(value=await awaitable)
+
+
 async def _score_item(metrics: _Metrics, item: ScoreItem, semaphore: asyncio.Semaphore) -> ScoredItem:
     jobs = {}
     q, a, ctx, ref = item.question, item.answer, item.contexts, item.reference
@@ -138,6 +151,20 @@ async def _score_item(metrics: _Metrics, item: ScoreItem, semaphore: asyncio.Sem
                 skipped[name] = MetricScore(value=None, error=NO_REFERENCE)
             else:
                 add(name, lambda: metrics.correctness.ascore(response=a, reference=ref))
+
+        elif name == "coverage":
+            if item.kind != "topic":
+                skipped[name] = MetricScore(value=None, error=NOT_APPLICABLE)
+            elif not ctx:
+                # Nothing retrieved at all: the material has nothing on it.
+                skipped[name] = MetricScore(value=0.0)
+            else:
+                add(name, lambda: _check(checks.coverage(metrics.llm, q, ctx)))
+        elif name == "restraint":
+            if item.kind != "offtopic":
+                skipped[name] = MetricScore(value=None, error=NOT_APPLICABLE)
+            else:
+                add(name, lambda: _check(checks.restraint(metrics.llm, q, a, ctx)))
 
     names = list(jobs)
     results = await asyncio.gather(*jobs.values())

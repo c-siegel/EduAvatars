@@ -180,3 +180,104 @@ def test_failed_parses_dont_put_the_judges_reply_in_the_logs(client, judge, capl
     judge.garbage = True
     client.post("/score", json=score_body(metrics=["context_recall"]), headers=AUTH)
     assert "I cannot do that" not in caplog.text
+
+
+def topic_body(**overrides) -> dict:
+    body = {
+        "kind": "topic",
+        "topic": {
+            "preprompt": "Du bist ein Biologie-Tutor für Klasse 9.",
+            "project_title": "Bio-Tutor",
+            "description": "Skript zur Zellbiologie",
+            "document_titles": ["Biologie-Skript"],
+            "objectives": "Photosynthese verstehen",
+            "existing_questions": ["Was ist Photosynthese?"],
+        },
+        "size": 3,
+        "judge": JUDGE,
+        "language": "de",
+    }
+    body.update(overrides)
+    return body
+
+
+def test_topic_questions_are_written_without_the_material(client, judge):
+    judge.overrides["questions"] = ["Wie atmen Pflanzen?", "wie atmen pflanzen?", "  ", "Was macht Chlorophyll?"]
+    response = client.post("/generate-testset", json=topic_body(), headers=AUTH)
+    assert response.status_code == 200, response.text
+    cases = response.json()["cases"]
+    # Duplicates (also differing in case) and blanks are dropped; there's no reference answer
+    # and no source passage to point to.
+    assert cases == [
+        {"question": "Wie atmen Pflanzen?", "reference": None, "chunk_id": None},
+        {"question": "Was macht Chlorophyll?", "reference": None, "chunk_id": None},
+    ]
+    prompt = judge.calls[0]["messages"][-1]["content"]
+    assert "Biologie-Tutor für Klasse 9" in prompt and "Biologie-Skript" in prompt
+    assert "Photosynthese verstehen" in prompt
+    assert "Was ist Photosynthese?" in prompt  # the existing question, to be avoided
+    assert len(judge.calls) == 1
+
+
+def test_offtopic_questions_use_their_own_prompt(client, judge):
+    response = client.post("/generate-testset", json=topic_body(kind="offtopic"), headers=AUTH)
+    assert response.status_code == 200
+    assert "certainly does NOT" in judge.calls[0]["messages"][-1]["content"]
+
+
+def test_generation_inputs_are_checked_per_kind(client, judge):
+    assert client.post("/generate-testset", json=topic_body(topic=None), headers=AUTH).status_code == 422
+    body = {"kind": "grounded", "judge": JUDGE, "size": 1}
+    assert client.post("/generate-testset", json=body, headers=AUTH).status_code == 422
+    assert judge.calls == []
+
+
+def test_a_judge_that_fails_topic_drafting_is_reported(client, judge):
+    judge.fail = True
+    response = client.post("/generate-testset", json=topic_body(), headers=AUTH)
+    assert response.status_code == 502
+
+
+def kind_item(kind: str, **extra) -> dict:
+    return {
+        "id": kind,
+        "question": "Wie atmen Pflanzen?",
+        "answer": "Über die Spaltöffnungen.",
+        "contexts": [PASSAGE],
+        "kind": kind,
+        **extra,
+    }
+
+
+def test_coverage_applies_to_topic_questions_only(client, judge):
+    body = score_body(items=[kind_item("topic"), kind_item("grounded"), kind_item("offtopic")], metrics=["coverage"])
+    scores = {i["id"]: i["scores"]["coverage"] for i in client.post("/score", json=body, headers=AUTH).json()["items"]}
+    assert scores["topic"] == {"value": 1.0, "error": None}
+    assert scores["grounded"] == {"value": None, "error": "NOT_APPLICABLE"}
+    assert scores["offtopic"] == {"value": None, "error": "NOT_APPLICABLE"}
+    assert len(judge.calls) == 1
+
+
+def test_coverage_grades_the_passages(client, judge):
+    for verdict, value in (("partly", 0.5), ("no", 0.0)):
+        judge.overrides["coverage"] = verdict
+        body = score_body(items=[kind_item("topic")], metrics=["coverage"])
+        item = client.post("/score", json=body, headers=AUTH).json()["items"][0]
+        assert item["scores"]["coverage"]["value"] == value
+
+
+def test_nothing_retrieved_means_no_coverage_without_a_judge_call(client, judge):
+    body = score_body(items=[kind_item("topic", contexts=[])], metrics=["coverage"])
+    item = client.post("/score", json=body, headers=AUTH).json()["items"][0]
+    assert item["scores"]["coverage"] == {"value": 0.0, "error": None}
+    assert judge.calls == []
+
+
+def test_restraint_applies_to_offtopic_questions_only(client, judge):
+    body = score_body(items=[kind_item("offtopic"), kind_item("topic")], metrics=["restraint"])
+    scores = {i["id"]: i["scores"]["restraint"] for i in client.post("/score", json=body, headers=AUTH).json()["items"]}
+    assert scores["offtopic"] == {"value": 1.0, "error": None}
+    assert scores["topic"] == {"value": None, "error": "NOT_APPLICABLE"}
+    judge.overrides["restraint"] = "misleading"
+    item = client.post("/score", json=score_body(items=[kind_item("offtopic")], metrics=["restraint"]), headers=AUTH)
+    assert item.json()["items"][0]["scores"]["restraint"]["value"] == 0.0
