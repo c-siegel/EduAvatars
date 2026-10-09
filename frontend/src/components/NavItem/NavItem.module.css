@@ -16,6 +16,13 @@
   flex-shrink: 0;
 }
 
+/* The sidebar is wide enough for the longest German label ("Profileinstellungen"); hyphenation is
+   only a fallback for even longer words, where the browser supports it for <html lang>. */
+.label {
+  min-width: 0;
+  hyphens: auto;
+}
+
 .navItem:hover {
   background: var(--surface-card);
   color: var(--text-primary);

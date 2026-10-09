@@ -30,7 +30,8 @@
 }
 
 .sidebar {
-  width: 196px;
+  /* Fits "Profileinstellungen" and "Antwortqualität" on one line next to their icons. */
+  width: 228px;
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
