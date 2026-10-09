@@ -40,6 +40,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/ai/` | One package each for LLM, TTS and STT, with one module per provider behind a small interface (`get_llm_client`, `get_tts_client`, `get_stt_client`) — including the local-TTS sidecar and local Whisper fallbacks |
 | `app/features/api_keys/` | The user's stored provider keys (`/api-keys`), the provider registry and speech-option status routes (`/providers`), key resolution and encryption |
 | `app/features/media/` | Avatar model and background image libraries |
+| `app/features/pronunciation/` | Each teacher's TTS word list (`/pronunciation`), preset packs (`presets/*.json`), import/export and the test box; the matching engine itself is `app/features/ai/tts/pronunciation.py` |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
@@ -192,6 +193,33 @@ long, and are stored as normalized 24 kHz mono WAV whatever format came in.
 | `POST /voice-clips/{clip_id}/preview` | Login required, own resource | Speak `{text, language}` in the clip's cloned voice via the local-TTS sidecar; returns WAV. |
 | `DELETE /voice-clips/{clip_id}` | Login required, own resource | Delete a clip; projects using it go back to the default voice and lose their start audio. |
 
+### Pronunciation word list — `app/features/pronunciation/router.py` (prefix `/pronunciation`)
+
+Each teacher's own list of terms the TTS should say differently, per spoken language (`de`/`en`).
+It applies to everything their projects speak in that language — chat replies (whole and
+streamed), the start audio and voice-clip previews — but never changes the displayed text. Rules
+are plain text, not regular expressions: a term matches literally (a space matches any
+whitespace), `{number}` stands for a number and is carried over into the spoken form, all rules
+apply in one longest-first pass, and they run after Markdown is stripped and before the built-in
+decimal/symbol rules (`app/features/ai/tts/normalizer.py`). At most 500 terms per language.
+
+| Endpoint | Auth | Description |
+|---|---|---|
+| `GET /pronunciation/entries?language=` | Login required | List the current user's terms (optionally for one language). |
+| `POST /pronunciation/entries` | Login required | Add a term `{language, term, spoken, wholeWord, caseSensitive, spellOut}`; `spellOut` generates the spoken form letter by letter. 409 on a duplicate term. |
+| `PUT /pronunciation/entries/{entry_id}` | Login required, own resource | Change a term (the language stays); an edited preset entry becomes the user's own. |
+| `DELETE /pronunciation/entries/{entry_id}` | Login required, own resource | Delete a term. |
+| `POST /pronunciation/import` | Login required | Import `{language, text, overwrite, dryRun}` — lines `term = spoken`, `term;spoken[;whole_word;case_sensitive]` or tab-separated; `!spell` as the spoken form spells the term out; `#` starts a comment. Invalid lines are reported, the rest is imported. |
+| `GET /pronunciation/export?language=` | Login required | The list as semicolon CSV (the format the import reads), with spreadsheet formulas escaped. |
+| `POST /pronunciation/preview` | Login required | The test box: `{text, language}` → the exact text the TTS gets plus the terms that matched; with `synthesize: true` also audio (base64) from one of the user's own TTS keys + voice, or the local sidecar + one of their voice clips. Audio previews are limited to 10 per minute per user. |
+| `GET /pronunciation/presets?language=` | Login required | The shipped preset packs with their entries and how many of them the user has. |
+| `POST /pronunciation/presets/{pack_id}/apply?language=` | Login required | Copy a pack into the user's list; terms they already have are kept. |
+| `DELETE /pronunciation/presets/{pack_id}?language=` | Login required | Remove the entries a pack added that the user hasn't edited. |
+
+A preset pack is a JSON file `app/features/pronunciation/presets/<id>.<language>.json` (see
+`presets.py` for the format); its display name and description go into the frontend locales under
+`pronunciation.presets.packs.<id>`. Every pack is validated by `tests/test_pronunciation_presets.py`.
+
 ### Analytics — `app/features/analytics/stats_router.py` (prefix `/analytics`)
 
 Read-only numbers for the teacher-facing dashboards, scoped to the current user's own projects.
@@ -265,7 +293,10 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | File | Purpose | Key functions |
 |---|---|---|
 | `features/ai/llm/` | LLM chat completion (litellm, plus a direct integration for GWDG Arcana) | `get_llm_client(api_key_record)` → `.complete(request)`, `.stream(request)`, `.test()`.<br>`complete(api_key_record, ChatRequest(...))` — one-shot reply.<br>`stream(api_key_record, ChatRequest(...))` — text deltas, falling back to a plain call if streaming fails before the first delta. |
-| `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language)` — routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
+| `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language, pronunciation=None)` — normalizes the text for speech (with the teacher's word list, if given), routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
+| `features/ai/tts/pronunciation.py` | Matching a teacher's word list | `compile_rules(rules)` → a cached `PronunciationMatcher`; `.apply(text, applied=None)` rewrites the text in one longest-first pass. `PronunciationRule(term, spoken, whole_word, case_sensitive)`, `spell_out(term)`. |
+| `features/pronunciation/service.py` | Managing the word list | `list_entries(...)`, `create_entry(...)`, `update_entry(...)`, `delete_entry(...)`, `get_owned_entry(...)`.<br>`matcher_for(session, user_id, language)` — what to pass as `synthesize_speech(..., pronunciation=)`.<br>`import_text(...)`, `export_csv(...)`. |
+| `features/pronunciation/presets.py` | Preset packs | `all_packs()`, `get_pack(id, language)`, `apply_pack(...)`, `remove_pack(...)`, `applied_count(...)`. |
 | `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — locally via faster-whisper or Parakeet (`Settings.stt_engine`), or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`.<br>`capacity.transcription_slot()` — limits concurrent local transcriptions. |
 | `features/chat/pipeline.py` | One chat turn for the public and preview chat | `prepare_chat(session, project)` — resolve keys and snapshot the project.<br>`reply_turn(context, turn)` — LLM → save → TTS.<br>`stream_turn(context, turn)` — `(event, data)` pairs for the SSE stream. |
 | `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_url_for(project)`, `effective_api_base(key)`. |
@@ -282,7 +313,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | `features/analytics/service.py` | Analytics queries behind the dashboard | `get_stats(...)`, `get_project_overview(...)`, `get_sessions_paginated(...)`, `get_session_ids(...)`, `get_timeseries_data(...)`.<br>`get_conversation_detail(...)`, `get_conversations_for_export(...)`, `delete_conversations(...)`. |
 | `features/analytics/csv_export.py` | Conversation CSV/ZIP export | `build_export(rows)`, `build_conversation_csv(conversation, project)`, `conversation_export_filename(...)`. |
 | `features/users/service.py` | Own profile and admin account management | `update_profile(...)`, `change_password(...)`, `set_profile_picture(...)`.<br>`create_user_as_admin(...)`, `admin_reset_password(...)`, `admin_update_user(session, admin, target, data)` — guards against self-lockout and removing the last admin. |
-| `features/users/account.py` | Account deletion | `delete_user_account(session, user)` — cascades to projects, keys, conversations, and uploaded files. |
+| `features/users/account.py` | Account deletion | `delete_user_account(session, user)` — cascades to projects, keys, conversations, the pronunciation word list, and uploaded files. |
 | `features/site_settings/service.py` | Instance-wide site settings | `get_or_create_site_settings(session)`, `update_site_settings(session, data)`. |
 | `features/chat/streaming.py` | Splitting streamed LLM text into speakable sentence chunks | `SentenceChunker` — `feed()`/`flush()` for a live stream.<br>`chunk_text(text)` for an already-complete string; `sse_event(event, data)` for one SSE frame. |
 | `features/chat/unlock.py` | Chat password verification | `verify_chat_password(project, password)`, `issue_unlock_token(project, visitor_id)`.<br>`is_unlocked(...)` / `assert_unlocked(...)` — check vs. raise variants. |
@@ -327,6 +358,10 @@ A few backend behaviors worth knowing about if you're deploying or extending thi
 - **Conversation exports are CSV-injection-safe** (`app/features/analytics/csv_export.py`): a
   visitor name or message starting with `=`, `+`, `-`, or `@` is escaped before being written to
   the exported CSV/ZIP, so it can't turn into a live spreadsheet formula when a teacher opens it.
+  The pronunciation word-list export does the same (and its import strips the escape again).
+- **Pronunciation rules are never regular expressions.** Teachers' terms are escaped before they
+  are compiled (`app/features/ai/tts/pronunciation.py`), so a word list can't inject a pattern or
+  cause catastrophic backtracking; the only syntax is the `{number}` placeholder.
 
 ## Latency monitoring
 

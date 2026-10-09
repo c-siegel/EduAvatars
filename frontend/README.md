@@ -42,6 +42,7 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `/dashboard` | `Dashboard/Overview` | A user's list of projects (avatars) |
 | `/dashboard/projects/:id` | `Dashboard/Configurator` | The 5-step wizard for building a project: appearance, technical (AI provider/language), behavior (personality prompt), preview chat, publish. Publishing always saves the current draft first, so there's no separate "save, then publish" step. |
 | `/dashboard/api` | `Dashboard/ApiDashboard` | Connect/manage a user's own LLM/TTS provider API keys ("bring your own key") |
+| `/dashboard/pronunciation` | `Dashboard/Pronunciation` | A user's TTS word list per language: add/edit terms, preset packs (physics), text/CSV import and export, and a test box that shows the spoken text live and plays it with a chosen TTS key/voice, voice clip or project's settings |
 | `/dashboard/analytics` | `Dashboard/Analytics` | Usage stats and per-conversation transcripts for a user's own projects |
 | `/dashboard/profile` | `Dashboard/Profile` | Account settings: picture, password, logout-everywhere, account deletion |
 | `/dashboard/change-password-required` | `Dashboard/ForcePasswordChange` | Forced password reset (e.g. after an admin-issued reset) |

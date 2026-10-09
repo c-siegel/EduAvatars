@@ -33,6 +33,11 @@ visitors need no account and no technical knowledge to use it.
 - **Pick a 3D face and a voice.** Every project starts with two bundled 3D faces to choose from
   (Julia and David), or upload your own; add a background image if you like; pick a synthesized
   voice from any connected provider.
+- **Teach it how to pronounce your subject.** A per-language word list (Dashboard →
+  Pronunciation) tells the speech output how to say terms, units and abbreviations — "pH" as
+  "p H", "13,9 m/s" as "13,9 Meter pro Sekunde". Plain text with a `{number}` placeholder, no
+  regular expressions; a ready-made physics pack, CSV import/export and a test box to hear the
+  result are built in.
 - **Talk by typing or by speaking.** Visitors can type a message or hold a button to speak —
   their speech is transcribed automatically, and the avatar answers out loud with matching lip
   movement.
