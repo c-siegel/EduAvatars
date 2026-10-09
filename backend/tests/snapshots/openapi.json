@@ -1939,6 +1939,112 @@
         "title": "PronunciationImportResult",
         "type": "object"
       },
+      "PronunciationPreviewIn": {
+        "properties": {
+          "language": {
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "synthesize": {
+            "default": false,
+            "title": "Synthesize",
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "ttsApiKeyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsapikeyid"
+          },
+          "ttsVoice": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttsvoice"
+          },
+          "voiceClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voiceclipid"
+          }
+        },
+        "required": [
+          "text",
+          "language"
+        ],
+        "title": "PronunciationPreviewIn",
+        "type": "object"
+      },
+      "PronunciationPreviewOut": {
+        "properties": {
+          "appliedTerms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Appliedterms",
+            "type": "array"
+          },
+          "audioBase64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audiobase64"
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype"
+          },
+          "spokenText": {
+            "title": "Spokentext",
+            "type": "string"
+          }
+        },
+        "required": [
+          "spokenText",
+          "appliedTerms"
+        ],
+        "title": "PronunciationPreviewOut",
+        "type": "object"
+      },
       "ProviderModelOut": {
         "properties": {
           "label": {
@@ -4981,6 +5087,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PronunciationImportResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/pronunciation/preview": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronunciationPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PronunciationPreviewOut"
                 }
               }
             },

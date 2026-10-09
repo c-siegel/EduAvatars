@@ -97,3 +97,25 @@ class PronunciationImportResult(CamelModel):
     updated: int
     skipped: int
     errors: list[PronunciationImportLineError]
+
+
+class PronunciationPreviewIn(CamelModel):
+    # A sentence or two, same cap as the voice-clip preview — enough to hear a few terms in context.
+    text: str = Field(min_length=1, max_length=300)
+    language: Language
+    # False: only show the rewritten text (free, instant). True: also synthesize it.
+    synthesize: bool = False
+    # Which TTS to hear it with: one of the teacher's own "tts" keys, or None for the local-TTS
+    # sidecar (optionally cloning one of their voice clips).
+    tts_api_key_id: str | None = None
+    tts_voice: str | None = Field(default=None, max_length=200)
+    voice_clip_id: str | None = None
+
+
+class PronunciationPreviewOut(CamelModel):
+    # What the TTS engine is actually given — after the word list AND the built-in rules.
+    spoken_text: str
+    # The terms of the word list that matched, so the page can show which entries took effect.
+    applied_terms: list[str]
+    audio_base64: str | None = None
+    content_type: str | None = None

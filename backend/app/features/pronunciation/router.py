@@ -4,7 +4,7 @@ Pronunciation Word List Routes
 Lets a teacher maintain their own list of terms the avatar should pronounce differently ("pH" ->
 "p H"), per spoken language, and import/export it as text. The list applies to the speech of
 every one of their projects in that language (see service.py::matcher_for); the logic lives in
-service.py.
+service.py, the test box's in preview.py.
 """
 
 from fastapi import APIRouter, Depends, Query
@@ -12,7 +12,7 @@ from fastapi.responses import Response
 from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_session
-from app.features.pronunciation import service
+from app.features.pronunciation import preview, service
 from app.features.pronunciation.models import PronunciationEntry
 from app.features.pronunciation.schemas import (
     Language,
@@ -21,6 +21,8 @@ from app.features.pronunciation.schemas import (
     PronunciationEntryUpdate,
     PronunciationImportIn,
     PronunciationImportResult,
+    PronunciationPreviewIn,
+    PronunciationPreviewOut,
 )
 from app.features.users.models import User
 
@@ -111,3 +113,17 @@ def export_entries(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="pronunciation-{language}.csv"'},
     )
+
+
+@router.post("/preview", response_model=PronunciationPreviewOut)
+def preview_text(
+    data: PronunciationPreviewIn,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Show how a sample sentence is handed to the TTS, and with synthesize=true, play it.
+
+    A plain `def`: synthesis blocks on the provider (or the local sidecar) for seconds, which
+    FastAPI then runs in its thread pool instead of on the event loop.
+    """
+    return preview.preview(session, current_user.id, data)

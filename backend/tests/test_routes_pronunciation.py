@@ -1,11 +1,16 @@
 """Route tests for the pronunciation word list (/pronunciation): entries stay private to their owner,
 validation and limits hold, and the text import/export round-trips."""
 
+import base64
+from datetime import datetime, timezone
+
 from sqlmodel import Session, select
 
+from app.core.config import settings
+from app.features.media.models import VoiceClip
 from app.features.pronunciation import service
 from app.features.pronunciation.models import PronunciationEntry
-from conftest import LLM_REPLY, login_as, make_user, new_client
+from conftest import LLM_REPLY, TTS_BYTES, create_key, login_as, make_user, new_client
 
 
 def add(client, term: str, spoken: str = "x", **extra):
@@ -210,3 +215,89 @@ def test_an_edit_applies_to_the_next_reply(client, anon, chat_project, fake_ai):
     anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
 
     assert "Lehrerin" in fake_ai.speech_calls[-1]["input"]
+
+
+def test_preview_shows_the_spoken_text_without_synthesizing(client, teacher, fake_ai):
+    add(client, "pH", "p H", caseSensitive=True)
+    response = client.post("/pronunciation/preview", json={"text": "**pH** bei 1,5", "language": "de"})
+    assert response.status_code == 200
+    assert response.json() == {
+        "spokenText": "p H bei 1 Komma 5",
+        "appliedTerms": ["pH"],
+        "audioBase64": None,
+        "contentType": None,
+    }
+    assert fake_ai.speech_calls == []
+
+
+def test_preview_synthesizes_with_the_chosen_key_and_voice(client, teacher, fake_ai):
+    add(client, "pH", "p H")
+    key = create_key(client, key_type="tts")
+    response = client.post(
+        "/pronunciation/preview",
+        json={"text": "Der pH", "language": "de", "synthesize": True, "ttsApiKeyId": key["id"], "ttsVoice": "nova"},
+    )
+    assert response.status_code == 200, response.text
+    assert base64.b64decode(response.json()["audioBase64"]) == TTS_BYTES
+    assert fake_ai.speech_calls[-1]["input"] == "Der p H"
+    assert fake_ai.speech_calls[-1]["voice"] == "nova"
+
+
+def test_preview_only_uses_the_teachers_own_tts_keys(client, teacher, fake_ai, engine):
+    llm_key = create_key(client)
+    other = login_as(new_client(), make_user(engine, email="other@example.com"))
+    other_key = create_key(other, key_type="tts")
+    for key_id in (other_key["id"], llm_key["id"]):
+        response = client.post(
+            "/pronunciation/preview",
+            json={"text": "Hallo", "language": "de", "synthesize": True, "ttsApiKeyId": key_id},
+        )
+        assert response.status_code == 404
+    assert fake_ai.speech_calls == []
+
+
+def test_preview_only_uses_the_teachers_own_voice_clips(client, teacher, engine, monkeypatch):
+    monkeypatch.setattr(settings, "local_tts_enabled", True)
+    with Session(engine) as session:
+        other = make_user(engine, email="other@example.com")
+        clip = VoiceClip(
+            user_id=other.id, name="x", file_path="/nope", sha256="abc", duration_seconds=5,
+            consent_confirmed_at=datetime.now(timezone.utc),
+        )
+        session.add(clip)
+        session.commit()
+        clip_id = clip.id
+    response = client.post(
+        "/pronunciation/preview",
+        json={"text": "Hallo", "language": "de", "synthesize": True, "voiceClipId": clip_id},
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "VOICE_CLIP_NOT_FOUND"
+
+
+def test_preview_without_key_needs_local_tts(client, teacher, monkeypatch):
+    monkeypatch.setattr(settings, "local_tts_enabled", False)
+    response = client.post("/pronunciation/preview", json={"text": "Hallo", "language": "de", "synthesize": True})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "TTS_NOT_CONFIGURED"
+
+
+def test_preview_provider_failure_is_a_502_with_a_code(client, teacher, fake_ai):
+    fake_ai.tts_error = RuntimeError("provider down")
+    key = create_key(client, key_type="tts")
+    response = client.post(
+        "/pronunciation/preview",
+        json={"text": "Hallo", "language": "de", "synthesize": True, "ttsApiKeyId": key["id"]},
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"]["code"] == "PRONUNCIATION_PREVIEW_FAILED"
+
+
+def test_preview_audio_is_rate_limited_per_teacher(client, teacher, fake_ai):
+    key = create_key(client, key_type="tts")
+    body = {"text": "Hallo", "language": "de", "synthesize": True, "ttsApiKeyId": key["id"]}
+    statuses = [client.post("/pronunciation/preview", json=body).status_code for _ in range(11)]
+    assert statuses[:10] == [200] * 10
+    assert statuses[10] == 429
+    # The text-only preview stays free.
+    assert client.post("/pronunciation/preview", json={"text": "Hallo", "language": "de"}).status_code == 200
