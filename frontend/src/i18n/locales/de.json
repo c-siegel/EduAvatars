@@ -77,7 +77,6 @@
   },
   "publicChat": {
     "unavailable": "Dieser Chat ist nicht verfügbar.",
-    "online": "Online",
     "endChat": "Chat beenden",
     "surveyBeforeTitle": "Umfrage vor dem Chat",
     "continueToChat": "Weiter zum Chat",

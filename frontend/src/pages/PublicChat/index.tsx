@@ -1230,7 +1230,6 @@ export function PublicChatPage() {
         <Avatar name={tutor.title} size="md" />
         <div className={styles.headerInfo}>
           <h1>{tutor.title}</h1>
-          <p className={styles.headerStatus}>{t("publicChat.online")}</p>
         </div>
         <div className={styles.headerActions}>
           <LanguageSwitcher />
