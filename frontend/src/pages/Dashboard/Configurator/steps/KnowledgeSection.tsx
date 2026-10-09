@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Callout } from "@/components/Callout";
+import { InfoButton, InfoPanel, LabelWithInfo, useInfoTip } from "@/components/InfoTip";
 import { apiKeysApi } from "@/api/apiKeys";
 import { knowledgeApi } from "@/api/knowledge";
 import { useKnowledgeStatus } from "@/lib/providers";
@@ -19,6 +20,8 @@ const MAX_TOP_K = 8;
 
 export function KnowledgeSection({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
+  const introTip = useInfoTip();
+  const modeTip = useInfoTip();
   const status = useKnowledgeStatus().data;
   const available = status?.available ?? false;
   const kbQuery = useQuery({ queryKey: ["knowledge-bases"], queryFn: knowledgeApi.list, enabled: available });
@@ -38,16 +41,47 @@ export function KnowledgeSection({ draft, onChange }: StepProps) {
 
   return (
     <section className={styles.section} aria-labelledby="knowledge-section-title">
-      <h3 id="knowledge-section-title" className={styles.title}>
-        {t("configurator.knowledge.title")}
-      </h3>
-      <p className={styles.hint}>{t("configurator.knowledge.intro")}</p>
+      <div className={styles.titleRow}>
+        <h3 id="knowledge-section-title" className={styles.title}>
+          {t("configurator.knowledge.title")}
+        </h3>
+        <InfoButton
+          topic={t("configurator.knowledge.title")}
+          open={introTip.open}
+          panelId={introTip.panelId}
+          onToggle={introTip.toggle}
+        />
+      </div>
+      <InfoPanel id={introTip.panelId} open={introTip.open}>
+        {t("configurator.knowledge.intro")}
+      </InfoPanel>
 
       {usesArcana ? (
         <Callout variant="info">{t("configurator.knowledge.arcanaHint")}</Callout>
       ) : (
         <>
-          <div className={styles.modes} role="radiogroup" aria-label={t("configurator.knowledge.modeLabel")}>
+          <div className={styles.titleRow}>
+            <span className={styles.label} id="knowledge-mode-label">
+              {t("configurator.knowledge.modeLabel")}
+            </span>
+            <InfoButton
+              topic={t("configurator.knowledge.modeLabel")}
+              open={modeTip.open}
+              panelId={modeTip.panelId}
+              onToggle={modeTip.toggle}
+            />
+          </div>
+          <InfoPanel id={modeTip.panelId} open={modeTip.open}>
+            <ul className={styles.modeHints}>
+              {KNOWLEDGE_MODES.map((mode) => (
+                <li key={mode}>
+                  <strong>{t(`configurator.knowledge.modes.${mode}`)}:</strong>{" "}
+                  {t(`configurator.knowledge.modeHints.${mode}`)}
+                </li>
+              ))}
+            </ul>
+          </InfoPanel>
+          <div className={styles.modes} role="radiogroup" aria-labelledby="knowledge-mode-label">
             {KNOWLEDGE_MODES.map((mode) => (
               <label key={mode} className={styles.mode}>
                 <input
@@ -56,10 +90,7 @@ export function KnowledgeSection({ draft, onChange }: StepProps) {
                   checked={draft.knowledgeMode === mode}
                   onChange={() => onChange({ knowledgeMode: mode })}
                 />
-                <span>
-                  <strong>{t(`configurator.knowledge.modes.${mode}`)}</strong>
-                  <span className={styles.hint}>{t(`configurator.knowledge.modeHints.${mode}`)}</span>
-                </span>
+                <strong>{t(`configurator.knowledge.modes.${mode}`)}</strong>
               </label>
             ))}
           </div>
@@ -96,9 +127,15 @@ export function KnowledgeSection({ draft, onChange }: StepProps) {
                 <p className={styles.hint}>{t("configurator.knowledge.noneSelected")}</p>
               )}
 
-              <label className={styles.topK}>
-                <span className={styles.label}>{t("configurator.knowledge.topK")}</span>
+              <div className={styles.topK}>
+                <LabelWithInfo
+                  label={t("configurator.knowledge.topK")}
+                  htmlFor="knowledge-top-k"
+                  className={styles.label}
+                  info={t("configurator.knowledge.topKHint")}
+                />
                 <input
+                  id="knowledge-top-k"
                   type="number"
                   min={1}
                   max={MAX_TOP_K}
@@ -107,8 +144,7 @@ export function KnowledgeSection({ draft, onChange }: StepProps) {
                     onChange({ knowledgeTopK: Math.min(MAX_TOP_K, Math.max(1, Math.floor(Number(e.target.value) || 1))) })
                   }
                 />
-                <span className={styles.hint}>{t("configurator.knowledge.topKHint")}</span>
-              </label>
+              </div>
 
               <Callout variant="warning">{t("configurator.knowledge.publicNotice")}</Callout>
             </>

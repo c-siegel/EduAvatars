@@ -79,3 +79,18 @@
   color: inherit;
   font: inherit;
 }
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.modeHints {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.modeHints li + li {
+  margin-top: var(--space-1);
+}
