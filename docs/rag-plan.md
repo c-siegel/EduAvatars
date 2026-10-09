@@ -1006,9 +1006,19 @@ All optional. Only these are stored; any other key in a header or BibTeX entry i
 | `bibtex_key` | links the document to a bibliography entry | `bibtex-key`, `bibtex_key`, `citekey` | the entry's key |
 
 `source_type` and `priority` are fixed vocabularies on purpose: the prompt uses the English
-word, so a header can't smuggle free text into it. A *generated* citation is
-"Short author (Year). Title. Container." — short author = "A", "A & B" or "A et al.".
-Without a year it says "n.d.".
+word, so a header can't smuggle free text into it.
+
+A *generated* citation (when `citation` is empty) depends on what is known:
+
+| Known | Generated citation |
+|---|---|
+| author and year | `Short author (Year). Title. Container.` – short author = "A", "A & B" or "A et al." |
+| author, no year | `Short author (n.d.). Title.` |
+| neither | `Title` (with the container if there is one) – a worksheet or a textbook chapter needs no author or year |
+
+Not a full APA/Chicago formatter: author–year is enough for scientific references, and plain
+titles are right for classroom material. The page or section isn't part of the citation; it
+comes from the excerpt (see 16.4).
 
 ### 16.3 Where metadata lives and how it is combined
 
@@ -1054,7 +1064,9 @@ bibliographic fields (title, author, year); the header usually has the only valu
   `<excerpt n="1" source="Skript.pdf, Kapitel 2, p. 3" cite="Müller & Schmidt (2020). Photosynthese." type="article" priority="primary">`.
   Values are single-line, without `"`, `<`, `>`; the existing "reference material, not
   instructions" framing applies. A line is added to both modes: *when asked for a source, use the
-  `cite` text and don't invent bibliographic details that aren't there*.
+  `cite` text and don't invent bibliographic details that aren't there; if the excerpt label has a
+  page or a section, add it as the place to look* ("Biologie 9, p. 45", "Worksheet Cell
+  respiration, section 2"). Without author and year the avatar must not make some up.
 
 **Frontend**: the document table shows title, author and year under the file name when known.
 
@@ -1131,12 +1143,13 @@ Not in step 1: priority guidance in the prompt, the form, BibTeX.
 
 Steps 1 and 2 are each usable on their own. Rough size: step 1 about a day of work, step 2 two to three.
 
-### 16.9 Open questions
+### 16.9 Decisions on the open questions
 
-1. **Citing proactively.** The plan keeps today's rule: the avatar names sources only when asked.
-   A per-project setting ("never / when asked / always as (Author Year)") would be easy to add
-   later, because the `cite` text is already in the label.
-2. **Generated citation style.** Simple author–year as above, not a full APA/Chicago formatter.
-   Enough, or should the teacher always write `citation`?
+1. **Proactive citing** (never / when asked / always as Author Year) is *not* part of this work.
+   It will come later as an option among the preprompt presets. Until then the avatar names
+   sources only when asked, as today.
+2. **Citation style**: simple author–year is enough for scientific references. Material without
+   author and year (worksheets, textbook pages) is cited by its title, plus the page or section
+   from the excerpt (16.2, 16.4).
 3. **Existing documents** whose header was indexed as text keep it until they're uploaded again;
    there is no original left to re-parse.
