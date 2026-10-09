@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   BarChart3,
   KeyRound,
+  Languages,
   Settings2,
   ShieldCheck,
   Menu,
@@ -52,6 +53,12 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
     href: "/dashboard/voices",
     icon: AudioLines,
     isActive: (p) => p.startsWith("/dashboard/voices"),
+  },
+  {
+    labelKey: "nav.pronunciation",
+    href: "/dashboard/pronunciation",
+    icon: Languages,
+    isActive: (p) => p.startsWith("/dashboard/pronunciation"),
   },
   {
     labelKey: "nav.profile",
