@@ -119,3 +119,29 @@ class PronunciationPreviewOut(CamelModel):
     applied_terms: list[str]
     audio_base64: str | None = None
     content_type: str | None = None
+
+
+class PresetEntryOut(CamelModel):
+    term: str
+    spoken: str
+    whole_word: bool
+    case_sensitive: bool
+
+
+class PresetPackOut(CamelModel):
+    id: str
+    language: str
+    version: int
+    entries: list[PresetEntryOut]
+    # How many of the teacher's entries currently come from this pack (0: not applied).
+    applied_count: int
+
+
+class PresetApplyResult(CamelModel):
+    added: int
+    # Terms the teacher already had — their own version wins.
+    skipped: int
+
+
+class PresetRemoveResult(CamelModel):
+    removed: int

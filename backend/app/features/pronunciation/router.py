@@ -12,10 +12,14 @@ from fastapi.responses import Response
 from sqlmodel import Session
 
 from app.core.deps import get_current_user, get_session
-from app.features.pronunciation import preview, service
+from app.features.pronunciation import presets, preview, service
 from app.features.pronunciation.models import PronunciationEntry
 from app.features.pronunciation.schemas import (
     Language,
+    PresetApplyResult,
+    PresetEntryOut,
+    PresetPackOut,
+    PresetRemoveResult,
     PronunciationEntryCreate,
     PronunciationEntryOut,
     PronunciationEntryUpdate,
@@ -127,3 +131,51 @@ def preview_text(
     FastAPI then runs in its thread pool instead of on the event loop.
     """
     return preview.preview(session, current_user.id, data)
+
+
+@router.get("/presets", response_model=list[PresetPackOut])
+def list_presets(
+    language: Language | None = None,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """The ready-made word lists (e.g. physics), with their entries and whether they're applied."""
+    return [
+        PresetPackOut(
+            id=pack.id,
+            language=pack.language,
+            version=pack.version,
+            entries=[
+                PresetEntryOut(
+                    term=r.term, spoken=r.spoken, whole_word=r.whole_word, case_sensitive=r.case_sensitive
+                )
+                for r in pack.entries
+            ],
+            applied_count=presets.applied_count(session, current_user.id, pack.id, pack.language),
+        )
+        for pack in presets.all_packs()
+        if language is None or pack.language == language
+    ]
+
+
+@router.post("/presets/{pack_id}/apply", response_model=PresetApplyResult)
+def apply_preset(
+    pack_id: str,
+    language: Language = Query(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Copy a preset pack into the word list; terms the user already has are kept as they are."""
+    added, skipped = presets.apply_pack(session, current_user.id, pack_id, language)
+    return PresetApplyResult(added=added, skipped=skipped)
+
+
+@router.delete("/presets/{pack_id}", response_model=PresetRemoveResult)
+def remove_preset(
+    pack_id: str,
+    language: Language = Query(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Remove the entries a preset pack added (edited ones are the user's own and stay)."""
+    return PresetRemoveResult(removed=presets.remove_pack(session, current_user.id, pack_id, language))
