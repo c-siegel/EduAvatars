@@ -65,6 +65,9 @@ class DocumentStatus(BaseModel):
     truncated: bool = False
     # Failed, and the original is still here: POST /documents/{id}/retry can process it again.
     retryable: bool = False
+    # The metadata header of a text/Markdown file (app/parsing/header.py), raw keys — the backend
+    # picks the ones it knows. None: no header (or not parsed yet).
+    metadata: dict[str, str | list[str]] | None = None
 
 
 class StatusRequest(BaseModel):

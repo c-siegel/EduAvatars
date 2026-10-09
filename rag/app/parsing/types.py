@@ -23,6 +23,8 @@ class ParseResult:
     sections: list[Section] = field(default_factory=list)
     page_count: int | None = None
     truncated: bool = False
+    # A text or Markdown file's metadata header (app/parsing/header.py), raw keys and values.
+    metadata: dict[str, str | list[str]] = field(default_factory=dict)
 
     @property
     def char_count(self) -> int:
@@ -65,6 +67,12 @@ def normalize_text(text: str) -> str:
     text = _INVISIBLE_RE.sub("", text)
     text = "\n".join(_SPACES_RE.sub(" ", line).strip() for line in text.split("\n"))
     return _BLANK_LINES_RE.sub("\n\n", text).strip()
+
+
+def clean_inline(text: str) -> str:
+    """One line of metadata: NFC, no invisible/control characters, whitespace collapsed."""
+    text = unicodedata.normalize("NFC", text).translate(_LIGATURES)
+    return " ".join(_INVISIBLE_RE.sub("", text).split())
 
 
 def split_markdown(text: str, page: int | None = None, heading: str | None = None) -> list[Section]:

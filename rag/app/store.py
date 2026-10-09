@@ -19,6 +19,7 @@ How to use:
     store.register_knowledge_base(kb_id, config)
 """
 
+import json
 import sqlite3
 import threading
 from collections.abc import Sequence
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS documents (
     chunk_count INTEGER,
     char_count INTEGER,
     truncated INTEGER NOT NULL DEFAULT 0,
+    header_json TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -100,11 +102,19 @@ class Store:
         self._db.execute("PRAGMA busy_timeout=5000")
         self._db.execute("PRAGMA foreign_keys=ON")
         self._db.executescript(_SCHEMA)
+        self._upgrade_schema()
         self._vec_tables: set[str] = {
             row["name"]
             for row in self._db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'vec_chunks_%'")
             if row["name"].removeprefix("vec_chunks_").isdigit()
         }
+
+    def _upgrade_schema(self) -> None:
+        """Columns added after a data volume was created: CREATE TABLE IF NOT EXISTS leaves an
+        existing table as it is."""
+        columns = {row["name"] for row in self._db.execute("PRAGMA table_info(documents)")}
+        if "header_json" not in columns:
+            self._db.execute("ALTER TABLE documents ADD COLUMN header_json TEXT")
 
     def close(self) -> None:
         with self._lock:
@@ -199,6 +209,7 @@ class Store:
                 chunk_count=row["chunk_count"],
                 char_count=row["char_count"],
                 truncated=bool(row["truncated"]),
+                metadata=json.loads(row["header_json"]) if row["header_json"] else None,
             )
             for row in rows
         ]
@@ -221,6 +232,7 @@ class Store:
         page_count: int | None,
         char_count: int,
         truncated: bool,
+        metadata: dict | None = None,
     ) -> bool:
         """Replace the document's chunks and mark it ready. False if it was deleted meanwhile."""
         dimensions = len(vectors[0]) if vectors else None
@@ -256,8 +268,16 @@ class Store:
                     )
                 self._db.execute(
                     "UPDATE documents SET status = 'ready', error_code = NULL, page_count = ?, chunk_count = ?, "
-                    "char_count = ?, truncated = ?, updated_at = ? WHERE id = ?",
-                    (page_count, len(chunks), char_count, int(truncated), _now(), document_id),
+                    "char_count = ?, truncated = ?, header_json = ?, updated_at = ? WHERE id = ?",
+                    (
+                        page_count,
+                        len(chunks),
+                        char_count,
+                        int(truncated),
+                        json.dumps(metadata, ensure_ascii=False) if metadata else None,
+                        _now(),
+                        document_id,
+                    ),
                 )
                 self._db.execute("COMMIT")
             except BaseException:

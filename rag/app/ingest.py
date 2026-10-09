@@ -170,6 +170,7 @@ class Ingestor:
                 page_count=result.page_count,
                 char_count=result.char_count,
                 truncated=result.truncated,
+                metadata=result.metadata,
             )
             # Indexed (or deleted meanwhile): the original has no further use.
             path.unlink(missing_ok=True)

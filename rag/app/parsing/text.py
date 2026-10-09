@@ -9,11 +9,13 @@ this order is right for practically every file a teacher in a German- or English
 has.
 
 Markdown is split at its headings so chunks carry them; plain text is split at blank lines by
-the chunker.
+the chunker. A metadata header at the top of either ("front matter", see header.py) is split off
+first: it describes the source and isn't part of the material.
 """
 
 import codecs
 
+from app.parsing.header import split_header
 from app.parsing.types import ParseResult, Section, normalize_text, split_markdown
 
 
@@ -29,8 +31,8 @@ def decode_text(data: bytes) -> str:
 
 
 def parse_text(data: bytes, file_type: str) -> ParseResult:
-    text = decode_text(data)
+    metadata, text = split_header(decode_text(data))
     if file_type == "md":
-        return ParseResult(split_markdown(text))
+        return ParseResult(split_markdown(text), metadata=metadata)
     normalized = normalize_text(text)
-    return ParseResult([Section(normalized)] if normalized else [])
+    return ParseResult([Section(normalized)] if normalized else [], metadata=metadata)

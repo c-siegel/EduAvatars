@@ -101,4 +101,20 @@ def parse_in_sandbox(file_type: str, data: bytes, limits: DocumentLimits) -> Par
         sections=[Section(s["text"], s.get("page"), s.get("heading")) for s in payload["sections"]],
         page_count=payload.get("page_count"),
         truncated=bool(payload.get("truncated")),
+        metadata=_metadata(payload.get("metadata")),
     )
+
+
+def _metadata(value) -> dict[str, str | list[str]]:
+    """The child parsed untrusted input, so the shape of what it reports is checked, not assumed."""
+    if not isinstance(value, dict):
+        return {}
+    clean: dict[str, str | list[str]] = {}
+    for key, item in list(value.items())[:40]:
+        if not isinstance(key, str) or len(key) > 64:
+            continue
+        if isinstance(item, str):
+            clean[key] = item[:500]
+        elif isinstance(item, list) and all(isinstance(i, str) for i in item):
+            clean[key] = [i[:500] for i in item[:20]]
+    return clean

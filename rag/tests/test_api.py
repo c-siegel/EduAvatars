@@ -271,3 +271,37 @@ def test_embed_and_chunk_sample_for_the_evaluation_service(client):
     assert chunks and chunks[0]["document_id"] == "doc-1" and "Vulkane" in chunks[0]["text"]
     assert client.get("/knowledge-bases/unknown/chunks", headers=AUTH).json() == []
     assert client.get("/knowledge-bases/kb-1/chunks").status_code == 401
+
+
+def test_status_reports_the_metadata_header(client):
+    data = "---\ntitle: Zellatmung\nusage_priority: primary\n---\n# Mitochondrien\nDie Zellatmung setzt Energie frei.".encode()
+    upload(client, "zellatmung.md", data)
+    status = wait_and_status(client)
+    assert status["status"] == "ready", status
+    assert status["metadata"] == {"title": "Zellatmung", "usage_priority": "primary"}
+    assert _query(client, "usage_priority primary Zellatmung")[0]["text"] == "Die Zellatmung setzt Energie frei."
+
+    upload(client, "plain.txt", b"Kein Header hier.", document_id="doc-2")
+    client.app.state.ingestor.wait_idle()
+    other = client.post("/documents/status", headers=AUTH, json={"document_ids": ["doc-2"]}).json()[0]
+    assert other["metadata"] is None
+
+
+def test_an_old_database_gets_the_header_column(tmp_path):
+    import sqlite3
+
+    from app.store import Store
+
+    path = tmp_path / "old.db"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE documents (id TEXT PRIMARY KEY, knowledge_base_id TEXT NOT NULL, file_type TEXT NOT NULL, "
+        "parser TEXT NOT NULL, status TEXT NOT NULL, error_code TEXT, page_count INTEGER, chunk_count INTEGER, "
+        "char_count INTEGER, truncated INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
+    )
+    db.commit()
+    db.close()
+    store = Store(str(path))
+    columns = {row["name"] for row in store._db.execute("PRAGMA table_info(documents)")}
+    store.close()
+    assert "header_json" in columns

@@ -77,6 +77,7 @@ def main() -> int:
             "page_count": result.page_count,
             "truncated": truncated,
             "sections": [{"text": s.text, "page": s.page, "heading": s.heading} for s in sections],
+            "metadata": result.metadata,
         }
     except RagError as exc:
         payload = {"ok": False, "error": exc.code}
