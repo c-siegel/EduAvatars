@@ -9,6 +9,9 @@
     "close": "Close",
     "replyBeingWritten": "Reply being written …"
   },
+  "languageSwitcher": {
+    "switchTo": "Switch to English"
+  },
   "nav": {
     "voices": "Voices",
     "overview": "Overview",

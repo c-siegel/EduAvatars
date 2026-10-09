@@ -12,13 +12,19 @@
   min-width: 0;
 }
 
+/* Up to two lines before truncating: on a phone the header actions leave little width, and a
+   longer tutor name cut after a few characters wasn't recognisable. */
 .headerInfo h1 {
   margin: 0;
   font-size: 1rem;
+  line-height: 1.25;
   color: inherit;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .infoButton {
@@ -43,8 +49,7 @@
   flex-shrink: 0;
 }
 
-/* Speech bubble for the "?" button. Opens on hover and on keyboard focus (:focus-within), so it
-   works for mouse, keyboard, and touch — a plain title attribute does none of those reliably. */
+/* Speech bubble for the "?" button, toggled by ModelInfoButton (tap/click, Escape to close). */
 .infoTip {
   position: relative;
   display: flex;
@@ -79,8 +84,7 @@
   border-bottom-color: var(--neutral-900, #1f2933);
 }
 
-.infoTip:hover .infoTipBubble,
-.infoTip:focus-within .infoTipBubble {
+.infoTipOpen .infoTipBubble {
   opacity: 1;
   visibility: visible;
 }

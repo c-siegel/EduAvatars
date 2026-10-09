@@ -9,6 +9,9 @@
     "close": "Schließen",
     "replyBeingWritten": "Antwort wird geschrieben …"
   },
+  "languageSwitcher": {
+    "switchTo": "Auf Deutsch wechseln"
+  },
   "nav": {
     "voices": "Stimmen",
     "overview": "Übersicht",
