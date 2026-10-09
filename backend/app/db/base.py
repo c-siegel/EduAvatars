@@ -33,5 +33,6 @@ from app.features.auth.models import PasswordResetToken  # noqa: F401
 from app.features.chat.models import Conversation, ProjectAccess  # noqa: F401
 from app.features.media.models import AvatarModel, BackgroundImage  # noqa: F401
 from app.features.projects.models import Project  # noqa: F401
+from app.features.pronunciation.models import PronunciationEntry  # noqa: F401
 from app.features.site_settings.models import SiteSettings  # noqa: F401
 from app.features.users.models import User  # noqa: F401

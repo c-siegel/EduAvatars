@@ -29,6 +29,7 @@ from app.features.chat.models import Conversation, ProjectAccess
 from app.features.ai.tts.local import forget_voice
 from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
 from app.features.projects.models import Project
+from app.features.pronunciation.models import PronunciationEntry
 from app.features.users.models import User
 from app.storage.files import unlink_quietly
 
@@ -72,6 +73,7 @@ def delete_user_account(session: Session, user: User) -> None:
     # Outstanding reset tokens — otherwise a link already sent by email would still resolve to a
     # user id that no longer exists.
     session.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+    session.execute(delete(PronunciationEntry).where(PronunciationEntry.user_id == user.id))
 
     unlink_quietly(user.avatar_path)
     session.delete(user)
