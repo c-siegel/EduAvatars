@@ -960,9 +960,10 @@ Run summaries are given overall and per kind. Test questions moved from the Know
 "Test questions" tab of the Answer quality page, next to the runs.
 
 
-## 16. Source metadata and citations (plan)
+## 16. Source metadata and citations
 
-Status: **planned**, not implemented. Two steps; the BibTeX import is part of step 2.
+Status: **implemented** (steps 1 and 2 together). Where the code differs from the plan below is
+noted in 16.10.
 
 ### 16.1 Goal and decisions
 
@@ -1153,3 +1154,23 @@ Steps 1 and 2 are each usable on their own. Rough size: step 1 about a day of wo
    from the excerpt (16.2, 16.4).
 3. **Existing documents** whose header was indexed as text keep it until they're uploaded again;
    there is no original left to re-parse.
+
+### 16.10 Implementation notes
+
+- **The knowledge service reports the header's raw keys**, not just the known ones; the backend
+  alone maps aliases, vocabularies and caps (`features/knowledge/metadata.py`). One mapping, in
+  the place that owns the metadata.
+- **Header lists** (e.g. several authors) are joined with ", ". Authors from BibTeX are stored as
+  "Last, First; Last, First", which the generated citation shortens to "A", "A & B" or "A et al.";
+  only ";" and "&" separate people, because "and" also occurs in organisation names.
+- **Linking**: `bibtex_key` is a column, set by the teacher, by the header or by an automatic match
+  (on import and when a document finishes indexing), never overwritten once set. Deleting the
+  bibliography keeps the keys, so a re-import links again.
+- **Prompt**: excerpts get `cite`, `type` and `priority` attributes only when the document has
+  them, and the citation and priority rules are only added when some excerpt carries them — a
+  knowledge base without metadata produces exactly the prompt it did before. Attribute values are
+  one line, without quotes or angle brackets.
+- **BibTeX recovery**: a value that isn't closed before a new line starting with `@` ends there,
+  so one broken entry doesn't swallow the rest of the file.
+- **The evaluation's topic questions** see metadata titles instead of file names where there are any.
+
