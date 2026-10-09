@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
 import styles from "./Toast.module.css";
 
 interface ToastProps {
@@ -21,7 +22,7 @@ export function Toast({ message, onDismiss }: ToastProps) {
     <div className={styles.toast} role="status">
       <span>{message}</span>
       <button className={styles.dismiss} aria-label={t("common.close")} onClick={onDismiss}>
-        ✕
+        <X size={16} />
       </button>
     </div>
   );

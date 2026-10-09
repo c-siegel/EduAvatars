@@ -116,7 +116,13 @@ export function Step4Preview({
             onChange={(e) => setInput(e.target.value)}
             aria-label={t("configurator.step4.testMessageAriaLabel")}
           />
-          <Button type="submit" size="sm" disabled={sendMutation.isPending}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={sendMutation.isPending}
+            aria-label={t("publicChat.send")}
+            title={t("publicChat.send")}
+          >
             <Send size={16} />
           </Button>
         </form>
