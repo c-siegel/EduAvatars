@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Pencil, Link2, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
+import { avatarLibraryApi } from "@/api/avatarLibrary";
 import { projectsApi } from "@/api/projects";
 import type { Project } from "@/types/project";
+import { projectAvatarThumbnailUrl } from "@/lib/builtinAvatars";
 import { formatRelativeDate } from "@/lib/time";
 import styles from "./ProjectCard.module.css";
 
@@ -15,6 +17,9 @@ export function ProjectCard({ project }: { project: Project }) {
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Same query key as the configurator's avatar grid, so all cards share one cached request.
+  const avatarsQuery = useQuery({ queryKey: ["avatar-models"], queryFn: avatarLibraryApi.list });
+  const avatarThumbnailUrl = projectAvatarThumbnailUrl(project, avatarsQuery.data);
 
   const deleteMutation = useMutation({
     mutationFn: () => projectsApi.remove(project.id),
@@ -63,7 +68,7 @@ export function ProjectCard({ project }: { project: Project }) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <Avatar name={project.title} size="md" />
+        <Avatar name={project.title} src={avatarThumbnailUrl} size="md" />
         <Badge variant={project.published ? "accent" : "default"}>
           {project.published ? t("overview.card.published") : t("overview.card.draft")}
         </Badge>
