@@ -11,6 +11,11 @@
   font-weight: 500;
 }
 
+/* Long labels ("Profileinstellungen") would otherwise squeeze the icon down to nothing. */
+.navItem svg {
+  flex-shrink: 0;
+}
+
 .navItem:hover {
   background: var(--surface-card);
   color: var(--text-primary);
