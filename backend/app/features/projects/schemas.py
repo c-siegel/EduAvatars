@@ -39,6 +39,12 @@ SttServerEngine = Literal["whisper", "parakeet"]
 # STT is off (see frontend pages/PublicChat/index.tsx).
 ChatLayout = Literal["avatar_chat", "avatar_chat_collapsed", "avatar_only", "chat_only"]
 
+# How a project uses its knowledge bases (see features/knowledge/prompt.py): not at all, as
+# supplementary material, or as the only source it may answer from.
+KnowledgeMode = Literal["off", "supplement", "strict"]
+MAX_KNOWLEDGE_TOP_K = 8
+MAX_KNOWLEDGE_BASES_PER_PROJECT = 10
+
 # A bundled default avatar is addressed by its file name in frontend/public/avatars/ (e.g.
 # "julia" -> /avatars/julia.glb) — restricted to a plain slug so it can never point anywhere else.
 _BUILTIN_AVATAR_RE = re.compile(r"^[a-z0-9-]{1,40}$")
@@ -94,6 +100,9 @@ class ProjectOut(CamelModel):
     # see features/projects/start_audio.py. Read-only: generated via its own endpoint, never
     # written directly through ProjectUpdate.
     start_audio_url: str | None
+    knowledge_mode: KnowledgeMode
+    knowledge_top_k: int
+    knowledge_base_ids: list[str]
     created_at: datetime
 
 
@@ -133,6 +142,11 @@ class ProjectUpdate(CamelModel):
     # non-empty string sets/changes it — handled separately in features/projects/service.py, never
     # written straight to the DB (see features/projects/service.py::set_or_clear_chat_password).
     chat_password: str | None = None
+    knowledge_mode: KnowledgeMode | None = None
+    knowledge_top_k: int | None = Field(default=None, ge=1, le=MAX_KNOWLEDGE_TOP_K)
+    # Replaces the whole list; only the owner's own knowledge bases are accepted (checked in
+    # features/projects/service.py).
+    knowledge_base_ids: list[str] | None = Field(default=None, max_length=MAX_KNOWLEDGE_BASES_PER_PROJECT)
 
     @field_validator("builtin_avatar")
     @classmethod
@@ -215,6 +229,10 @@ class ProjectExportData(BaseModel):
     streaming_enabled: bool = True
     chat_layout: ChatLayout = "avatar_chat"
     require_visitor_name: bool = False
+    # The knowledge bases themselves stay in the teacher's library and aren't exported; an
+    # imported project starts with knowledge_mode "off" (see export.py::import_project).
+    knowledge_mode: KnowledgeMode = "off"
+    knowledge_top_k: int = Field(default=4, ge=1, le=MAX_KNOWLEDGE_TOP_K)
 
     @model_validator(mode="before")
     @classmethod

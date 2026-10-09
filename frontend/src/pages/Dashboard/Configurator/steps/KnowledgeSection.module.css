@@ -1,0 +1,81 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-default);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.hint {
+  display: block;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mode,
+.base {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.mode input,
+.base input {
+  margin-top: 0.25rem;
+}
+
+.mode strong {
+  font-weight: 500;
+}
+
+.bases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.bases legend {
+  margin-bottom: var(--space-2);
+}
+
+.topK {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 16rem;
+}
+
+.topK input {
+  width: 5rem;
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: inherit;
+  font: inherit;
+}

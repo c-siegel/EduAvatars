@@ -31,7 +31,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/core/` | Cross-cutting setup: settings (`config.py`), auth dependencies (`deps.py`), cookies, domain errors, middleware, public URLs (`urls.py`), the LLM/TTS/STT provider registry (`providers.py`), rate limiting, security helpers |
 | `app/db/` | Database session/engine setup; `base.py` imports every feature's models for Alembic |
 | `app/storage/` | Shared upload handling: content sniffing, saving/deleting files, cached file responses |
-| `app/tasks/` | Background work: the periodic data-retention purge |
+| `app/tasks/` | Background work: the periodic data-retention purge, and retrying deletes the knowledge service missed while it was down |
 | `app/features/auth/` | Register, login, logout, password reset |
 | `app/features/users/` | Own profile (`/me`), account deletion, admin account management (`/admin/users`) |
 | `app/features/site_settings/` | Instance-wide settings: public (`/settings/public`) and admin (`/admin/settings`) |
@@ -41,6 +41,8 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/api_keys/` | The user's stored provider keys (`/api-keys`), the provider registry and speech-option status routes (`/providers`), key resolution and encryption |
 | `app/features/media/` | Avatar model and background image libraries |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
+| `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn |
+| `app/features/evaluation/` | Quality evaluation of knowledge-base answers: test sets, and runs that answer them through a project (`runner.py`, one background worker) and have the optional evaluation service (`rag-eval/`, Ragas) score them through `eval_client.py` |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
 
@@ -134,6 +136,8 @@ library models) or `builtinAvatar` (a bundled default like `"julia"`), its backg
 | `GET /projects/{project_id}/start-audio` | `start_audio_router.py` | Owner, or public if published | Serve the pre-generated start-prompt audio file. |
 | `POST /projects/{project_id}/chat/messages` | `app/features/chat/preview_router.py` | Login required, own resource | Send a message to the project's LLM and return the reply, for the in-app preview chat. |
 | `POST /projects/{project_id}/chat/transcriptions` | `app/features/chat/preview_router.py` | Login required, own resource | Transcribe a voice message for the in-app preview chat. |
+| `POST /projects/{project_id}/latency-test/messages` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: answer a message as SSE with per-module timings, optionally with another of the owner's LLM keys (`llmApiKeyId`), another TTS path (`ttsMode`: `project`/`local`/`none`) or without streaming (`streaming: false`). Never saved. |
+| `POST /projects/{project_id}/latency-test/transcriptions` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: transcribe a recording on the server (`engine`: `project`/`whisper`/`parakeet`) and return `{text, sttMs, engine}`. |
 
 ### Public chat — `app/features/chat/public_router.py` (prefix `/public`)
 
@@ -217,7 +221,7 @@ one visitor's chat with a published project, not an HTTP/login session.
 
 ### API keys and providers — `app/features/api_keys/` (prefixes `/api-keys`, `/providers`)
 
-Store, edit, test, and delete a user's own LLM/TTS/STT provider API keys — the "bring your own
+Store, edit, test, and delete a user's own LLM/TTS/STT/embedding provider API keys — the "bring your own
 key" feature — plus the provider registry so the frontend can build its key form without
 duplicating that data. Keys are encrypted at rest.
 
@@ -232,6 +236,58 @@ duplicating that data. Keys are encrypted at rest.
 | `DELETE /api-keys/{key_id}` | `router.py` | Login required, own resource | Delete a key; projects using it fall back to "no key configured". |
 | `POST /api-keys/{key_id}/test` | `router.py` | Login required, own resource | Try the stored key against its provider and record whether it works. |
 
+### Knowledge bases — `app/features/knowledge/router.py` (prefixes `/knowledge-bases`, `/knowledge-documents`)
+
+A teacher's knowledge bases (RAG) and their documents. Every route answers `404
+KNOWLEDGE_DISABLED` unless `RAG_ENABLED` is set; the work behind them happens in the optional
+knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
+[docs/rag-plan.md](../docs/rag-plan.md)). Projects attach knowledge bases through `PUT
+/projects/{id}` (`knowledgeMode`, `knowledgeTopK`, `knowledgeBaseIds`).
+
+| Method & path | Auth | Description |
+|---|---|---|
+| `GET /providers/rag-status` | Login required | Whether this deployment offers knowledge bases, the service's state, the upload limits and the user's storage use. |
+| `GET /knowledge-bases` | Login required | The user's knowledge bases with document counts and how many projects use each. |
+| `POST /knowledge-bases` | Login required | Create one, embedded with the local model or one of the user's embedding keys (fixed afterwards). |
+| `PATCH /knowledge-bases/{kb_id}` | Login required, own resource | Rename or re-describe it. |
+| `DELETE /knowledge-bases/{kb_id}` | Login required, own resource | Delete it with all documents, including their indexed text in the knowledge service. |
+| `GET /knowledge-bases/{kb_id}/documents` | Login required, own resource | Its documents with their current indexing status. |
+| `POST /knowledge-bases/{kb_id}/documents` | Login required, own resource | Upload one document (multipart `file`, `parser`, `consent`); indexed in the background. Rate-limited, size- and quota-checked. |
+| `POST /knowledge-documents/{document_id}/retry` | Login required, own resource | Index a failed document again (optionally with Docling) while the knowledge service still keeps its original. Counts against the upload rate limit. |
+| `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
+| `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
+
+### Evaluation — `app/features/evaluation/router.py` (prefixes `/test-sets`, `/test-cases`, `/evaluation/runs`)
+
+Measuring how well a project answers from its knowledge bases, with Ragas as LLM judge (see
+[rag-eval/README.md](../rag-eval/README.md) and [docs/rag-plan.md §7](../docs/rag-plan.md)).
+Every route answers `404 EVALUATION_DISABLED` unless both `RAG_ENABLED` and
+`RAG_EVALUATION_ENABLED` are set. The judge is one of the user's own LLM keys (not Arcana); its
+decrypted key only goes to the evaluation service with each request. Runs answer through the
+project's real retrieval and prompt, without speech and without saving a conversation, and keep
+copies of questions, answers and passages — so they are deleted with the knowledge base, the
+project or the account.
+
+| Route | Access | Purpose |
+|---|---|---|
+| `GET /providers/evaluation-status` | Login required | Whether this deployment offers evaluation, the service's state, the per-run question cap and the judge calls per metric (for the cost estimate). |
+| `GET /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | The knowledge base's test sets with question counts. |
+| `POST /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | Create one (`name`, `language`: `de`/`en`). |
+| `GET /test-sets` | Login required | All the user's test sets (for the run form). |
+| `PATCH /test-sets/{id}`, `DELETE /test-sets/{id}` | Login required, own resource | Rename / delete it with its questions and every run that used it. |
+| `GET /test-sets/{id}/cases`, `POST /test-sets/{id}/cases` | Login required, own resource | List / add questions with optional reference answers (at most 500 per set). |
+| `POST /test-sets/{id}/cases/import` | Login required, own resource | Add questions from a CSV (`question`/`frage`, optional `reference`/`referenz`; `,` or `;`; at most 1 MB). |
+| `GET /test-sets/{id}/cases/export` | Login required, own resource | The approved questions as CSV (formula-guarded for spreadsheet apps). |
+| `POST /test-sets/{id}/generate` | Login required, own resource | Draft up to 10 questions with reference answers from a sample of the material, with a judge key. Drafts start unapproved. |
+| `DELETE /test-sets/{id}/drafts` | Login required, own resource | Discard the unapproved drafts. |
+| `PATCH /test-cases/{id}`, `DELETE /test-cases/{id}` | Login required, own resource | Edit or approve / delete one question. |
+| `GET /evaluation/runs` | Login required | The user's runs (optionally `?projectId=`). |
+| `POST /evaluation/runs` | Login required, own resources | Start a run (`projectId`, `testSetId`, `judgeApiKeyId`, `metrics`) in the background. One active run per user; capped by the admin's questions-per-run setting. |
+| `GET /evaluation/runs/{id}` | Login required, own resource | Progress, configuration snapshot, summary and per-question results. |
+| `POST /evaluation/runs/{id}/cancel` | Login required, own resource | Stop after the current question or batch; what's scored is kept. |
+| `DELETE /evaluation/runs/{id}` | Login required, own resource | Delete it. |
+| `GET /evaluation/runs/{id}/export?format=csv\|json` | Login required, own resource | Download the results. |
+
 ### Admin — `app/features/users/admin_users_router.py` and `app/features/site_settings/admin_router.py` (prefix `/admin`)
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
@@ -244,8 +300,9 @@ only way an account is actually deleted is the self-service `DELETE /me` above.
 | `POST /admin/users` | Admin only | Create an account with a temporary password the new user must change on first login. |
 | `PUT /admin/users/{user_id}` | Admin only | Promote/demote or enable/disable an account. |
 | `POST /admin/users/{user_id}/reset-password` | Admin only | Set a user's password on their behalf; they must change it on next login. |
-| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention). |
-| `PUT /admin/settings` | Admin only | Update the instance-wide site settings. |
+| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention, knowledge-base limits, questions per evaluation run). |
+| `PUT /admin/settings` | Admin only | Update the instance-wide site settings; knowledge limits are checked against the knowledge service's ceilings. |
+| `GET /admin/settings/knowledge-ceilings` | Admin only | The highest values the knowledge limits may be set to. |
 
 ### Site settings — `app/features/site_settings/public_router.py` (prefix `/settings`)
 
@@ -342,13 +399,17 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 | `POST /{slug}/messages/stream` (SSE `done` event) | `llmMs` | Time from request start to the full LLM reply being assembled. |
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
+| | `llmFirstTokenMs` | Time until the LLM's first token arrived. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
+| (SSE `chunk` events) | `textReadyMs`, `ttsMs`, `sentMs` | Per chunk: when its text was handed to TTS, how long its synthesis took (`null` without TTS), and when it was sent — all since the request started. |
 | `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text) call — local Whisper or Parakeet, or the cloud provider. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio
 decode/playback, time to first spoken word). See [frontend/README.md](../frontend/README.md#debugging)
-for the full breakdown and what each logged field means.
+for the full breakdown and what each logged field means. The dashboard's latency test page
+(`/dashboard/latency`, routes `/projects/{id}/latency-test/*` above) shows the same numbers per
+message and compares configurations; the `chunk` and `done` fields are the same there.
 
 ## Tests
 

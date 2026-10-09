@@ -10,6 +10,9 @@ import { ConfiguratorPage } from "./pages/Dashboard/Configurator";
 import { AnalyticsPage } from "./pages/Dashboard/Analytics";
 import { ApiDashboardPage } from "./pages/Dashboard/ApiDashboard";
 import { VoicesPage } from "./pages/Dashboard/Voices";
+import { KnowledgePage } from "./pages/Dashboard/Knowledge";
+import { EvaluationPage } from "./pages/Dashboard/Evaluation";
+import { LatencyLabPage } from "./pages/Dashboard/LatencyLab";
 import { ProfilePage } from "./pages/Dashboard/Profile";
 import { AdminUsersPage } from "./pages/Dashboard/Admin/Users";
 import { AdminSettingsPage } from "./pages/Dashboard/Admin/Settings";
@@ -63,6 +66,9 @@ export function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="api" element={<ApiDashboardPage />} />
           <Route path="voices" element={<VoicesPage />} />
+          <Route path="knowledge" element={<KnowledgePage />} />
+          <Route path="evaluation" element={<EvaluationPage />} />
+          <Route path="latency" element={<LatencyLabPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="change-password-required" element={<ForcePasswordChangePage />} />
           <Route path="admin" element={<RequireAdmin> <AdminUsersPage /> </RequireAdmin> } />

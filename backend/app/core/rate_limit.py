@@ -198,3 +198,26 @@ def enforce_password_reset_rate_limit(request: Request, email: str) -> None:
     message = ErrorCode.RATE_LIMIT_GENERIC
     _enforce(f"reset-ip:{_client_ip(request)}", max_requests=10, window_seconds=600, message=message)
     _enforce(f"reset-email:{email.lower()}", max_requests=3, window_seconds=600, message=message)
+
+
+def enforce_knowledge_upload_rate_limit(user_id: str, max_per_10_minutes: int) -> None:
+    """Limit knowledge-base uploads per teacher — the limit is an admin site setting
+    (SiteSettings.rag_upload_rate_per_10min), since indexing is the instance's most CPU-heavy job."""
+    _enforce(
+        f"knowledge-upload:{user_id}",
+        max_requests=max_per_10_minutes,
+        window_seconds=600,
+        message=ErrorCode.RATE_LIMIT_KNOWLEDGE_UPLOAD,
+    )
+
+
+def enforce_evaluation_rate_limit(user_id: str) -> None:
+    """Limit drafting test questions and starting evaluation runs per teacher. The judge calls
+    are on the teacher's own key, but each request also holds a backend thread and the shared
+    evaluation service, so a burst could slow everyone's chats."""
+    _enforce(
+        f"evaluation:{user_id}",
+        max_requests=20,
+        window_seconds=600,
+        message=ErrorCode.RATE_LIMIT_EVALUATION,
+    )

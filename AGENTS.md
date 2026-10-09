@@ -14,7 +14,9 @@ an analytics dashboard.
   for STT. Python ≥ 3.11. Details: [backend/README.md](backend/README.md)
 - `frontend/` — React 18 + TypeScript + Vite, three.js via TalkingHead, react-query, i18next.
   Details: [frontend/README.md](frontend/README.md)
-- `local-tts/` — optional self-hosted TTS sidecar. `docker/` — images, Compose, Caddy.
+- `local-tts/` — optional self-hosted TTS sidecar. `rag/` — optional knowledge service (RAG):
+  parsing, embeddings, search; see [rag/README.md](rag/README.md). `rag-eval/` — optional Ragas quality evaluation of
+  the knowledge base; see [rag-eval/README.md](rag-eval/README.md). `docker/` — images, Compose, Caddy.
 
 ## Commands
 
@@ -25,6 +27,21 @@ python -m pytest                          # conftest.py sets throwaway secrets; 
 python -m alembic upgrade head
 python -m alembic revision --autogenerate -m "Add foo to project"   # then review by hand
 uvicorn app.main:app --reload             # http://localhost:8000, needs .env (see README)
+
+# Knowledge service (from rag/) — tests fake the embedding model, nothing is downloaded
+pip install -e ".[dev]"
+RAG_SERVICE_TOKEN=test python -m pytest
+
+# Evaluation service (from rag-eval/) — tests fake the judge LLM at the litellm seam
+pip install -e ".[dev]"
+RAG_SERVICE_TOKEN=test python -m pytest
+
+# Everything at once (from repo root): set up / start backend, frontend and the services enabled in .env
+python scripts/dev.py setup
+python scripts/dev.py
+
+# Licence gate (in an environment with one component installed, plus pip-licenses)
+sh scripts/check-licences.sh
 
 # Frontend (from frontend/)
 npm ci
@@ -71,6 +88,11 @@ yourself before you push.
 - Backend tests use the fixtures in `backend/tests/conftest.py`, which fake providers at the
   litellm / model-loader seam. Never call a real provider or download a model in tests.
 - Fixing a bug: add a regression test that fails without the fix.
+
+**Dependencies**
+- Only permissive licences (MIT, BSD, Apache-2.0, ISC, PSF, MPL-2.0 unmodified) — no GPL/LGPL/AGPL,
+  SSPL or non-commercial licences, also for model weights. `scripts/check-licences.sh` enforces
+  this in CI; local embedding models are allowlisted in `rag/app/embedding.py`.
 
 **Docs**
 - New env variable → `.env.example` (with a comment saying which deploy path uses it) and the
@@ -133,6 +155,8 @@ Project skills live in `.claude/skills/`:
 - `av` (PyAV) is capped below 19: faster-whisper still passes an argument PyAV 19 removed.
 - The 3D avatar (WebGL) and audio often don't work in headless browsers — verify the rest of the
   page instead of treating that as a bug.
+- The knowledge service's parser subprocess (`rag/app/parsing/worker.py`) runs with `python -I`
+  and must not import `app.config` — it gets no environment and only sees the file's bytes.
 - On-device STT model files come from `scripts/fetch-stt-model.sh` (writes `./models`, ~380 MB,
   git-ignored). Without them the browser falls back to server-side STT.
 - The settings module validates `JWT_SECRET` / `API_KEY_ENCRYPTION_SECRET` at import time; the app

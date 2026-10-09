@@ -4,7 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AudioLines,
+  BookOpen,
+  Gauge,
   LayoutDashboard,
+  Timer,
   BarChart3,
   KeyRound,
   Settings2,
@@ -22,6 +25,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useEvaluationStatus, useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -54,12 +58,34 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
     isActive: (p) => p.startsWith("/dashboard/voices"),
   },
   {
+    labelKey: "nav.latencyLab",
+    href: "/dashboard/latency",
+    icon: Timer,
+    isActive: (p) => p.startsWith("/dashboard/latency"),
+  },
+  {
     labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
   },
 ];
+
+// Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
+const KNOWLEDGE_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.knowledge",
+  href: "/dashboard/knowledge",
+  icon: BookOpen,
+  isActive: (p) => p.startsWith("/dashboard/knowledge"),
+};
+
+// Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
+const EVALUATION_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.evaluation",
+  href: "/dashboard/evaluation",
+  icon: Gauge,
+  isActive: (p) => p.startsWith("/dashboard/evaluation"),
+};
 
 const ADMIN_NAV_ITEM: NavConfigItem = {
   labelKey: "nav.admin",
@@ -99,7 +125,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
+  const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
+  const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
+  // Knowledge sits right after Voices — both are the teacher's libraries — and Evaluation after it.
+  const knowledgeItems = evaluationAvailable ? [KNOWLEDGE_NAV_ITEM, EVALUATION_NAV_ITEM] : [KNOWLEDGE_NAV_ITEM];
+  const baseItems = knowledgeAvailable
+    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, ...knowledgeItems] : [item]))
+    : BASE_NAV_ITEMS;
+  const navItems = user?.isAdmin ? [...baseItems, ADMIN_NAV_ITEM] : baseItems;
   const activeItem = navItems.find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
-import { findProvider } from "@/lib/providers";
+import { curatedModels, findProvider } from "@/lib/providers";
 import { ALL_KEY_TYPES, KEY_TYPE_LABELS, type ApiKey, type ApiKeyInput, type ApiKeyType, type ProviderSpec } from "@/types/apiKey";
 import styles from "./ApiDashboard.module.css";
 
@@ -39,10 +39,13 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
   // dropdown never shows an endpoint that couldn't be used for what was just picked.
   const eligibleSpecs = specs.filter((option) => option.supportedTypes.includes(keyType));
   const spec = findProvider(eligibleSpecs, provider) ?? eligibleSpecs[0] ?? specs[0];
+  const availableKeyTypes = ALL_KEY_TYPES.filter((type) => specs.some((option) => option.supportedTypes.includes(type)));
+  // Embedding keys pick from the provider's embedding models, every other type from its chat models.
+  const models = curatedModels(spec, keyType);
   // A stored model that isn't in the curated list was entered as free text (or the provider keeps
   // no list at all) — then the dropdown shows the free-text entry as active, with the input field
   // below it.
-  const isCuratedModel = spec.models.some((model) => model.value === modelId);
+  const isCuratedModel = models.some((model) => model.value === modelId);
   const showFreeTextModel = freeTextModel || (Boolean(modelId) && !isCuratedModel);
   const modelSelectValue = showFreeTextModel ? FREE_TEXT_MODEL : modelId || NO_MODEL;
   // TTS providers with a hard-wired speech output model (spec.ttsModelFixed, e.g. OpenAI/Gemini)
@@ -61,7 +64,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
       setApiBase(nextSpec.defaultApiBase ?? "");
     }
     // Models are provider-specific — a selection from the old provider makes no sense here.
-    if (!nextSpec.models.some((model) => model.value === modelId)) {
+    if (!curatedModels(nextSpec, keyType).some((model) => model.value === modelId)) {
       setModelId("");
       setFreeTextModel(false);
     }
@@ -105,7 +108,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
           value={keyType}
           onChange={(e) => setKeyType(e.target.value as ApiKeyType)}
         >
-          {ALL_KEY_TYPES.map((type) => (
+          {availableKeyTypes.map((type) => (
             <option key={type} value={type}>
               {KEY_TYPE_LABELS[type]}
             </option>
@@ -137,6 +140,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
         {keyType === "stt" && spec.sttModelFixed && (
           <p className={styles.hint}>{t("apiKeyForm.sttModelFixedHint", { provider: spec.label })}</p>
         )}
+        {keyType === "embedding" && <p className={styles.hint}>{t("apiKeyForm.embeddingHint")}</p>}
       </div>
 
       <Input
@@ -173,7 +177,7 @@ export function ApiKeyForm({ specs, editing, pending, errorMessage, onSubmit, on
             required
           >
             <option value={NO_MODEL}>{t("apiKeyForm.pleaseChoose")}</option>
-            {spec.models.map((model) => (
+            {models.map((model) => (
               <option key={model.value} value={model.value}>
                 {model.label}
               </option>

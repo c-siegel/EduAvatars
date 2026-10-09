@@ -272,3 +272,10 @@
     display: flex;
   }
 }
+
+/* Under an assistant bubble: the knowledge-base documents that reply was given. */
+.transcriptSources {
+  margin: var(--space-1) 0 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
