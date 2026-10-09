@@ -148,7 +148,11 @@ def test_csv_import_and_export_round_trip(client, setup):
     assert exported.headers["content-type"].startswith("text/csv")
     rows = list(csv.reader(io.StringIO(exported.content.decode("utf-8-sig"))))
     # Formula-like cells are guarded for spreadsheet apps …
-    assert rows == [["question", "reference"], ["Was ist ATP?", "Ein Energieträger."], ["'=HYPERLINK(1)", "'-5 Grad"]]
+    assert rows == [
+        ["question", "reference", "kind"],
+        ["Was ist ATP?", "Ein Energieträger.", "topic"],
+        ["'=HYPERLINK(1)", "'-5 Grad", "topic"],
+    ]
 
     # … and the guard is undone on import, so the round trip is lossless.
     other = client.post(f"/knowledge-bases/{setup['kb']['id']}/test-sets", json={"name": "Kopie"}).json()
@@ -301,8 +305,8 @@ def test_export_as_csv_and_json(client, setup):
     run_id = _start(client, setup).json()["id"]
     exported = client.get(f"/evaluation/runs/{run_id}/export").content.decode("utf-8-sig")
     rows = list(csv.reader(io.StringIO(exported)))
-    assert rows[0][:4] == ["question", "reference", "answer", "faithfulness"]
-    assert rows[1][0] == "'=Photosynthese?" and rows[1][3] == "0.8"
+    assert rows[0][:5] == ["question", "kind", "reference", "answer", "faithfulness"]
+    assert rows[1][0] == "'=Photosynthese?" and rows[1][1] == "topic" and rows[1][4] == "0.8"
     assert "Skript.pdf S. 1" in rows[1]
 
     as_json = client.get(f"/evaluation/runs/{run_id}/export?format=json").json()
@@ -401,3 +405,86 @@ def test_one_draft_request_at_a_time(client, teacher, setup, monkeypatch):
     )
     assert response.status_code == 409
     assert response.json() == {"detail": "EVALUATION_GENERATION_ACTIVE"}
+
+
+def _draft(client, setup, **body):
+    return client.post(
+        f"/test-sets/{setup['test_set']['id']}/generate", json={"judgeApiKeyId": setup["judge_key"]["id"], **body}
+    )
+
+
+def test_manual_and_csv_questions_default_to_topic_and_the_kind_can_change(client, setup):
+    case = _add(client, setup["test_set"]["id"])
+    assert case["kind"] == "topic"
+    off = client.post(
+        f"/test-sets/{setup['test_set']['id']}/cases", json={"question": "Wer gewinnt die WM?", "kind": "offtopic"}
+    ).json()
+    assert off["kind"] == "offtopic"
+    assert client.patch(f"/test-cases/{case['id']}", json={"kind": "grounded"}).json()["kind"] == "grounded"
+    assert client.patch(f"/test-cases/{case['id']}", json={"kind": "nonsense"}).status_code == 422
+
+
+def test_csv_kind_column_is_read(client, setup):
+    data = "question;kind\nA?;Material\nB?;außerhalb\nC?;\nD?;unbekannt\n".encode()
+    client.post(f"/test-sets/{setup['test_set']['id']}/cases/import", files={"file": ("k.csv", data)})
+    kinds = [c["kind"] for c in client.get(f"/test-sets/{setup['test_set']['id']}/cases").json()]
+    assert kinds == ["grounded", "offtopic", "topic", "topic"]
+
+
+def test_topic_questions_are_drafted_without_the_material(client, setup, fake_eval):
+    _add(client, setup["test_set"]["id"], question="Was ist Photosynthese?")
+    response = _draft(client, setup, kind="topic", projectId=setup["project"]["id"], objectives="  Zellatmung  ", size=3)
+    assert response.status_code == 201, response.text
+    drafts = response.json()
+    assert [(d["kind"], d["approved"], d["origin"], d["reference"]) for d in drafts] == [("topic", False, "generated", None)] * 3
+
+    sent = fake_eval.generate_calls[-1]
+    assert sent["kind"] == "topic"
+    assert "chunks" not in sent
+    topic = sent["topic"]
+    assert topic["project_title"] == "Mathe-Tutor"
+    assert topic["document_titles"] == ["Skript"]
+    assert topic["objectives"] == "Zellatmung"
+    assert topic["existing_questions"] == ["Was ist Photosynthese?"]  # to avoid repeating it
+    # The judge never sees the content, only titles and the teacher's own descriptions.
+    assert "Photosynthese wandelt" not in json.dumps(sent)
+
+    _draft(client, setup, kind="topic", projectId=setup["project"]["id"], size=1)
+    assert len(fake_eval.generate_calls[-1]["topic"]["existing_questions"]) == 4
+
+
+def test_offtopic_drafts_and_the_project_requirements(client, setup, fake_eval, engine):
+    response = _draft(client, setup, kind="offtopic", projectId=setup["project"]["id"], size=2)
+    assert [d["kind"] for d in response.json()] == ["offtopic", "offtopic"]
+    assert _draft(client, setup, kind="topic").json() == {"detail": "EVALUATION_PROJECT_REQUIRED"}
+
+    login_as(client, make_user(engine, email="other@example.com"))
+    other_key = create_key(client)
+    response = client.post(
+        f"/test-sets/{setup['test_set']['id']}/generate",
+        json={"judgeApiKeyId": other_key["id"], "kind": "topic", "projectId": setup["project"]["id"]},
+    )
+    assert response.status_code == 404
+
+
+def test_a_run_scores_each_kind_and_summarizes_by_kind(client, setup, fake_eval):
+    test_set_id = setup["test_set"]["id"]
+    client.post(f"/test-sets/{test_set_id}/cases", json={"question": "Was ist Photosynthese?", "reference": "Licht zu Energie.", "kind": "grounded"})
+    client.post(f"/test-sets/{test_set_id}/cases", json={"question": "Wie atmen Pflanzen?", "kind": "topic"})
+    client.post(f"/test-sets/{test_set_id}/cases", json={"question": "Wer gewinnt die WM?", "kind": "offtopic"})
+    run = client.get(f"/evaluation/runs/{_start(client, setup, metrics=['faithfulness', 'coverage', 'restraint']).json()['id']}").json()
+    assert run["status"] == "done", run
+
+    sent = fake_eval.score_calls[0]["items"]
+    assert [i["kind"] for i in sent] == ["grounded", "topic", "offtopic"]
+    items = {i["kind"]: i for i in run["items"]}
+    assert items["topic"]["scores"]["coverage"] == {"value": 0.8, "error": None}
+    assert items["grounded"]["scores"]["coverage"] == {"value": None, "error": "NOT_APPLICABLE"}
+    assert items["offtopic"]["scores"]["restraint"]["value"] == 0.8
+    assert items["topic"]["scores"]["restraint"]["error"] == "NOT_APPLICABLE"
+
+    summary = run["summary"]
+    assert summary["metrics"]["coverage"]["count"] == 1
+    assert {k: v["count"] for k, v in summary["byKind"].items()} == {"grounded": 1, "topic": 1, "offtopic": 1}
+    assert summary["byKind"]["topic"]["metrics"]["coverage"]["mean"] == 0.8
+    assert summary["byKind"]["grounded"]["metrics"]["coverage"]["mean"] is None

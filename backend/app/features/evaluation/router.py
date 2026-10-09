@@ -172,7 +172,7 @@ def add_case(
     session: Session = Depends(get_session),
 ):
     test_set = _owned_test_set(test_set_id, current_user, session)
-    return _case_out(service.add_case(session, test_set, data.question, data.reference))
+    return _case_out(service.add_case(session, test_set, data.question, data.reference, data.kind))
 
 
 @router.post("/test-sets/{test_set_id}/cases/import", response_model=CsvImportOut, dependencies=[Depends(_enabled)])
@@ -216,8 +216,22 @@ def generate_cases(
     Drafts are unapproved until the teacher approves them."""
     test_set = _owned_test_set(test_set_id, current_user, session)
     get_owned_knowledge_base(session, current_user.id, test_set.knowledge_base_id)
+    project = None
+    if data.project_id:
+        project = session.get(Project, data.project_id)
+        if project is None or project.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail=ErrorCode.PROJECT_NOT_FOUND)
     enforce_evaluation_rate_limit(current_user.id)
-    return [_case_out(c) for c in service.generate_cases(session, test_set, data.judge_api_key_id, data.size)]
+    cases = service.generate_cases(
+        session,
+        test_set,
+        data.judge_api_key_id,
+        data.size,
+        kind=data.kind,
+        project=project,
+        objectives=data.objectives,
+    )
+    return [_case_out(c) for c in cases]
 
 
 @router.delete("/test-sets/{test_set_id}/drafts", status_code=204, dependencies=[Depends(_enabled)])

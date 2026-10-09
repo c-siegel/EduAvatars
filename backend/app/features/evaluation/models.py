@@ -51,6 +51,10 @@ class EvalTestCase(SQLModel, table=True):
     reference: str | None = None
     # "manual" | "csv" | "generated"
     origin: str = "manual"
+    # What the question tests (rag-eval/app/schemas.py::QuestionKind): "grounded" (drafted from a
+    # passage: retrieval), "topic" (asked about the subject without knowing the material: coverage
+    # and gaps), "offtopic" (outside the subject: does the avatar admit it doesn't know).
+    kind: str = "grounded"
     # Drafted questions start unapproved: runs only use approved ones, so nothing the judge wrote
     # is measured before the teacher has read it.
     approved: bool = True
@@ -100,6 +104,8 @@ class EvalRunItem(SQLModel, table=True):
     position: int = 0
     question: str
     reference: str | None = None
+    # Copied from the case, so the summary can be split by kind after the case changes or goes.
+    kind: str = "grounded"
     answer: str | None = None
     # [{text, filename, page, score}] — the passages the answer was given, as they were.
     contexts_json: str = "[]"

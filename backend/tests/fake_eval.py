@@ -48,7 +48,10 @@ class FakeEval:
             for item in body["items"]:
                 scores = {}
                 for metric in body["metrics"]:
-                    if metric in ("context_recall", "factual_correctness") and not item.get("reference"):
+                    kind = item.get("kind", "grounded")
+                    if (metric == "coverage" and kind != "topic") or (metric == "restraint" and kind != "offtopic"):
+                        scores[metric] = {"value": None, "error": "NOT_APPLICABLE"}
+                    elif metric in ("context_recall", "factual_correctness") and not item.get("reference"):
                         scores[metric] = {"value": None, "error": "NO_REFERENCE"}
                     else:
                         scores[metric] = {"value": fake.value, "error": None}
@@ -58,6 +61,13 @@ class FakeEval:
         @app.post("/generate-testset")
         def generate(body: dict):
             fake.generate_calls.append(body)
+            if body["kind"] != "grounded":
+                return {
+                    "cases": [
+                        {"question": f"Frage {i} zum Thema?", "reference": None, "chunk_id": None}
+                        for i in range(body["size"])
+                    ]
+                }
             return {
                 "cases": [
                     {"question": f"Was steht in Abschnitt {c['chunk_id']}?", "reference": c["text"][:80], "chunk_id": c["chunk_id"]}

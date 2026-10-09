@@ -174,6 +174,7 @@ def _execute(session: Session, run_id: str) -> None:
                     "answer": item.answer[:20000],
                     "contexts": [c["text"][:20000] for c in json.loads(item.contexts_json)][:20],
                     "reference": item.reference,
+                    "kind": item.kind,
                 }
                 for item in batch
             ],
