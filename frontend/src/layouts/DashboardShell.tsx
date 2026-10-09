@@ -125,6 +125,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  // Escape closes the open drawer, as with any overlay.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileNavOpen]);
+
   const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
   const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
   // Knowledge sits right after Voices — both are the teacher's libraries — and Evaluation after it.
