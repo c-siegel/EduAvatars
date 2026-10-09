@@ -954,8 +954,8 @@
     "page": "S. {{page}}"
   },
   "testSets": {
-    "title": "Testfragen für den Qualitätstest",
-    "hint": "Fragen mit (optionalen) Referenzantworten, mit denen du auf der Seite „Antwortqualität“ misst, wie gut ein Projekt aus diesem Material antwortet.",
+    "title": "Testfragen",
+    "hint": "Fragen mit (optionalen) Referenzantworten für die Läufe. Die Art einer Frage bestimmt, was sie misst: Fragen aus dem Material prüfen die Suche, Fragen zum Thema zeigen Lücken im Material, Fragen außerhalb des Themas prüfen, ob der Avatar Unbekanntes zugibt.",
     "choose": "Testset",
     "option": "{{name}} – {{count}} Fragen, {{approved}} freigegeben",
     "name": "Name des Testsets",
@@ -976,8 +976,6 @@
     "draft_one": "{{count}} Frage entwerfen",
     "draft_other": "{{count}} Fragen entwerfen",
     "drafting": "Entwürfe werden geschrieben …",
-    "draftHint_one": "Das gewählte LLM schreibt aus einem zufälligen Abschnitt deines Materials eine Frage mit Antwort. Das kostet etwa {{count}} Aufruf mit deinem Schlüssel. Entwürfe zählen erst, wenn du sie freigibst.",
-    "draftHint_other": "Das gewählte LLM schreibt aus zufälligen Abschnitten deines Materials Fragen mit Antworten. Das kostet etwa {{count}} Aufrufe mit deinem Schlüssel. Entwürfe zählen erst, wenn du sie freigibst.",
     "draftFailed": "Entwerfen fehlgeschlagen.",
     "draftsPending_one": "{{count}} Entwurf wartet auf deine Prüfung.",
     "draftsPending_other": "{{count}} Entwürfe warten auf deine Prüfung.",
@@ -999,7 +997,25 @@
     "edit": "Bearbeiten",
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "removeCase": "Frage löschen"
+    "removeCase": "Frage löschen",
+    "noKnowledgeBase": "Lege zuerst auf der Seite „Wissen“ eine Wissensbasis an.",
+    "knowledgeBase": "Wissensbasis",
+    "draftTitle": "Fragen entwerfen lassen",
+    "draftKind": "Art der Frage",
+    "draftProject": "Projekt, zu dem die Fragen passen sollen",
+    "objectives": "Lernziele (optional)",
+    "objectivesPlaceholder": "Lernziele oder Klassenstufe (optional), z. B. „Klasse 9: Photosynthese und Zellatmung“",
+    "addTitle": "Frage selbst hinzufügen",
+    "kind": {
+      "grounded": "Aus dem Material",
+      "topic": "Zum Thema",
+      "offtopic": "Außerhalb des Themas"
+    },
+    "kindHint": {
+      "grounded": "Aus zufälligen Abschnitten deines Materials schreibt das LLM Fragen mit Antworten. Das prüft, ob die Suche den Abschnitt findet – nicht, was dem Material fehlt. Etwa {{count}} Aufrufe mit deinem Schlüssel.",
+      "topic": "Das LLM kennt nur die Anweisungen des Projekts und die Dokumenttitel, nicht den Inhalt, und stellt Fragen, wie Lernende sie stellen würden. So zeigen sich Lücken im Material. Keine Referenzantwort. Ein Aufruf mit deinem Schlüssel.",
+      "offtopic": "Fragen, die das Material sicher nicht behandelt. Geprüft wird, ob der Avatar das zugibt, statt zu erfinden. Keine Referenzantwort. Ein Aufruf mit deinem Schlüssel."
+    }
   },
   "evaluation": {
     "title": "Antwortqualität",
@@ -1008,7 +1024,7 @@
     "unreachable": "Der Bewertungsdienst ist gerade nicht erreichbar. Läufe schlagen fehl, bis er wieder läuft.",
     "judgeNote": "LLM-Bewertungen schwanken und sind außerhalb des Englischen weniger zuverlässig. Nutze die Werte zum Vergleichen von Läufen (z. B. vor und nach einer Änderung), nicht als Noten.",
     "startTitle": "Neuen Lauf starten",
-    "noTestSets": "Lege zuerst auf der Seite „Wissen“ ein Testset mit Fragen an.",
+    "noTestSets": "Lege zuerst auf dem Tab „Testfragen“ ein Testset mit Fragen an.",
     "project": "Projekt",
     "testSet": "Testset",
     "testSetOption": "{{name}} ({{count}} freigegebene Fragen)",
@@ -1021,21 +1037,27 @@
       "answer_relevancy": "Relevanz der Antwort",
       "context_precision": "Kontext-Präzision",
       "context_recall": "Kontext-Vollständigkeit",
-      "factual_correctness": "Faktentreue"
+      "factual_correctness": "Faktentreue",
+      "coverage": "Abdeckung",
+      "restraint": "Zurückhaltung"
     },
     "metricShort": {
       "faithfulness": "Treue",
       "answer_relevancy": "Relevanz",
       "context_precision": "Präzision",
       "context_recall": "Vollständ.",
-      "factual_correctness": "Fakten"
+      "factual_correctness": "Fakten",
+      "coverage": "Abdeckung",
+      "restraint": "Zurückh."
     },
     "metricHint": {
       "faithfulness": "Ist jede Aussage der Antwort durch die gefundenen Abschnitte gedeckt? Erkennt Erfundenes.",
       "answer_relevancy": "Geht die Antwort auf die Frage ein?",
       "context_precision": "Sind die gefundenen Abschnitte relevant, und stehen die relevanten vorn?",
       "context_recall": "Hat die Suche gefunden, was die Referenzantwort braucht? Nur mit Referenzantwort.",
-      "factual_correctness": "Stimmt die Antwort mit der Referenzantwort überein? Nur mit Referenzantwort."
+      "factual_correctness": "Stimmt die Antwort mit der Referenzantwort überein? Nur mit Referenzantwort.",
+      "coverage": "Reichen die gefundenen Abschnitte, um die Frage zu beantworten? Nur für Fragen zum Thema.",
+      "restraint": "Gibt der Avatar zu, was nicht im Material steht, statt zu erfinden? Nur für Fragen außerhalb des Themas."
     },
     "tooMany": "Das Testset hat {{count}} freigegebene Fragen, erlaubt sind höchstens {{max}} pro Lauf.",
     "noApproved": "Das Testset hat noch keine freigegebenen Fragen.",
@@ -1094,8 +1116,22 @@
       "NO_REFERENCE": "nicht bewertet: keine Referenzantwort",
       "NO_EMBEDDING": "nicht bewertet: das Embedding-Modell ist nicht verfügbar",
       "NOT_SCORABLE": "nicht bewertbar (z. B. Antwort ohne Sachaussage)",
-      "JUDGE_FAILED": "das Bewertungs-LLM hat nicht geantwortet"
-    }
+      "JUDGE_FAILED": "das Bewertungs-LLM hat nicht geantwortet",
+      "NOT_APPLICABLE": "gilt für diese Art von Frage nicht"
+    },
+    "tabs": {
+      "questions": "Testfragen",
+      "runs": "Läufe"
+    },
+    "toQuestions": "Zu den Testfragen",
+    "kind": "Art der Frage",
+    "byKindTitle": "Ergebnisse nach Art der Frage",
+    "gapsTitle_one": "Lücken im Material: {{count}} Frage nicht vollständig beantwortbar",
+    "gapsTitle_other": "Lücken im Material: {{count}} Fragen nicht vollständig beantwortbar",
+    "gapsHint": "Zu diesen Fragen zum Thema haben die gefundenen Abschnitte nicht genug hergegeben. Ergänze das Material oder prüfe, ob die Frage dazugehört.",
+    "noGaps": "Alle Fragen zum Thema wurden durch das Material gedeckt.",
+    "gapNone": "nicht gedeckt",
+    "gapPartly": "teilweise"
   },
   "errors": {
     "RATE_LIMIT_EVALUATION": "Zu viele Anfragen an den Qualitätstest. Bitte warte ein paar Minuten.",
@@ -1119,6 +1155,7 @@
     "EVALUATION_LLM_FAILED": "Das LLM des Projekts hat nicht geantwortet.",
     "EVALUATION_INTERRUPTED": "Der Lauf wurde durch einen Neustart des Servers unterbrochen. Starte ihn neu.",
     "EVALUATION_KEY_DELETED": "Ein Schlüssel des Laufs wurde gelöscht, deshalb wurde er angehalten.",
+    "EVALUATION_PROJECT_REQUIRED": "Wähle ein Projekt, zu dem die Fragen passen sollen.",
     "EMBEDDING_KEY_MISSING_MODEL": "Für diesen Embedding-Key ist kein Modell hinterlegt.",
     "KNOWLEDGE_DISABLED": "Wissensbasen sind auf dieser Instanz nicht verfügbar.",
     "KNOWLEDGE_SERVICE_UNAVAILABLE": "Der Wissensdienst antwortet nicht. Bitte versuch es später noch einmal.",

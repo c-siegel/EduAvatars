@@ -1,10 +1,10 @@
 // Dashboard tab "Evaluation": measure how well a project answers from its knowledge bases. A run
 // asks a test set's questions through the project (like a student would, without speech and
 // without saving) and has a judge LLM score the answers with Ragas. Runs can be compared side by
-// side, e.g. "supplement" vs. "strict", or two embedding models. Test sets are kept on the
-// Knowledge page. Only reachable when the deployment runs the evaluation service.
+// side, e.g. "supplement" vs. "strict", or two embedding models. Two tabs: the test questions
+// (TestSets.tsx) and the runs. Only reachable when the deployment runs the evaluation service.
 
-import { Fragment, useMemo, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Download, Square, Trash2 } from "lucide-react";
@@ -16,14 +16,17 @@ import { errorMessage } from "@/api/client";
 import {
   ACTIVE_RUN_STATUSES,
   METRICS,
+  QUESTION_KINDS,
   evaluationApi,
   type EvaluationStatus,
   type MetricName,
   type MetricScore,
+  type QuestionKind,
   type Run,
   type RunItem,
 } from "@/api/evaluation";
 import { projectsApi } from "@/api/projects";
+import { TestQuestions } from "./TestSets";
 import { numberLocale } from "@/lib/format";
 import { isJudgeKey, keyDisplayName, useEvaluationStatus, useProviders } from "@/lib/providers";
 import styles from "./Evaluation.module.css";
@@ -44,8 +47,24 @@ export function EvaluationPage() {
       (query.state.data ?? []).some((r) => ACTIVE_RUN_STATUSES.includes(r.status)) ? POLL_MS : false,
   });
   const runs = runsQuery.data ?? [];
+  const testSetsQuery = useQuery({
+    queryKey: ["test-sets", "all"],
+    queryFn: evaluationApi.allTestSets,
+    enabled: Boolean(status?.available),
+  });
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [chosenTab, setChosenTab] = useState<"questions" | "runs" | null>(null);
+
+  // Someone with questions or runs comes to run or read them; a newcomer has to write questions
+  // first. Decided once, when both lists are loaded — otherwise creating the first test set would
+  // flip the tab under their hands.
+  const loaded = testSetsQuery.isSuccess && runsQuery.isSuccess;
+  useEffect(() => {
+    if (loaded && chosenTab === null) {
+      setChosenTab((testSetsQuery.data ?? []).length > 0 || runs.length > 0 ? "runs" : "questions");
+    }
+  }, [loaded, chosenTab, testSetsQuery.data, runs.length]);
 
   if (statusQuery.isLoading) return <p className={styles.hint}>{t("common.loading")}</p>;
   if (!status?.available) {
@@ -56,6 +75,8 @@ export function EvaluationPage() {
       </div>
     );
   }
+
+  const tab = chosenTab;
 
   function toggleCompare(id: string) {
     setCompareIds((ids) =>
@@ -69,29 +90,50 @@ export function EvaluationPage() {
     <div className={styles.page}>
       <Header />
       {!status.reachable && <Callout variant="warning">{t("evaluation.unreachable")}</Callout>}
-      <Callout variant="info">{t("evaluation.judgeNote")}</Callout>
-      <StartRun status={status} onStarted={setOpenRunId} />
-
-      <div className={styles.card}>
-        <h3>{t("evaluation.runsTitle")}</h3>
-        {runsQuery.isLoading && <p className={styles.hint}>{t("common.loading")}</p>}
-        {!runsQuery.isLoading && runs.length === 0 && <p className={styles.hint}>{t("evaluation.noRuns")}</p>}
-        {runs.length > 1 && <p className={styles.hint}>{t("evaluation.compareHint", { max: MAX_COMPARE })}</p>}
-        <ul className={styles.runList}>
-          {runs.map((run) => (
-            <RunRow
-              key={run.id}
-              run={run}
-              open={openRunId === run.id}
-              onToggle={() => setOpenRunId(openRunId === run.id ? null : run.id)}
-              compared={compareIds.includes(run.id)}
-              onCompare={() => toggleCompare(run.id)}
-            />
-          ))}
-        </ul>
+      <div className={styles.tabs} role="tablist" aria-label={t("evaluation.title")}>
+        {(["questions", "runs"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={`${styles.tab} ${tab === id ? styles.tabActive : ""}`}
+            onClick={() => setChosenTab(id)}
+          >
+            {t(`evaluation.tabs.${id}`)}
+          </button>
+        ))}
       </div>
 
-      {compared.length >= 2 && <Compare runs={compared} />}
+      {tab === "questions" && <TestQuestions status={status} />}
+
+      {tab === "runs" && (
+        <>
+          <Callout variant="info">{t("evaluation.judgeNote")}</Callout>
+          <StartRun status={status} onStarted={setOpenRunId} onNeedQuestions={() => setChosenTab("questions")} />
+
+          <div className={styles.card}>
+            <h3>{t("evaluation.runsTitle")}</h3>
+            {runsQuery.isLoading && <p className={styles.hint}>{t("common.loading")}</p>}
+            {!runsQuery.isLoading && runs.length === 0 && <p className={styles.hint}>{t("evaluation.noRuns")}</p>}
+            {runs.length > 1 && <p className={styles.hint}>{t("evaluation.compareHint", { max: MAX_COMPARE })}</p>}
+            <ul className={styles.runList}>
+              {runs.map((run) => (
+                <RunRow
+                  key={run.id}
+                  run={run}
+                  open={openRunId === run.id}
+                  onToggle={() => setOpenRunId(openRunId === run.id ? null : run.id)}
+                  compared={compareIds.includes(run.id)}
+                  onCompare={() => toggleCompare(run.id)}
+                />
+              ))}
+            </ul>
+          </div>
+
+          {compared.length >= 2 && <Compare runs={compared} />}
+        </>
+      )}
     </div>
   );
 }
@@ -118,7 +160,15 @@ function scoreClass(value: number | null | undefined): string {
 }
 
 /** Choose project, test set, judge and metrics; see the cost; confirm; start. */
-function StartRun({ status, onStarted }: { status: EvaluationStatus; onStarted: (id: string) => void }) {
+function StartRun({
+  status,
+  onStarted,
+  onNeedQuestions,
+}: {
+  status: EvaluationStatus;
+  onStarted: (id: string) => void;
+  onNeedQuestions: () => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const specs = useProviders().data ?? [];
@@ -176,6 +226,11 @@ function StartRun({ status, onStarted }: { status: EvaluationStatus; onStarted: 
       <div className={styles.card}>
         <h3>{t("evaluation.startTitle")}</h3>
         <p className={styles.hint}>{t("evaluation.noTestSets")}</p>
+        <div>
+          <Button size="sm" onClick={onNeedQuestions}>
+            {t("evaluation.toQuestions")}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -392,6 +447,8 @@ function RunDetail({ run }: { run: Run }) {
     <div className={styles.detail}>
       <ConfigSummary run={run} />
       {run.summary && <SummaryCards run={run} />}
+      {run.summary && <KindBreakdown run={run} />}
+      <Gaps run={run} items={detailQuery.data?.items ?? []} />
       {!active && (
         <div className={styles.actionsRow}>
           <Button size="sm" onClick={() => evaluationApi.exportRun(run.id, "csv")}>
@@ -478,6 +535,83 @@ function RunDetail({ run }: { run: Run }) {
   );
 }
 
+/** The scores per question kind: "faithful on questions from the material" and "covered on topic
+ * questions" say different things, so they aren't averaged together. */
+function KindBreakdown({ run }: { run: Run }) {
+  const { t } = useTranslation();
+  const byKind = run.summary?.byKind ?? {};
+  const kinds = QUESTION_KINDS.filter((kind) => byKind[kind]);
+  if (kinds.length < 2) return null;
+  const metrics = run.metrics.filter((metric) => kinds.some((kind) => (byKind[kind]?.metrics[metric]?.count ?? 0) > 0));
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <caption className={styles.caption}>{t("evaluation.byKindTitle")}</caption>
+        <thead>
+          <tr>
+            <th>{t("evaluation.kind")}</th>
+            {metrics.map((metric) => (
+              <th key={metric} title={t(`evaluation.metric.${metric}`)}>
+                {t(`evaluation.metricShort.${metric}`)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {kinds.map((kind) => (
+            <tr key={kind}>
+              <th scope="row">
+                {t(`testSets.kind.${kind}`)} <span className={styles.hint}>({byKind[kind]?.count})</span>
+              </th>
+              {metrics.map((metric) => {
+                const mean = byKind[kind]?.metrics[metric]?.mean;
+                return (
+                  <td key={metric} className={scoreClass(mean)}>
+                    {formatScore(mean)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** The questions about the subject that the material couldn't answer: what to add to it. */
+function Gaps({ run, items }: { run: Run; items: RunItem[] }) {
+  const { t } = useTranslation();
+  if (!run.metrics.includes("coverage") || !run.summary?.byKind.topic) return null;
+  const gaps = items
+    .filter((item) => item.kind === "topic" && (item.scores.coverage?.value ?? 1) < 1)
+    .sort((a, b) => (a.scores.coverage?.value ?? 0) - (b.scores.coverage?.value ?? 0));
+  const scored = items.some((item) => item.kind === "topic" && item.scores.coverage?.value != null);
+  if (!scored) return null;
+  return (
+    <div className={styles.gaps}>
+      <h4>{t("evaluation.gapsTitle", { count: gaps.length })}</h4>
+      {gaps.length === 0 ? (
+        <p className={styles.hint}>{t("evaluation.noGaps")}</p>
+      ) : (
+        <>
+          <p className={styles.hint}>{t("evaluation.gapsHint")}</p>
+          <ul>
+            {gaps.map((item) => (
+              <li key={item.id}>
+                <Badge variant={item.scores.coverage?.value === 0 ? "danger" : "default"}>
+                  {item.scores.coverage?.value === 0 ? t("evaluation.gapNone") : t("evaluation.gapPartly")}
+                </Badge>{" "}
+                {item.question}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ScoreCell({ score }: { score: MetricScore | undefined }) {
   const { t } = useTranslation();
   if (!score) return <td className={styles.scoreNone}>…</td>;
@@ -496,6 +630,9 @@ function ItemDetail({ item }: { item: RunItem }) {
   const reasons = Object.entries(item.scores).filter(([, score]) => score.error);
   return (
     <div className={styles.itemDetail}>
+      <p className={styles.hint}>
+        {t("evaluation.kind")}: {t(`testSets.kind.${item.kind}`)}
+      </p>
       <div>
         <span className={styles.label}>{t("evaluation.answer")}</span>
         <p className={styles.text}>{item.answer ?? "—"}</p>

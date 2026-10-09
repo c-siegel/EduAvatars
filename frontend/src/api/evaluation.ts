@@ -11,8 +11,16 @@ export const METRICS = [
   "context_precision",
   "context_recall",
   "factual_correctness",
+  "coverage",
+  "restraint",
 ] as const;
 export type MetricName = (typeof METRICS)[number];
+
+// What a question tests (backend/app/features/evaluation/models.py): "grounded" – drafted from a
+// passage of the material (retrieval); "topic" – asked about the subject without knowing the
+// material (coverage, gaps); "offtopic" – outside the subject (does the avatar admit it).
+export const QUESTION_KINDS = ["grounded", "topic", "offtopic"] as const;
+export type QuestionKind = (typeof QUESTION_KINDS)[number];
 
 export interface EvaluationStatus {
   available: boolean;
@@ -40,6 +48,7 @@ export interface TestCase {
   testSetId: string;
   question: string;
   reference: string | null;
+  kind: QuestionKind;
   origin: "manual" | "csv" | "generated";
   // Drafted questions start unapproved; runs only use approved ones.
   approved: boolean;
@@ -75,6 +84,8 @@ export interface Latency {
 
 export interface RunSummary {
   metrics: Record<string, MetricSummary>;
+  // The same per question kind, only for kinds the run has questions of.
+  byKind: Partial<Record<QuestionKind, { count: number; metrics: Record<string, MetricSummary> }>>;
   retrievalMs: Latency;
   llmMs: Latency;
 }
@@ -106,6 +117,7 @@ export interface RunItem {
   position: number;
   question: string;
   reference: string | null;
+  kind: QuestionKind;
   answer: string | null;
   contexts: { text: string; filename: string | null; page: number | null; score: number | null }[];
   scores: Record<string, MetricScore>;
@@ -144,9 +156,12 @@ export const evaluationApi = {
   removeTestSet: (id: string) => apiClient.delete<void>(`/test-sets/${id}`),
 
   cases: (testSetId: string) => apiClient.get<TestCase[]>(`/test-sets/${testSetId}/cases`),
-  addCase: (testSetId: string, question: string, reference: string | null) =>
-    apiClient.post<TestCase>(`/test-sets/${testSetId}/cases`, { question, reference }),
-  updateCase: (id: string, data: { question?: string; reference?: string | null; approved?: boolean }) =>
+  addCase: (testSetId: string, question: string, reference: string | null, kind: QuestionKind) =>
+    apiClient.post<TestCase>(`/test-sets/${testSetId}/cases`, { question, reference, kind }),
+  updateCase: (
+    id: string,
+    data: { question?: string; reference?: string | null; approved?: boolean; kind?: QuestionKind },
+  ) =>
     apiClient.patch<TestCase>(`/test-cases/${id}`, data),
   removeCase: (id: string) => apiClient.delete<void>(`/test-cases/${id}`),
   importCsv: (testSetId: string, file: File) => {
@@ -155,8 +170,10 @@ export const evaluationApi = {
     return apiClient.upload<{ imported: number; skipped: number }>(`/test-sets/${testSetId}/cases/import`, formData);
   },
   exportCsv: (testSetId: string) => download(`/test-sets/${testSetId}/cases/export`, "test-set.csv"),
-  generate: (testSetId: string, judgeApiKeyId: string, size: number) =>
-    apiClient.post<TestCase[]>(`/test-sets/${testSetId}/generate`, { judgeApiKeyId, size }),
+  generate: (
+    testSetId: string,
+    data: { judgeApiKeyId: string; size: number; kind: QuestionKind; projectId?: string; objectives?: string },
+  ) => apiClient.post<TestCase[]>(`/test-sets/${testSetId}/generate`, data),
   discardDrafts: (testSetId: string) => apiClient.delete<void>(`/test-sets/${testSetId}/drafts`),
 
   runs: () => apiClient.get<Run[]>("/evaluation/runs"),
