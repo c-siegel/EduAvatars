@@ -36,3 +36,5 @@ models/
 
 # Knowledge service local data (see rag/README.md)
 rag/.data/
+rag-eval/.data/
+local-tts/.data/

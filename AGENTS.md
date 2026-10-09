@@ -36,6 +36,10 @@ RAG_SERVICE_TOKEN=test python -m pytest
 pip install -e ".[dev]"
 RAG_SERVICE_TOKEN=test python -m pytest
 
+# Everything at once (from repo root): set up / start backend, frontend and the services enabled in .env
+python scripts/dev.py setup
+python scripts/dev.py
+
 # Licence gate (in an environment with one component installed, plus pip-licenses)
 sh scripts/check-licences.sh
 
