@@ -39,8 +39,9 @@ from app.features.api_keys.resolve import effective_api_base, get_owned_key_of_t
 from app.features.evaluation import cleanup, eval_client
 from app.features.evaluation.models import EvalRun, EvalRunItem, EvalTestCase, EvalTestSet
 from app.features.knowledge import rag_client
-from app.features.knowledge.models import KnowledgeBase, KnowledgeDocument
+from app.features.knowledge.models import KnowledgeBase
 from app.features.knowledge.service import KnowledgeServiceUnavailable
+from app.features.knowledge.sources import titles_by_document
 from app.features.projects.models import Project
 from app.features.site_settings.service import get_or_create_site_settings
 
@@ -463,12 +464,6 @@ def _topic_request(session: Session, test_set: EvalTestSet, kind: str, project: 
     """What the judge may know about the subject: never the material's content, only how the
     teacher described it and what its documents are called."""
     kb = session.get(KnowledgeBase, test_set.knowledge_base_id)
-    filenames = session.exec(
-        select(KnowledgeDocument.filename)
-        .where(KnowledgeDocument.knowledge_base_id == test_set.knowledge_base_id)
-        .order_by(KnowledgeDocument.created_at)
-        .limit(50)
-    ).all()
     existing = session.exec(
         select(EvalTestCase.question)
         .where(EvalTestCase.test_set_id == test_set.id, EvalTestCase.kind == kind)
@@ -480,7 +475,7 @@ def _topic_request(session: Session, test_set: EvalTestSet, kind: str, project: 
             "preprompt": (project.preprompt or "")[:8000],
             "project_title": project.title[:200],
             "description": ((kb.description or "") if kb else "")[:2000],
-            "document_titles": [name.rsplit(".", 1)[0] for name in filenames],
+            "document_titles": titles_by_document(session, test_set.knowledge_base_id),
             "objectives": (objectives or "").strip()[:2000],
             "existing_questions": list(existing),
         }

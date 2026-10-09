@@ -66,8 +66,10 @@ class FakeRag:
             if fake.reject_upload_with:
                 return JSONResponse(status_code=422, content={"detail": {"code": fake.reject_upload_with}})
             document_id = parsed["document_id"]
+            header, data = _split_header(data)
             status = {"document_id": document_id, "status": fake.upload_status, "error_code": None,
-                      "page_count": 1, "chunk_count": 1, "char_count": len(data), "truncated": False}
+                      "page_count": 1, "chunk_count": 1, "char_count": len(data), "truncated": False,
+                      "metadata": header}
             fake.documents[document_id] = status
             if fake.upload_status == "ready":
                 fake.chunks.append({
@@ -129,3 +131,17 @@ class FakeRag:
             return {"dimensions": 1536}
 
         return app
+
+
+def _split_header(data: bytes) -> tuple[dict | None, bytes]:
+    """A rough stand-in for rag/app/parsing/header.py: `key: value` lines between `---` lines."""
+    text = data.decode("utf-8", errors="replace")
+    if not text.startswith("---\n") or "\n---\n" not in text[4:]:
+        return None, data
+    head, body = text[4:].split("\n---\n", 1)
+    fields = {}
+    for line in head.split("\n"):
+        key, sep, value = line.partition(":")
+        if sep and value.strip():
+            fields[key.strip().lower()] = value.strip().strip('"')
+    return fields or None, body.encode()

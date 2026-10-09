@@ -31,6 +31,14 @@ backend's IDs; ownership, quotas and the dashboard live in the backend
 | Index | `app/store.py` | One SQLite file: chunks, FTS5 keyword index, sqlite-vec vectors. |
 | Search | `app/search.py` | Vector + keyword search, merged with reciprocal rank fusion. |
 
+A metadata header at the top of a Markdown or text file (front matter, `---` … `---`, as Arcana,
+Obsidian or static site generators write it) is split off before chunking (`app/parsing/header.py`):
+it describes the source and isn't part of the material. Its fields are reported in the document
+status (`metadata`) for the backend, which keeps the ones it knows as source metadata; nothing of
+it is embedded or searchable. Only a flat subset of YAML is read (`key: value`, quoted strings,
+lists, `|`/`>` blocks), at most 8 KB, without a YAML library. A `---` line followed by anything
+else (a horizontal rule) stays content.
+
 Original files are deleted as soon as they've been indexed; only the extracted text, chunks and
 vectors are kept. If indexing fails, the original stays for `RAG_FAILED_UPLOAD_RETENTION_HOURS`
 (24 by default) so the teacher can retry with one click — possibly with Docling — and is deleted

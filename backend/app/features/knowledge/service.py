@@ -32,9 +32,9 @@ from app.features.api_keys.crypto import reveal_api_key
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import effective_api_base, get_owned_key_of_type
 from app.features.evaluation import cleanup as evaluation_cleanup
-from app.features.knowledge import rag_client
+from app.features.knowledge import rag_client, sources
 from app.features.knowledge.limits import KnowledgeLimits, current_limits
-from app.features.knowledge.models import KnowledgeBase, KnowledgeDocument, RagPendingDeletion
+from app.features.knowledge.models import KnowledgeBase, KnowledgeBibEntry, KnowledgeDocument, RagPendingDeletion
 from app.features.knowledge.upload_checks import detect_file_type, safe_display_name
 from app.features.projects.models import Project
 
@@ -196,6 +196,7 @@ def delete_knowledge_base(session: Session, kb: KnowledgeBase) -> None:
         project.knowledge_base_ids_json = json.dumps([i for i in project.knowledge_base_ids if i != kb.id])
         session.add(project)
     session.execute(delete(KnowledgeDocument).where(KnowledgeDocument.knowledge_base_id == kb.id))
+    session.execute(delete(KnowledgeBibEntry).where(KnowledgeBibEntry.knowledge_base_id == kb.id))
     # Test sets belong to the KB, and runs hold copies of its passages.
     evaluation_cleanup.delete_for_knowledge_base(session, kb.id)
     kb_id = kb.id
@@ -209,6 +210,7 @@ def delete_all_for_user(session: Session, user_id: str) -> None:
     Doesn't commit — runs inside features/users/account.py's single deletion transaction."""
     kb_ids = [kb.id for kb in list_knowledge_bases(session, user_id)]
     session.execute(delete(KnowledgeDocument).where(KnowledgeDocument.user_id == user_id))
+    session.execute(delete(KnowledgeBibEntry).where(KnowledgeBibEntry.user_id == user_id))
     session.execute(delete(KnowledgeBase).where(KnowledgeBase.user_id == user_id))
     # The remote deletes are queued rather than sent here: the account transaction hasn't
     # committed yet, and the periodic cleanup (app/tasks/knowledge_cleanup.py) sends them right after.
@@ -310,6 +312,8 @@ def refresh_statuses(session: Session, documents: list[KnowledgeDocument]) -> No
             document.chunk_count = status.get("chunk_count")
             document.truncated = bool(status.get("truncated"))
             document.retryable = bool(status.get("retryable"))
+            if document.status == "ready":
+                sources.apply_header(session, document, status.get("metadata"))
         document.updated_at = _now()
         session.add(document)
     session.commit()

@@ -16,6 +16,7 @@ How to use:
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -64,8 +65,37 @@ class KnowledgeDocument(SQLModel, table=True):
     # Failed, and the knowledge service still has the original (it keeps it for a while after a
     # failure), so POST /knowledge-documents/{id}/retry can index it again without a re-upload.
     retryable: bool = False
+    # Source metadata (features/knowledge/metadata.py), in layers that are combined when read,
+    # never copied into each other: the teacher's own entries win over the linked bibliography
+    # entry, which wins over the file's own header. So re-importing a bibliography updates every
+    # linked document, and clearing a field falls back to the next layer.
+    # What the file's header said (text/Markdown only), already mapped to our field names.
+    header_json: str | None = None
+    # What the teacher entered in the dashboard — only the fields they set.
+    meta_json: str | None = None
+    # The BibTeX key of the linked bibliography entry (KnowledgeBibEntry), set by the teacher, by
+    # the file's header or by an automatic match.
+    bibtex_key: str | None = None
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
+
+
+class KnowledgeBibEntry(SQLModel, table=True):
+    """One entry of a knowledge base's imported bibliography (features/knowledge/bibtex.py).
+
+    The bibliographic layer of the metadata of every document linked to it by BibTeX key.
+    Re-importing replaces a knowledge base's entries; the links stay, as they're by key.
+    """
+
+    __table_args__ = (UniqueConstraint("knowledge_base_id", "key"),)
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    knowledge_base_id: str = Field(foreign_key="knowledgebase.id", index=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    key: str
+    # Our metadata fields (features/knowledge/metadata.py) plus "files": the attached files'
+    # names, for linking documents by file name.
+    fields_json: str = "{}"
 
 
 class RagPendingDeletion(SQLModel, table=True):

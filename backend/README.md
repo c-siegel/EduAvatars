@@ -42,7 +42,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/media/` | Avatar model and background image libraries |
 | `app/features/pronunciation/` | Each teacher's TTS word list (`/pronunciation`), preset packs (`presets/*.json`), import/export and the test box; the matching engine itself is `app/features/ai/tts/pronunciation.py` |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
-| `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn |
+| `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn. Source metadata of documents (`metadata.py`, `sources.py`, BibTeX import in `bibtex.py`) only goes into the prompt, never into the index |
 | `app/features/evaluation/` | Quality evaluation of knowledge-base answers: test sets, and runs that answer them through a project (`runner.py`, one background worker) and have the optional evaluation service (`rag-eval/`, Ragas) score them through `eval_client.py` |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
@@ -284,6 +284,9 @@ knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
 | `POST /knowledge-documents/{document_id}/retry` | Login required, own resource | Index a failed document again (optionally with Docling) while the knowledge service still keeps its original. Counts against the upload rate limit. |
 | `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
 | `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
+| `PATCH /knowledge-documents/{document_id}/metadata` | Login required, own resource | Replace the teacher's own source details (title, author, year, container, url, citation, sourceType, priority, note, bibtexKey). Empty fields fall back to the linked bibliography entry, then to the file's header. Never re-indexes. |
+| `POST /knowledge-bases/{kb_id}/bibliography` | Login required, own resource | Replace the knowledge base's bibliography with a BibTeX file (≤ 1 MB, ≤ 2,000 entries) and link documents to entries by key (from the file's header, the entry's `file` field, or the file name). Counts against the upload rate limit. |
+| `GET /knowledge-bases/{kb_id}/bibliography`, `DELETE …` | Login required, own resource | List the entries (for the key picker) / delete them; documents keep their keys. |
 
 ### Evaluation — `app/features/evaluation/router.py` (prefixes `/test-sets`, `/test-cases`, `/evaluation/runs`)
 

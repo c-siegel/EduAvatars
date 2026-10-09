@@ -35,6 +35,19 @@ _STRICT = (
     "numbers or file names unless you're asked where something comes from."
 )
 
+# Only when some excerpt has a cite attribute (source metadata, features/knowledge/metadata.py).
+_CITATION = (
+    "When asked where something comes from, name the source by the excerpt's cite attribute and add "
+    "the page or section from its source attribute as the place to look. Don't add authors, years or "
+    "titles that aren't given there."
+)
+
+# Only when some excerpt has a priority attribute.
+_PRIORITY = (
+    "Some excerpts are marked with a priority: rely on primary sources first and use secondary and "
+    "supplementary ones to add to them. If sources disagree, say so instead of silently picking one."
+)
+
 _STRICT_NOTHING_FOUND = (
     "## Reference material\n"
     "This conversation is limited to documents the teacher provided, and nothing in them matches the "
@@ -44,6 +57,12 @@ _STRICT_NOTHING_FOUND = (
 )
 
 
+def _attribute(value: str, limit: int = 300) -> str:
+    """A value that can't leave its attribute: one line, no quotes or angle brackets."""
+    text = " ".join(str(value).split())[:limit]
+    return text.replace('"', "'").replace("<", "‹").replace(">", "›")
+
+
 def _label(passage, index: int) -> str:
     parts = [passage.filename or "document"]
     if passage.heading:
@@ -51,7 +70,21 @@ def _label(passage, index: int) -> str:
     if passage.page:
         parts.append(f"p. {passage.page}")
     # Quotes would end the attribute early; the label is only orientation for the model.
-    return ", ".join(parts).replace('"', "'")
+    return _attribute(", ".join(parts), 500)
+
+
+def _attributes(passage, index: int) -> str:
+    attributes = f'n="{index}" source="{_label(passage, index)}"'
+    cite = getattr(passage, "cite", None)
+    source_type = getattr(passage, "source_type", None)
+    priority = getattr(passage, "priority", None)
+    if cite:
+        attributes += f' cite="{_attribute(cite)}"'
+    if source_type:
+        attributes += f' type="{_attribute(source_type, 20)}"'
+    if priority:
+        attributes += f' priority="{_attribute(priority, 20)}"'
+    return attributes
 
 
 def reference_block(mode: str, passages: Sequence) -> str | None:
@@ -61,6 +94,10 @@ def reference_block(mode: str, passages: Sequence) -> str | None:
     for index, passage in enumerate(passages, start=1):
         # The closing tag inside a passage would let its text escape the delimiter.
         text = passage.text.replace("</excerpt>", "</ excerpt>")
-        excerpts.append(f'<excerpt n="{index}" source="{_label(passage, index)}">\n{text}\n</excerpt>')
-    rule = _STRICT if mode == "strict" else _SUPPLEMENT
-    return f"{_INTRO}\n{rule}\n\n" + "\n\n".join(excerpts)
+        excerpts.append(f"<excerpt {_attributes(passage, index)}>\n{text}\n</excerpt>")
+    rules = [_STRICT if mode == "strict" else _SUPPLEMENT]
+    if any(getattr(p, "cite", None) for p in passages):
+        rules.append(_CITATION)
+    if any(getattr(p, "priority", None) for p in passages):
+        rules.append(_PRIORITY)
+    return f"{_INTRO}\n" + "\n".join(rules) + "\n\n" + "\n\n".join(excerpts)
