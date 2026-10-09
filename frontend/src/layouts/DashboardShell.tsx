@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -101,6 +101,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const { data: user, error } = useCurrentUser();
 
   // Auth guard: only a confirmed 401 sends teachers back to /login. A network/5xx error
@@ -125,11 +127,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  // Dismissing the drawer (Escape, scrim) hands focus back to the menu button that opened it, so
+  // keyboard users don't drop to the top of the page.
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+    menuButtonRef.current?.focus();
+  }
+
+  // Opening moves focus into the drawer, so the next Tab lands on a nav link instead of the page
+  // behind the scrim.
+  useEffect(() => {
+    if (mobileNavOpen) sidebarRef.current?.querySelector("a")?.focus();
+  }, [mobileNavOpen]);
+
   // Escape closes the open drawer, as with any overlay.
   useEffect(() => {
     if (!mobileNavOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMobileNavOpen(false);
+      if (event.key === "Escape") closeMobileNav();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -153,7 +168,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const sidebar = (
-    <aside className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
+    <aside ref={sidebarRef} className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
       <div className={styles.sidebarHeader}>
         <Wordmark />
       </div>
@@ -187,6 +202,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     <div className={styles.shell}>
       <header className={styles.mobileTopbar}>
         <button
+          ref={menuButtonRef}
           className={styles.menuButton}
           aria-label={mobileNavOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={mobileNavOpen}
@@ -198,7 +214,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Avatar name={user?.name ?? ""} size="sm" />
       </header>
 
-      {mobileNavOpen && <Scrim onClick={() => setMobileNavOpen(false)} />}
+      {mobileNavOpen && <Scrim onClick={closeMobileNav} />}
 
       {sidebar}
 
