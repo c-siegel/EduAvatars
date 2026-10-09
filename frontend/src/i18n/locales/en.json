@@ -7,7 +7,10 @@
     "register": "Sign up",
     "loading": "Loading …",
     "close": "Close",
-    "replyBeingWritten": "Reply being written …"
+    "replyBeingWritten": "Reply being written …",
+    "moreInfo": "More about “{{topic}}”",
+    "advancedSettings": "Advanced settings",
+    "advancedChanged": "changed: {{fields}}"
   },
   "languageSwitcher": {
     "switchTo": "Switch to English"

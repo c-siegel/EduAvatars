@@ -1,0 +1,64 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.heading {
+  margin: 0;
+}
+
+/* 24px target (WCAG 2.2 minimum) around a 15px icon, so it stays unobtrusive next to the label. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.button:hover,
+.buttonOpen {
+  color: var(--text-accent);
+  background: var(--surface-accent-soft);
+}
+
+.panel {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.panel a {
+  color: var(--text-link);
+}
+
+.toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.toggleLabel strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
