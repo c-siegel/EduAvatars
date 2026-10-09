@@ -1,7 +1,9 @@
-// The "Test questions" part of a knowledge base on the Knowledge page: test sets for the quality
-// evaluation (see pages/Dashboard/Evaluation). Questions are written by hand, imported from CSV,
-// or drafted by a judge LLM from the material — drafts only count once the teacher approves them.
-// Only shown when the deployment runs the evaluation service.
+// The "Test questions" tab of the Answer quality page: test sets per knowledge base. Questions are
+// written by hand, imported from CSV, or drafted by a judge LLM — drafts only count once the
+// teacher approves them. Each question has a kind that decides what it measures:
+//   grounded  drafted from a passage of the material: does retrieval find it?
+//   topic     asked about the subject without knowing the material: which gaps does it have?
+//   offtopic  outside the subject: does the avatar admit what it doesn't know?
 
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,12 +15,58 @@ import { Callout } from "@/components/Callout";
 import { HeadingWithInfo } from "@/components/InfoTip";
 import { apiKeysApi } from "@/api/apiKeys";
 import { errorMessage } from "@/api/client";
-import { evaluationApi, type EvaluationStatus, type TestCase, type TestSet } from "@/api/evaluation";
-import type { KnowledgeBase } from "@/api/knowledge";
+import {
+  QUESTION_KINDS,
+  evaluationApi,
+  type EvaluationStatus,
+  type QuestionKind,
+  type TestCase,
+  type TestSet,
+} from "@/api/evaluation";
+import { knowledgeApi, type KnowledgeBase } from "@/api/knowledge";
+import { projectsApi } from "@/api/projects";
 import { isJudgeKey, keyDisplayName, useProviders } from "@/lib/providers";
-import styles from "./Knowledge.module.css";
+// The test set classes live next to the knowledge page's: same look for the same kind of form.
+import styles from "../Knowledge/Knowledge.module.css";
 
-export function TestSets({ kb, status }: { kb: KnowledgeBase; status: EvaluationStatus }) {
+/** The tab: pick a knowledge base, then work on its test sets. */
+export function TestQuestions({ status }: { status: EvaluationStatus }) {
+  const { t } = useTranslation();
+  const kbQuery = useQuery({ queryKey: ["knowledge-bases"], queryFn: knowledgeApi.list });
+  const knowledgeBases = kbQuery.data ?? [];
+  const [kbId, setKbId] = useState("");
+  const kb = knowledgeBases.find((k) => k.id === kbId) ?? knowledgeBases[0];
+
+  if (kbQuery.isLoading) return <p className={styles.hint}>{t("common.loading")}</p>;
+  if (!kb) {
+    return (
+      <div className={styles.card}>
+        <h3>{t("testSets.title")}</h3>
+        <p className={styles.hint}>{t("testSets.noKnowledgeBase")}</p>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.card}>
+      <HeadingWithInfo title={t("testSets.title")} info={t("testSets.hint")} />
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor="test-kb">
+          {t("testSets.knowledgeBase")}
+        </label>
+        <select id="test-kb" className={styles.select} value={kb.id} onChange={(e) => setKbId(e.target.value)}>
+          {knowledgeBases.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <TestSets key={kb.id} kb={kb} status={status} />
+    </div>
+  );
+}
+
+function TestSets({ kb, status }: { kb: KnowledgeBase; status: EvaluationStatus }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const setsQuery = useQuery({ queryKey: ["test-sets", kb.id], queryFn: () => evaluationApi.testSets(kb.id) });
@@ -43,8 +91,7 @@ export function TestSets({ kb, status }: { kb: KnowledgeBase; status: Evaluation
   }
 
   return (
-    <section className={styles.search}>
-      <HeadingWithInfo as="h4" title={t("testSets.title")} info={t("testSets.hint")} />
+    <>
       {testSets.length > 0 && (
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`test-set-${kb.id}`}>
@@ -90,7 +137,7 @@ export function TestSets({ kb, status }: { kb: KnowledgeBase; status: Evaluation
         <Callout variant="danger">{errorMessage(createMutation.error, t("testSets.saveFailed"))}</Callout>
       )}
       {selected && <TestSetDetail key={selected.id} testSet={selected} status={status} />}
-    </section>
+    </>
   );
 }
 
@@ -197,6 +244,36 @@ function TestSetDetail({ testSet, status }: { testSet: TestSet; status: Evaluati
   );
 }
 
+function KindSelect({
+  id,
+  value,
+  onChange,
+  label,
+}: {
+  id: string;
+  value: QuestionKind;
+  onChange: (kind: QuestionKind) => void;
+  label: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <select
+      id={id}
+      className={`${styles.select} ${styles.selectInline}`}
+      value={value}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.value as QuestionKind)}
+    >
+      {QUESTION_KINDS.map((kind) => (
+        <option key={kind} value={kind}>
+          {t(`testSets.kind.${kind}`)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Draft questions with the judge LLM: from the material, or about the subject without it. */
 function DraftQuestions({
   testSet,
   status,
@@ -209,20 +286,50 @@ function DraftQuestions({
   const { t } = useTranslation();
   const specs = useProviders().data ?? [];
   const keysQuery = useQuery({ queryKey: ["api-keys"], queryFn: apiKeysApi.list });
+  const projectsQuery = useQuery({ queryKey: ["projects"], queryFn: projectsApi.list });
   const judgeKeys = (keysQuery.data ?? []).filter(isJudgeKey);
+  const projects = projectsQuery.data ?? [];
+  const [kind, setKind] = useState<QuestionKind>("topic");
   const [keyId, setKeyId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [objectives, setObjectives] = useState("");
   const size = status.maxDraftsPerRequest ?? 10;
   const effectiveKey = keyId || judgeKeys[0]?.id || "";
+  const effectiveProject = projectId || projects[0]?.id || "";
+  const needsProject = kind !== "grounded";
 
   const generateMutation = useMutation({
-    mutationFn: () => evaluationApi.generate(testSet.id, effectiveKey, size),
+    mutationFn: () =>
+      evaluationApi.generate(testSet.id, {
+        judgeApiKeyId: effectiveKey,
+        size,
+        kind,
+        ...(needsProject ? { projectId: effectiveProject } : {}),
+        ...(kind === "topic" && objectives.trim() ? { objectives: objectives.trim() } : {}),
+      }),
     onSuccess: onDrafted,
   });
 
   if (judgeKeys.length === 0) return <p className={styles.hint}>{t("testSets.noJudgeKey")}</p>;
   return (
     <div className={styles.upload}>
+      <h4>{t("testSets.draftTitle")}</h4>
       <div className={styles.searchRow}>
+        <KindSelect id={`draft-kind-${testSet.id}`} value={kind} onChange={setKind} label={t("testSets.draftKind")} />
+        {needsProject && (
+          <select
+            className={`${styles.select} ${styles.selectInline}`}
+            value={effectiveProject}
+            aria-label={t("testSets.draftProject")}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           className={`${styles.select} ${styles.selectInline}`}
           value={effectiveKey}
@@ -235,11 +342,26 @@ function DraftQuestions({
             </option>
           ))}
         </select>
-        <Button size="sm" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+        <Button
+          size="sm"
+          onClick={() => generateMutation.mutate()}
+          disabled={generateMutation.isPending || (needsProject && !effectiveProject)}
+        >
           <Sparkles size={14} /> {generateMutation.isPending ? t("testSets.drafting") : t("testSets.draft", { count: size })}
         </Button>
       </div>
-      <p className={styles.hint}>{t("testSets.draftHint", { count: size })}</p>
+      {kind === "topic" && (
+        <textarea
+          className={styles.textarea}
+          rows={2}
+          maxLength={2000}
+          value={objectives}
+          placeholder={t("testSets.objectivesPlaceholder")}
+          aria-label={t("testSets.objectives")}
+          onChange={(e) => setObjectives(e.target.value)}
+        />
+      )}
+      <p className={styles.hint}>{t(`testSets.kindHint.${kind}`, { count: size })}</p>
       {generateMutation.isError && (
         <Callout variant="danger">{errorMessage(generateMutation.error, t("testSets.draftFailed"))}</Callout>
       )}
@@ -251,8 +373,9 @@ function AddCase({ testSet, onAdded }: { testSet: TestSet; onAdded: () => void }
   const { t } = useTranslation();
   const [question, setQuestion] = useState("");
   const [reference, setReference] = useState("");
+  const [kind, setKind] = useState<QuestionKind>("topic");
   const addMutation = useMutation({
-    mutationFn: () => evaluationApi.addCase(testSet.id, question.trim(), reference.trim() || null),
+    mutationFn: () => evaluationApi.addCase(testSet.id, question.trim(), reference.trim() || null, kind),
     onSuccess: () => {
       setQuestion("");
       setReference("");
@@ -267,6 +390,7 @@ function AddCase({ testSet, onAdded }: { testSet: TestSet; onAdded: () => void }
 
   return (
     <form className={styles.upload} onSubmit={handleSubmit}>
+      <h4>{t("testSets.addTitle")}</h4>
       <textarea
         className={styles.textarea}
         rows={2}
@@ -288,7 +412,8 @@ function AddCase({ testSet, onAdded }: { testSet: TestSet; onAdded: () => void }
       {addMutation.isError && (
         <Callout variant="danger">{errorMessage(addMutation.error, t("testSets.saveFailed"))}</Callout>
       )}
-      <div>
+      <div className={styles.searchRow}>
+        <KindSelect id={`add-kind-${testSet.id}`} value={kind} onChange={setKind} label={t("testSets.draftKind")} />
         <Button type="submit" size="sm" disabled={!question.trim() || addMutation.isPending}>
           {t("testSets.addCase")}
         </Button>
@@ -302,9 +427,10 @@ function CaseRow({ testCase, onChanged }: { testCase: TestCase; onChanged: () =>
   const [editing, setEditing] = useState(false);
   const [question, setQuestion] = useState(testCase.question);
   const [reference, setReference] = useState(testCase.reference ?? "");
+  const [kind, setKind] = useState<QuestionKind>(testCase.kind);
 
   const updateMutation = useMutation({
-    mutationFn: (data: { question?: string; reference?: string | null; approved?: boolean }) =>
+    mutationFn: (data: { question?: string; reference?: string | null; approved?: boolean; kind?: QuestionKind }) =>
       evaluationApi.updateCase(testCase.id, data),
     onSuccess: () => {
       setEditing(false);
@@ -325,6 +451,7 @@ function CaseRow({ testCase, onChanged }: { testCase: TestCase; onChanged: () =>
             aria-label={t("testSets.question")}
             onChange={(e) => setQuestion(e.target.value)}
           />
+          <KindSelect id={`kind-${testCase.id}`} value={kind} onChange={setKind} label={t("testSets.draftKind")} />
         </td>
         <td>
           <textarea
@@ -340,7 +467,7 @@ function CaseRow({ testCase, onChanged }: { testCase: TestCase; onChanged: () =>
           <Button
             size="sm"
             variant="accent"
-            onClick={() => updateMutation.mutate({ question: question.trim(), reference: reference.trim() || null })}
+            onClick={() => updateMutation.mutate({ question: question.trim(), reference: reference.trim() || null, kind })}
             disabled={!question.trim() || updateMutation.isPending}
             aria-label={t("testSets.save")}
             title={t("testSets.save")}
@@ -359,7 +486,8 @@ function CaseRow({ testCase, onChanged }: { testCase: TestCase; onChanged: () =>
     <tr className={testCase.approved ? undefined : styles.draftRow}>
       <td>
         <span className={styles.cellText}>{testCase.question}</span>
-        <span className={styles.hint}>
+        <span className={styles.badges}>
+          <Badge title={t(`testSets.kindHint.${testCase.kind}`, { count: 10 })}>{t(`testSets.kind.${testCase.kind}`)}</Badge>
           <Badge variant={testCase.approved ? "default" : "accent"}>
             {testCase.approved ? t(`testSets.origin.${testCase.origin}`) : t("testSets.draftBadge")}
           </Badge>

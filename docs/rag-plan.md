@@ -941,3 +941,21 @@ Where the code differs from the plan above, and why:
 - **Not verified in the development sandbox:** a real judge model. The end-to-end check used an
   OpenAI-compatible stand-in that answers with schema-valid JSON.
 
+### Question kinds (added after the first Part B version)
+
+Questions drafted from the material's own passages (grounded) can't reveal what the material
+lacks, and they make faithfulness and factual correctness almost certainly high. Test questions
+therefore have a kind (`EvalTestCase.kind`, copied to `EvalRunItem.kind`):
+
+- **grounded** – from passages, with reference answers: tests retrieval.
+- **topic** – from the project's instructions, the knowledge base description, the document
+  titles and optional learning objectives, without any passage text: tests coverage. The new
+  `coverage` check (do the retrieved passages answer it: yes / partly / no) turns the "no"s into a
+  list of gaps in the material. No reference answer, because the judge's own knowledge could
+  contradict the course material, which would make factual correctness measure the wrong thing.
+- **offtopic** – outside the subject: the new `restraint` check (does the avatar admit it or
+  invent?). Mostly meaningful in strict mode.
+
+Run summaries are given overall and per kind. Test questions moved from the Knowledge page to the
+"Test questions" tab of the Answer quality page, next to the runs.
+

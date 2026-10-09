@@ -959,8 +959,8 @@
     "page": "p. {{page}}"
   },
   "testSets": {
-    "title": "Test questions for evaluation",
-    "hint": "Questions with (optional) reference answers. Use them on the Answer quality page to measure how well a project answers from this material.",
+    "title": "Test questions",
+    "hint": "Questions with (optional) reference answers for the runs. A question's kind decides what it measures: questions from the material test retrieval, questions about the subject reveal gaps in the material, off-topic questions test whether the avatar admits what it doesn't know.",
     "choose": "Test set",
     "option": "{{name}} – {{count}} questions, {{approved}} approved",
     "name": "Test set name",
@@ -981,8 +981,6 @@
     "draft_one": "Draft {{count}} question",
     "draft_other": "Draft {{count}} questions",
     "drafting": "Drafting …",
-    "draftHint_one": "The chosen LLM writes a question with an answer from a random passage of your material. This costs about {{count}} call on your key. Drafts only count once you approve them.",
-    "draftHint_other": "The chosen LLM writes questions with answers from random passages of your material. This costs about {{count}} calls on your key. Drafts only count once you approve them.",
     "draftFailed": "Drafting failed.",
     "draftsPending_one": "{{count}} draft is waiting for your review.",
     "draftsPending_other": "{{count}} drafts are waiting for your review.",
@@ -1004,7 +1002,25 @@
     "edit": "Edit",
     "save": "Save",
     "cancel": "Cancel",
-    "removeCase": "Delete question"
+    "removeCase": "Delete question",
+    "noKnowledgeBase": "First create a knowledge base on the Knowledge page.",
+    "knowledgeBase": "Knowledge base",
+    "draftTitle": "Have questions drafted",
+    "draftKind": "Kind of question",
+    "draftProject": "Project the questions should fit",
+    "objectives": "Learning objectives (optional)",
+    "objectivesPlaceholder": "Learning objectives or grade level (optional), e.g. “Grade 9: photosynthesis and cell respiration”",
+    "addTitle": "Add a question yourself",
+    "kind": {
+      "grounded": "From the material",
+      "topic": "About the subject",
+      "offtopic": "Off-topic"
+    },
+    "kindHint": {
+      "grounded": "From random passages of your material, the LLM writes questions with answers. This tests whether retrieval finds the passage – not what the material is missing. About {{count}} calls on your key.",
+      "topic": "The LLM only knows the project's instructions and the document titles, not the content, and asks what students would ask. That's how gaps in the material show up. No reference answer. One call on your key.",
+      "offtopic": "Questions the material certainly doesn't cover. Tests whether the avatar admits that instead of making things up. No reference answer. One call on your key."
+    }
   },
   "evaluation": {
     "title": "Answer quality",
@@ -1013,7 +1029,7 @@
     "unreachable": "The evaluation service can't be reached right now. Runs will fail until it's back.",
     "judgeNote": "LLM judges are noisy and less reliable outside English. Use the scores to compare runs (e.g. before and after a change), not as grades.",
     "startTitle": "Start a new run",
-    "noTestSets": "First create a test set with questions on the Knowledge page.",
+    "noTestSets": "First create a test set with questions on the “Test questions” tab.",
     "project": "Project",
     "testSet": "Test set",
     "testSetOption": "{{name}} ({{count}} approved questions)",
@@ -1026,21 +1042,27 @@
       "answer_relevancy": "Answer relevancy",
       "context_precision": "Context precision",
       "context_recall": "Context recall",
-      "factual_correctness": "Factual correctness"
+      "factual_correctness": "Factual correctness",
+      "coverage": "Coverage",
+      "restraint": "Restraint"
     },
     "metricShort": {
       "faithfulness": "Faithful",
       "answer_relevancy": "Relevant",
       "context_precision": "Precision",
       "context_recall": "Recall",
-      "factual_correctness": "Facts"
+      "factual_correctness": "Facts",
+      "coverage": "Coverage",
+      "restraint": "Restraint"
     },
     "metricHint": {
       "faithfulness": "Is every claim in the answer backed by the retrieved passages? Catches made-up content.",
       "answer_relevancy": "Does the answer address the question?",
       "context_precision": "Are the retrieved passages relevant, with the relevant ones first?",
       "context_recall": "Did retrieval find what the reference answer needs? Only with a reference answer.",
-      "factual_correctness": "Does the answer agree with the reference answer? Only with a reference answer."
+      "factual_correctness": "Does the answer agree with the reference answer? Only with a reference answer.",
+      "coverage": "Do the retrieved passages suffice to answer the question? Only for questions about the subject.",
+      "restraint": "Does the avatar admit what isn't in the material instead of making things up? Only for off-topic questions."
     },
     "tooMany": "The test set has {{count}} approved questions; at most {{max}} are allowed per run.",
     "noApproved": "The test set has no approved questions yet.",
@@ -1099,8 +1121,22 @@
       "NO_REFERENCE": "not scored: no reference answer",
       "NO_EMBEDDING": "not scored: the embedding model isn't available",
       "NOT_SCORABLE": "can't be scored (e.g. an answer without a factual claim)",
-      "JUDGE_FAILED": "the judge LLM didn't answer"
-    }
+      "JUDGE_FAILED": "the judge LLM didn't answer",
+      "NOT_APPLICABLE": "doesn't apply to this kind of question"
+    },
+    "tabs": {
+      "questions": "Test questions",
+      "runs": "Runs"
+    },
+    "toQuestions": "Go to test questions",
+    "kind": "Kind of question",
+    "byKindTitle": "Results by kind of question",
+    "gapsTitle_one": "Gaps in the material: {{count}} question can't be answered fully",
+    "gapsTitle_other": "Gaps in the material: {{count}} questions can't be answered fully",
+    "gapsHint": "For these questions about the subject, the retrieved passages didn't contain enough. Add to the material, or check whether the question belongs.",
+    "noGaps": "The material covered all the questions about the subject.",
+    "gapNone": "not covered",
+    "gapPartly": "partly"
   },
   "errors": {
     "RATE_LIMIT_EVALUATION": "Too many evaluation requests. Please wait a few minutes.",
@@ -1124,6 +1160,7 @@
     "EVALUATION_LLM_FAILED": "The project's LLM didn't answer.",
     "EVALUATION_INTERRUPTED": "The run was interrupted by a server restart. Start it again.",
     "EVALUATION_KEY_DELETED": "One of the run's keys was deleted, so the run was stopped.",
+    "EVALUATION_PROJECT_REQUIRED": "Choose a project the questions should fit.",
     "EMBEDDING_KEY_MISSING_MODEL": "This embedding key has no model.",
     "KNOWLEDGE_DISABLED": "Knowledge bases aren't available on this instance.",
     "KNOWLEDGE_SERVICE_UNAVAILABLE": "The knowledge service isn't responding. Please try again later.",

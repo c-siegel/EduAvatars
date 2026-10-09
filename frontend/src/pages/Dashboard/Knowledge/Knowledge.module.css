@@ -368,3 +368,10 @@
   padding: var(--space-2) var(--space-3);
   font-size: 0.875rem;
 }
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}

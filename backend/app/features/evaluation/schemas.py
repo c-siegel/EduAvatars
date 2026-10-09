@@ -12,8 +12,17 @@ from pydantic import Field
 
 from app.core.schema import CamelModel
 
-MetricName = Literal["faithfulness", "answer_relevancy", "context_precision", "context_recall", "factual_correctness"]
+MetricName = Literal[
+    "faithfulness",
+    "answer_relevancy",
+    "context_precision",
+    "context_recall",
+    "factual_correctness",
+    "coverage",
+    "restraint",
+]
 Language = Literal["de", "en"]
+QuestionKind = Literal["grounded", "topic", "offtopic"]
 
 
 class EvaluationStatusOut(CamelModel):
@@ -51,12 +60,16 @@ class TestSetOut(CamelModel):
 class TestCaseCreate(CamelModel):
     question: str = Field(max_length=4000)
     reference: str | None = Field(default=None, max_length=8000)
+    # A question the teacher writes is, unless said otherwise, one a student might ask about the
+    # subject — which is what "topic" tests.
+    kind: QuestionKind = "topic"
 
 
 class TestCaseUpdate(CamelModel):
     question: str | None = Field(default=None, max_length=4000)
     reference: str | None = Field(default=None, max_length=8000)
     approved: bool | None = None
+    kind: QuestionKind | None = None
 
 
 class TestCaseOut(CamelModel):
@@ -64,6 +77,7 @@ class TestCaseOut(CamelModel):
     test_set_id: str
     question: str
     reference: str | None
+    kind: str
     origin: str
     approved: bool
     created_at: datetime
@@ -77,6 +91,11 @@ class CsvImportOut(CamelModel):
 class GenerateIn(CamelModel):
     judge_api_key_id: str
     size: int = Field(default=10, ge=1, le=10)
+    kind: QuestionKind = "grounded"
+    # topic/offtopic: the project whose instructions the questions are about.
+    project_id: str | None = None
+    # topic: what the teacher wants students to learn, as extra context for the questions.
+    objectives: str | None = Field(default=None, max_length=2000)
 
 
 class RunCreate(CamelModel):
@@ -118,8 +137,16 @@ class LatencyOut(CamelModel):
     p90: float | None
 
 
+class KindSummaryOut(CamelModel):
+    count: int
+    metrics: dict[str, MetricSummaryOut]
+
+
 class RunSummaryOut(CamelModel):
     metrics: dict[str, MetricSummaryOut]
+    # The same per question kind: "faithfulness 0.95 on material questions" and "coverage 0.6 on
+    # topic questions" tell different things and shouldn't be averaged together.
+    by_kind: dict[str, KindSummaryOut] = {}
     retrieval_ms: LatencyOut
     llm_ms: LatencyOut
 
@@ -157,6 +184,7 @@ class RunItemOut(CamelModel):
     position: int
     question: str
     reference: str | None
+    kind: str
     answer: str | None
     contexts: list[RunContextOut]
     scores: dict[str, MetricScoreOut]

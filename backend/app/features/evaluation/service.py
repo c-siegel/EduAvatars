@@ -39,14 +39,23 @@ from app.features.api_keys.resolve import effective_api_base, get_owned_key_of_t
 from app.features.evaluation import cleanup, eval_client
 from app.features.evaluation.models import EvalRun, EvalRunItem, EvalTestCase, EvalTestSet
 from app.features.knowledge import rag_client
-from app.features.knowledge.models import KnowledgeBase
+from app.features.knowledge.models import KnowledgeBase, KnowledgeDocument
 from app.features.knowledge.service import KnowledgeServiceUnavailable
 from app.features.projects.models import Project
 from app.features.site_settings.service import get_or_create_site_settings
 
 logger = logging.getLogger(__name__)
 
-METRICS = ("faithfulness", "answer_relevancy", "context_precision", "context_recall", "factual_correctness")
+METRICS = (
+    "faithfulness",
+    "answer_relevancy",
+    "context_precision",
+    "context_recall",
+    "factual_correctness",
+    "coverage",
+    "restraint",
+)
+KINDS = ("grounded", "topic", "offtopic")
 # Judge calls per question and metric with Ragas 0.4 (counted in rag-eval's tests); context
 # precision makes one per retrieved passage, so it's multiplied by the project's top_k. Shown as
 # the cost estimate before a run starts.
@@ -56,6 +65,9 @@ JUDGE_CALLS_PER_METRIC = {
     "context_precision": 1,
     "context_recall": 1,
     "factual_correctness": 4,
+    # One call, and only for topic / offtopic questions respectively.
+    "coverage": 1,
+    "restraint": 1,
 }
 LANGUAGES = ("de", "en")
 ACTIVE_STATUSES = ("queued", "answering", "scoring")
@@ -218,7 +230,9 @@ def get_owned_case(session: Session, user_id: str, case_id: str) -> EvalTestCase
     return case
 
 
-def add_case(session: Session, test_set: EvalTestSet, question: str, reference: str | None) -> EvalTestCase:
+def add_case(
+    session: Session, test_set: EvalTestSet, question: str, reference: str | None, kind: str = "topic"
+) -> EvalTestCase:
     if _case_count(session, test_set.id) >= MAX_CASES_PER_TEST_SET:
         raise EvaluationError(ErrorCode.EVALUATION_TEST_SET_FULL)
     question_text = _clean_text(question, MAX_QUESTION_CHARS)
@@ -229,6 +243,7 @@ def add_case(session: Session, test_set: EvalTestSet, question: str, reference: 
         user_id=test_set.user_id,
         question=question_text,
         reference=_clean_text(reference, MAX_REFERENCE_CHARS),
+        kind=kind if kind in KINDS else "topic",
     )
     session.add(case)
     session.commit()
@@ -246,6 +261,8 @@ def update_case(session: Session, case: EvalTestCase, changes: dict) -> EvalTest
         case.reference = _clean_text(changes["reference"], MAX_REFERENCE_CHARS)
     if changes.get("approved") is not None:
         case.approved = bool(changes["approved"])
+    if changes.get("kind") in KINDS:
+        case.kind = changes["kind"]
     session.add(case)
     session.commit()
     session.refresh(case)
@@ -269,6 +286,18 @@ def delete_unapproved(session: Session, test_set: EvalTestSet) -> int:
 # --- CSV import/export -----------------------------------------------------------------------
 
 
+# What the "kind" column of a CSV may say (the export writes the English names).
+_CSV_KINDS = {
+    "grounded": "grounded",
+    "material": "grounded",
+    "topic": "topic",
+    "thema": "topic",
+    "offtopic": "offtopic",
+    "ausserhalb": "offtopic",
+    "außerhalb": "offtopic",
+}
+
+
 def _decode_csv(data: bytes) -> str:
     # Excel saves "CSV UTF-8" with a byte-order mark and plain "CSV" in Windows-1252.
     try:
@@ -285,7 +314,8 @@ def _strip_csv_guard(value: str) -> str:
 
 
 def import_csv(session: Session, test_set: EvalTestSet, data: bytes) -> tuple[int, int]:
-    """Add the rows of a `question,reference` CSV; returns (imported, skipped)."""
+    """Add the rows of a `question,reference,kind` CSV (the last two optional); returns
+    (imported, skipped)."""
     if len(data) > MAX_CSV_BYTES or b"\x00" in data:
         raise EvaluationError(ErrorCode.EVALUATION_CSV_INVALID)
     text = _decode_csv(data)
@@ -300,8 +330,10 @@ def import_csv(session: Session, test_set: EvalTestSet, data: bytes) -> tuple[in
         raise EvaluationError(ErrorCode.EVALUATION_CSV_INVALID) from exc
     question_names = {"question", "frage"}
     reference_names = {"reference", "referenz", "answer", "antwort", "reference_answer", "referenzantwort"}
+    kind_names = {"kind", "art", "fragenart"}
     question_col = next((i for i, name in enumerate(header) if name in question_names), None)
     reference_col = next((i for i, name in enumerate(header) if name in reference_names), None)
+    kind_col = next((i for i, name in enumerate(header) if name in kind_names), None)
     if question_col is None:
         raise EvaluationError(ErrorCode.EVALUATION_CSV_INVALID)
 
@@ -313,6 +345,7 @@ def import_csv(session: Session, test_set: EvalTestSet, data: bytes) -> tuple[in
             reference = (
                 _strip_csv_guard(row[reference_col]).strip() if reference_col is not None and reference_col < len(row) else ""
             )
+            kind = _CSV_KINDS.get(row[kind_col].strip().lower(), "topic") if kind_col is not None and kind_col < len(row) else "topic"
             if not question or len(question) > MAX_QUESTION_CHARS or len(reference) > MAX_REFERENCE_CHARS or imported >= room:
                 skipped += 1
                 continue
@@ -322,6 +355,7 @@ def import_csv(session: Session, test_set: EvalTestSet, data: bytes) -> tuple[in
                     user_id=test_set.user_id,
                     question=question,
                     reference=reference or None,
+                    kind=kind,
                     origin="csv",
                 )
             )
@@ -336,10 +370,10 @@ def import_csv(session: Session, test_set: EvalTestSet, data: bytes) -> tuple[in
 def export_csv(session: Session, test_set: EvalTestSet) -> str:
     out = io.StringIO()
     writer = csv.writer(out)
-    writer.writerow(["question", "reference"])
+    writer.writerow(["question", "reference", "kind"])
     for case in list_cases(session, test_set):
         if case.approved:
-            writer.writerow([_csv_safe(case.question), _csv_safe(case.reference or "")])
+            writer.writerow([_csv_safe(case.question), _csv_safe(case.reference or ""), case.kind])
     return out.getvalue()
 
 
@@ -367,26 +401,40 @@ def judge_for(session: Session, user_id: str, key_id: str | None) -> Judge:
 # --- Drafting questions ----------------------------------------------------------------------
 
 
-def generate_cases(session: Session, test_set: EvalTestSet, judge_key_id: str, size: int) -> list[EvalTestCase]:
-    """Draft up to `size` questions from a random sample of the knowledge base's passages.
-    They're saved unapproved; the teacher reads, edits and approves them."""
+def generate_cases(
+    session: Session,
+    test_set: EvalTestSet,
+    judge_key_id: str,
+    size: int,
+    *,
+    kind: str = "grounded",
+    project: Project | None = None,
+    objectives: str | None = None,
+) -> list[EvalTestCase]:
+    """Draft up to `size` questions. They're saved unapproved; the teacher reads, edits and
+    approves them.
+
+    grounded: from a random sample of the knowledge base's passages, with reference answers.
+    topic / offtopic: from the project's instructions and the document titles only — the judge
+    doesn't see the material, so questions it doesn't cover (topic) or that it can't cover
+    (offtopic) come up. They have no reference answer.
+    """
+    if kind not in KINDS:
+        kind = "grounded"
+    if kind != "grounded" and project is None:
+        raise EvaluationError(ErrorCode.EVALUATION_PROJECT_REQUIRED)
     with _drafting_lock:
         if test_set.user_id in _drafting_users:
             raise EvaluationError(ErrorCode.EVALUATION_GENERATION_ACTIVE, status_code=409)
         _drafting_users.add(test_set.user_id)
     try:
-        return _generate_cases(session, test_set, judge_key_id, size)
+        return _generate_cases(session, test_set, judge_key_id, size, kind, project, objectives)
     finally:
         with _drafting_lock:
             _drafting_users.discard(test_set.user_id)
 
 
-def _generate_cases(session: Session, test_set: EvalTestSet, judge_key_id: str, size: int) -> list[EvalTestCase]:
-    room = MAX_CASES_PER_TEST_SET - _case_count(session, test_set.id)
-    if room <= 0:
-        raise EvaluationError(ErrorCode.EVALUATION_TEST_SET_FULL)
-    size = max(1, min(size, MAX_DRAFTS_PER_REQUEST, room))
-    judge = judge_for(session, test_set.user_id, judge_key_id)
+def _grounded_request(session: Session, test_set: EvalTestSet, size: int) -> dict:
     try:
         chunks = rag_client.sample_chunks(test_set.knowledge_base_id, _CHUNK_SAMPLE)
     except (rag_client.RagUnavailable, rag_client.RagRejected) as exc:
@@ -403,15 +451,61 @@ def _generate_cases(session: Session, test_set: EvalTestSet, judge_key_id: str, 
     chunks = [c for c in chunks if c.get("text", "").strip()]
     if not chunks:
         raise EvaluationError(ErrorCode.EVALUATION_NO_PASSAGES)
-    body = {
+    return {
         "chunks": [
             {"chunk_id": c["chunk_id"], "text": c["text"][:20000], "heading": c.get("heading"), "page": c.get("page")}
             for c in chunks
-        ],
-        "size": size,
-        "judge": judge.config,
-        "language": test_set.language,
+        ]
     }
+
+
+def _topic_request(session: Session, test_set: EvalTestSet, kind: str, project: Project, objectives: str | None) -> dict:
+    """What the judge may know about the subject: never the material's content, only how the
+    teacher described it and what its documents are called."""
+    kb = session.get(KnowledgeBase, test_set.knowledge_base_id)
+    filenames = session.exec(
+        select(KnowledgeDocument.filename)
+        .where(KnowledgeDocument.knowledge_base_id == test_set.knowledge_base_id)
+        .order_by(KnowledgeDocument.created_at)
+        .limit(50)
+    ).all()
+    existing = session.exec(
+        select(EvalTestCase.question)
+        .where(EvalTestCase.test_set_id == test_set.id, EvalTestCase.kind == kind)
+        .order_by(EvalTestCase.created_at.desc())
+        .limit(40)
+    ).all()
+    return {
+        "topic": {
+            "preprompt": (project.preprompt or "")[:8000],
+            "project_title": project.title[:200],
+            "description": ((kb.description or "") if kb else "")[:2000],
+            "document_titles": [name.rsplit(".", 1)[0] for name in filenames],
+            "objectives": (objectives or "").strip()[:2000],
+            "existing_questions": list(existing),
+        }
+    }
+
+
+def _generate_cases(
+    session: Session,
+    test_set: EvalTestSet,
+    judge_key_id: str,
+    size: int,
+    kind: str,
+    project: Project | None,
+    objectives: str | None,
+) -> list[EvalTestCase]:
+    room = MAX_CASES_PER_TEST_SET - _case_count(session, test_set.id)
+    if room <= 0:
+        raise EvaluationError(ErrorCode.EVALUATION_TEST_SET_FULL)
+    size = max(1, min(size, MAX_DRAFTS_PER_REQUEST, room))
+    judge = judge_for(session, test_set.user_id, judge_key_id)
+    if kind == "grounded":
+        material = _grounded_request(session, test_set, size)
+    else:
+        material = _topic_request(session, test_set, kind, project, objectives)
+    body = {"kind": kind, "size": size, "judge": judge.config, "language": test_set.language, **material}
     try:
         drafts = eval_client.generate_testset(body)
     except eval_client.EvalRejected as exc:
@@ -427,10 +521,12 @@ def _generate_cases(session: Session, test_set: EvalTestSet, judge_key_id: str, 
             test_set_id=test_set.id,
             user_id=test_set.user_id,
             question=question,
-            reference=_clean_text(draft.get("reference"), MAX_REFERENCE_CHARS),
+            # Only grounded drafts have one; the judge's own knowledge is no yardstick for the rest.
+            reference=_clean_text(draft.get("reference"), MAX_REFERENCE_CHARS) if kind == "grounded" else None,
+            kind=kind,
             origin="generated",
             approved=False,
-            source_chunk_id=draft.get("chunk_id"),
+            source_chunk_id=draft.get("chunk_id") if kind == "grounded" else None,
         )
         session.add(case)
         cases.append(case)
@@ -508,7 +604,12 @@ def start_run(
         for position, case in enumerate(cases):
             session.add(
                 EvalRunItem(
-                    run_id=run.id, test_case_id=case.id, position=position, question=case.question, reference=case.reference
+                    run_id=run.id,
+                    test_case_id=case.id,
+                    position=position,
+                    question=case.question,
+                    reference=case.reference,
+                    kind=case.kind,
                 )
             )
         session.commit()
@@ -576,8 +677,7 @@ def _percentile(values: list[float], fraction: float) -> float | None:
     return round(ordered[index], 1)
 
 
-def summarize(metrics: list[str], items: list[EvalRunItem]) -> dict:
-    """Mean and median per metric over the questions it applied to, plus latency percentiles."""
+def _metric_summary(metrics: list[str], items: list[EvalRunItem]) -> dict:
     per_metric = {}
     for metric in metrics:
         values = []
@@ -590,10 +690,22 @@ def summarize(metrics: list[str], items: list[EvalRunItem]) -> dict:
             "median": round(statistics.median(values), 4) if values else None,
             "count": len(values),
         }
+    return per_metric
+
+
+def summarize(metrics: list[str], items: list[EvalRunItem]) -> dict:
+    """Mean and median per metric over the questions it applied to — overall and per question
+    kind — plus latency percentiles."""
     retrieval = [i.retrieval_ms for i in items if i.retrieval_ms is not None]
     llm_times = [i.llm_ms for i in items if i.llm_ms is not None]
+    by_kind = {}
+    for kind in KINDS:
+        of_kind = [i for i in items if i.kind == kind]
+        if of_kind:
+            by_kind[kind] = {"count": len(of_kind), "metrics": _metric_summary(metrics, of_kind)}
     return {
-        "metrics": per_metric,
+        "metrics": _metric_summary(metrics, items),
+        "by_kind": by_kind,
         "retrieval_ms": {"p50": _percentile(retrieval, 0.5), "p90": _percentile(retrieval, 0.9)},
         "llm_ms": {"p50": _percentile(llm_times, 0.5), "p90": _percentile(llm_times, 0.9)},
     }
@@ -605,6 +717,7 @@ def item_out(item: EvalRunItem) -> dict:
         "position": item.position,
         "question": item.question,
         "reference": item.reference,
+        "kind": item.kind,
         "answer": item.answer,
         "contexts": json.loads(item.contexts_json or "[]"),
         "scores": json.loads(item.scores_json) if item.scores_json else {},
@@ -618,7 +731,7 @@ def export_run_csv(run: EvalRun, items: list[EvalRunItem]) -> str:
     out = io.StringIO()
     writer = csv.writer(out)
     metrics = run.metrics
-    writer.writerow(["question", "reference", "answer", *metrics, "retrieval_ms", "llm_ms", "sources", "error"])
+    writer.writerow(["question", "kind", "reference", "answer", *metrics, "retrieval_ms", "llm_ms", "sources", "error"])
     for item in items:
         data = item_out(item)
         sources = "; ".join(
@@ -631,6 +744,7 @@ def export_run_csv(run: EvalRun, items: list[EvalRunItem]) -> str:
         writer.writerow(
             [
                 _csv_safe(item.question),
+                item.kind,
                 _csv_safe(item.reference or ""),
                 _csv_safe(item.answer or ""),
                 *scores,

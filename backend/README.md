@@ -275,15 +275,15 @@ project or the account.
 | `POST /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | Create one (`name`, `language`: `de`/`en`). |
 | `GET /test-sets` | Login required | All the user's test sets (for the run form). |
 | `PATCH /test-sets/{id}`, `DELETE /test-sets/{id}` | Login required, own resource | Rename / delete it with its questions and every run that used it. |
-| `GET /test-sets/{id}/cases`, `POST /test-sets/{id}/cases` | Login required, own resource | List / add questions with optional reference answers (at most 500 per set). |
-| `POST /test-sets/{id}/cases/import` | Login required, own resource | Add questions from a CSV (`question`/`frage`, optional `reference`/`referenz`; `,` or `;`; at most 1 MB). |
+| `GET /test-sets/{id}/cases`, `POST /test-sets/{id}/cases` | Login required, own resource | List / add questions with optional reference answers and a `kind` (`grounded`, `topic` (default) or `offtopic`; at most 500 per set). |
+| `POST /test-sets/{id}/cases/import` | Login required, own resource | Add questions from a CSV (`question`/`frage`, optional `reference`/`referenz` and `kind`/`art`; `,` or `;`; at most 1 MB). |
 | `GET /test-sets/{id}/cases/export` | Login required, own resource | The approved questions as CSV (formula-guarded for spreadsheet apps). |
-| `POST /test-sets/{id}/generate` | Login required, own resource | Draft up to 10 questions with reference answers from a sample of the material, with a judge key. Drafts start unapproved. |
+| `POST /test-sets/{id}/generate` | Login required, own resource | Draft up to 10 questions with a judge key (`kind`): `grounded` from a sample of the material, with reference answers; `topic` / `offtopic` (need `projectId`, optional `objectives`) from the project's instructions, the knowledge base's description and the document titles only — the judge never sees passage text — without reference answers. Drafts start unapproved. |
 | `DELETE /test-sets/{id}/drafts` | Login required, own resource | Discard the unapproved drafts. |
 | `PATCH /test-cases/{id}`, `DELETE /test-cases/{id}` | Login required, own resource | Edit or approve / delete one question. |
 | `GET /evaluation/runs` | Login required | The user's runs (optionally `?projectId=`). |
 | `POST /evaluation/runs` | Login required, own resources | Start a run (`projectId`, `testSetId`, `judgeApiKeyId`, `metrics`) in the background. One active run per user; capped by the admin's questions-per-run setting. |
-| `GET /evaluation/runs/{id}` | Login required, own resource | Progress, configuration snapshot, summary and per-question results. |
+| `GET /evaluation/runs/{id}` | Login required, own resource | Progress, configuration snapshot, summary (overall and per question kind) and per-question results. |
 | `POST /evaluation/runs/{id}/cancel` | Login required, own resource | Stop after the current question or batch; what's scored is kept. |
 | `DELETE /evaluation/runs/{id}` | Login required, own resource | Delete it. |
 | `GET /evaluation/runs/{id}/export?format=csv\|json` | Login required, own resource | Download the results. |

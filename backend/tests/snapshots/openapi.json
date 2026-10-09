@@ -999,6 +999,39 @@
             "title": "Judgeapikeyid",
             "type": "string"
           },
+          "kind": {
+            "default": "grounded",
+            "enum": [
+              "grounded",
+              "topic",
+              "offtopic"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "objectives": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objectives"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
           "size": {
             "default": 10,
             "maximum": 10.0,
@@ -1024,6 +1057,27 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KindSummaryOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "title": "Metrics",
+            "type": "object"
+          }
+        },
+        "required": [
+          "count",
+          "metrics"
+        ],
+        "title": "KindSummaryOut",
         "type": "object"
       },
       "KnowledgeBaseCreate": {
@@ -3163,7 +3217,9 @@
                 "answer_relevancy",
                 "context_precision",
                 "context_recall",
-                "factual_correctness"
+                "factual_correctness",
+                "coverage",
+                "restraint"
               ],
               "type": "string"
             },
@@ -3329,6 +3385,10 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "llmMs": {
             "anyOf": [
               {
@@ -3383,6 +3443,7 @@
           "position",
           "question",
           "reference",
+          "kind",
           "answer",
           "contexts",
           "scores",
@@ -3516,6 +3577,14 @@
       },
       "RunSummaryOut": {
         "properties": {
+          "byKind": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/KindSummaryOut"
+            },
+            "default": {},
+            "title": "Bykind",
+            "type": "object"
+          },
           "llmMs": {
             "$ref": "#/components/schemas/LatencyOut"
           },
@@ -3965,6 +4034,16 @@
       },
       "TestCaseCreate": {
         "properties": {
+          "kind": {
+            "default": "topic",
+            "enum": [
+              "grounded",
+              "topic",
+              "offtopic"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "question": {
             "maxLength": 4000,
             "title": "Question",
@@ -4004,6 +4083,10 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "origin": {
             "title": "Origin",
             "type": "string"
@@ -4033,6 +4116,7 @@
           "testSetId",
           "question",
           "reference",
+          "kind",
           "origin",
           "approved",
           "createdAt"
@@ -4052,6 +4136,22 @@
               }
             ],
             "title": "Approved"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "grounded",
+                  "topic",
+                  "offtopic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
           },
           "question": {
             "anyOf": [
