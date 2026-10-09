@@ -1717,6 +1717,228 @@
         "title": "ProjectUpdate",
         "type": "object"
       },
+      "PronunciationEntryCreate": {
+        "properties": {
+          "caseSensitive": {
+            "default": false,
+            "title": "Casesensitive",
+            "type": "boolean"
+          },
+          "language": {
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "spellOut": {
+            "default": false,
+            "title": "Spellout",
+            "type": "boolean"
+          },
+          "spoken": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Spoken",
+            "type": "string"
+          },
+          "term": {
+            "maxLength": 200,
+            "title": "Term",
+            "type": "string"
+          },
+          "wholeWord": {
+            "default": true,
+            "title": "Wholeword",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "term",
+          "language"
+        ],
+        "title": "PronunciationEntryCreate",
+        "type": "object"
+      },
+      "PronunciationEntryOut": {
+        "properties": {
+          "caseSensitive": {
+            "title": "Casesensitive",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "sourcePack": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcepack"
+          },
+          "spoken": {
+            "title": "Spoken",
+            "type": "string"
+          },
+          "term": {
+            "title": "Term",
+            "type": "string"
+          },
+          "wholeWord": {
+            "title": "Wholeword",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "language",
+          "term",
+          "spoken",
+          "wholeWord",
+          "caseSensitive",
+          "sourcePack",
+          "createdAt"
+        ],
+        "title": "PronunciationEntryOut",
+        "type": "object"
+      },
+      "PronunciationEntryUpdate": {
+        "properties": {
+          "caseSensitive": {
+            "default": false,
+            "title": "Casesensitive",
+            "type": "boolean"
+          },
+          "spellOut": {
+            "default": false,
+            "title": "Spellout",
+            "type": "boolean"
+          },
+          "spoken": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Spoken",
+            "type": "string"
+          },
+          "term": {
+            "maxLength": 200,
+            "title": "Term",
+            "type": "string"
+          },
+          "wholeWord": {
+            "default": true,
+            "title": "Wholeword",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "term"
+        ],
+        "title": "PronunciationEntryUpdate",
+        "type": "object"
+      },
+      "PronunciationImportIn": {
+        "properties": {
+          "dryRun": {
+            "default": false,
+            "title": "Dryrun",
+            "type": "boolean"
+          },
+          "language": {
+            "enum": [
+              "de",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 200000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language",
+          "text"
+        ],
+        "title": "PronunciationImportIn",
+        "type": "object"
+      },
+      "PronunciationImportLineError": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "line",
+          "content",
+          "error"
+        ],
+        "title": "PronunciationImportLineError",
+        "type": "object"
+      },
+      "PronunciationImportResult": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/PronunciationImportLineError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "updated",
+          "skipped",
+          "errors"
+        ],
+        "title": "PronunciationImportResult",
+        "type": "object"
+      },
       "ProviderModelOut": {
         "properties": {
           "label": {
@@ -4523,6 +4745,242 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/pronunciation/entries": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "de",
+                    "en"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PronunciationEntryOut"
+                  },
+                  "title": "Response List Entries Api V1 Pronunciation Entries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronunciationEntryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PronunciationEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/pronunciation/entries/{entry_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronunciationEntryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PronunciationEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/pronunciation/export": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": true,
+            "schema": {
+              "enum": [
+                "de",
+                "en"
+              ],
+              "title": "Language",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/pronunciation/import": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronunciationImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PronunciationImportResult"
                 }
               }
             },

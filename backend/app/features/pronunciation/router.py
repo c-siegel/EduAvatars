@@ -1,0 +1,113 @@
+"""
+Pronunciation Word List Routes
+
+Lets a teacher maintain their own list of terms the avatar should pronounce differently ("pH" ->
+"p H"), per spoken language, and import/export it as text. The list applies to the speech of
+every one of their projects in that language (see service.py::matcher_for); the logic lives in
+service.py.
+"""
+
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
+from sqlmodel import Session
+
+from app.core.deps import get_current_user, get_session
+from app.features.pronunciation import service
+from app.features.pronunciation.models import PronunciationEntry
+from app.features.pronunciation.schemas import (
+    Language,
+    PronunciationEntryCreate,
+    PronunciationEntryOut,
+    PronunciationEntryUpdate,
+    PronunciationImportIn,
+    PronunciationImportResult,
+)
+from app.features.users.models import User
+
+router = APIRouter(prefix="/pronunciation", tags=["pronunciation"])
+
+
+def _to_out(entry: PronunciationEntry) -> PronunciationEntryOut:
+    return PronunciationEntryOut(
+        id=entry.id,
+        language=entry.language,
+        term=entry.term,
+        spoken=entry.spoken,
+        whole_word=entry.whole_word,
+        case_sensitive=entry.case_sensitive,
+        source_pack=entry.source_pack,
+        created_at=entry.created_at,
+    )
+
+
+@router.get("/entries", response_model=list[PronunciationEntryOut])
+def list_entries(
+    language: Language | None = None,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """List the current user's word list, optionally for one language."""
+    return [_to_out(e) for e in service.list_entries(session, current_user.id, language)]
+
+
+@router.post("/entries", response_model=PronunciationEntryOut, status_code=201)
+def create_entry(
+    data: PronunciationEntryCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Add a term to the current user's word list."""
+    return _to_out(service.create_entry(session, current_user.id, data))
+
+
+@router.put("/entries/{entry_id}", response_model=PronunciationEntryOut)
+def update_entry(
+    entry_id: str,
+    data: PronunciationEntryUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Change a term, its spoken form or its options (the language stays)."""
+    entry = service.get_owned_entry(session, current_user.id, entry_id)
+    return _to_out(service.update_entry(session, entry, data))
+
+
+@router.delete("/entries/{entry_id}", status_code=204)
+def delete_entry(
+    entry_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Remove a term from the word list."""
+    service.delete_entry(session, service.get_owned_entry(session, current_user.id, entry_id))
+
+
+@router.post("/import", response_model=PronunciationImportResult)
+def import_entries(
+    data: PronunciationImportIn,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Add terms from pasted text or a .txt/.csv file — one "term = spoken" or "term;spoken" per line.
+
+    With dryRun nothing is saved; the result says what would be added, updated and skipped.
+    """
+    return service.import_text(
+        session, current_user.id, data.language, data.text, overwrite=data.overwrite, dry_run=data.dry_run
+    )
+
+
+@router.get("/export")
+def export_entries(
+    language: Language = Query(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Download the word list for one language as CSV (the same format the import reads)."""
+    # A BOM so Excel opens the umlauts and symbols as UTF-8 instead of guessing a legacy codepage.
+    content = "﻿" + service.export_csv(session, current_user.id, language)
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="pronunciation-{language}.csv"'},
+    )

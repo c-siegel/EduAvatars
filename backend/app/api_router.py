@@ -17,6 +17,7 @@ from app.features.chat import preview_router, public_router
 from app.features.media import avatars_router, backgrounds_router, voices_router
 from app.features.projects import publication_router, start_audio_router, transfer_router
 from app.features.projects import router as projects_router
+from app.features.pronunciation import router as pronunciation_router
 from app.features.site_settings import admin_router as site_settings_admin_router
 from app.features.site_settings import public_router as site_settings_public_router
 from app.features.users import admin_users_router, profile_router
@@ -40,6 +41,7 @@ api_router.include_router(backgrounds_router.router)  # /backgrounds
 api_router.include_router(voices_router.router)  # /voice-clips: voice library for local TTS
 api_router.include_router(providers_router.router)  # /providers: provider registry
 api_router.include_router(api_keys_router.router)  # /api-keys: the user's stored keys
+api_router.include_router(pronunciation_router.router)  # /pronunciation: the user's TTS word list
 
 # Analytics
 api_router.include_router(stats_router.router)  # /analytics/stats, /timeseries, /overview
