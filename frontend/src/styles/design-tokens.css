@@ -55,7 +55,8 @@
   --blue-700: #1d4ed8;
 
   /* Brand/accent colours (fixed in the product, not configurable) */
-  --gradient-brand: linear-gradient(135deg, var(--emerald-500), var(--teal-600));
+  /* 700 shades: white text on 500/600 was only 2.5–3.7:1; on 700 it is about 5.5:1 (WCAG AA). */
+  --gradient-brand: linear-gradient(135deg, var(--emerald-700), var(--teal-700));
   --gradient-brand-soft: linear-gradient(135deg, var(--emerald-50), var(--teal-50));
   --color-accent: var(--emerald-500);
   --color-accent-strong: var(--teal-600);
