@@ -150,33 +150,6 @@
   line-height: 1.5;
 }
 
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-6) var(--space-8);
-  color: var(--text-tertiary);
-  font-size: 0.875rem;
-  /* Pushes the footer to the bottom of the page's flex column (see PublicLayout.module.css)
-     whenever the content above is shorter than the viewport, instead of leaving empty space
-     below it. */
-  margin-top: auto;
-}
-
-.footerLinks {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.footerLinks a {
-  color: var(--text-tertiary);
-  text-decoration: none;
-}
-
-.footerLinks a:hover {
-  color: var(--text-primary);
-}
 
 .headingShort,
 .featureTitleShort {
@@ -217,16 +190,9 @@
     padding: var(--space-10) var(--space-5);
   }
 
-  .footer {
-    flex-direction: column;
-    gap: var(--space-2);
-    text-align: center;
-    padding: var(--space-6) var(--space-5);
-  }
 
   .headingFull,
-  .featureTitleFull,
-  .footerLinksFull {
+  .featureTitleFull {
     display: none;
   }
 

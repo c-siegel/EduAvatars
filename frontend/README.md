@@ -83,3 +83,13 @@ Other scripts:
 npm run build     # type-checks and builds a production bundle into dist/
 npm run preview   # serves the production build locally
 ```
+
+## Version and documentation link
+
+The footer of the public pages (`components/SiteFooter`) shows the build version
+(`package.json` version plus the short commit, e.g. `0.1.0 (a1b2c3d)`) and a documentation link.
+
+- `APP_COMMIT` (build-time env / Docker build arg): the commit shown in the footer. The release
+  workflow passes `github.sha`; local builds fall back to `git rev-parse`.
+- `VITE_DOCS_URL` (build-time env / Docker build arg): URL of the documentation. While it is unset
+  the footer shows "Documentation (coming soon)" instead of a link.

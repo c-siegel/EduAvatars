@@ -65,7 +65,16 @@
       "errorTooShort": "New password needs at least {{min}} characters and a digit.",
       "errorMismatch": "The repeated password doesn't match the new password.",
       "errorInvalidLink": "This link is invalid or has expired. Please request a new one."
-    }
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "passwordHint": "At least 10 characters, one digit"
+  },
+  "siteFooter": {
+    "docs": "Documentation",
+    "docsSoon": "Documentation (coming soon)",
+    "version": "Version {{version}}",
+    "navAriaLabel": "Footer"
   },
   "surveyEmbed": {
     "notice": "This survey is provided by an external provider (Tally). Loading it connects to tally.so.",

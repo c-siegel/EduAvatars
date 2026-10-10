@@ -65,7 +65,16 @@
       "errorTooShort": "Neues Passwort braucht mind. {{min}} Zeichen und eine Zahl.",
       "errorMismatch": "Die Wiederholung stimmt nicht mit dem neuen Passwort überein.",
       "errorInvalidLink": "Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an."
-    }
+    },
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "passwordHint": "Mind. 10 Zeichen, eine Zahl"
+  },
+  "siteFooter": {
+    "docs": "Dokumentation",
+    "docsSoon": "Dokumentation (folgt in Kürze)",
+    "version": "Version {{version}}",
+    "navAriaLabel": "Fußbereich"
   },
   "surveyEmbed": {
     "notice": "Diese Umfrage wird von einem externen Anbieter (Tally) bereitgestellt. Beim Laden wird eine Verbindung zu tally.so hergestellt.",

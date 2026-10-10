@@ -7,6 +7,10 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+# Shown next to the version in the footer; there is no .git directory in the build context.
+ARG APP_COMMIT=""
+ARG VITE_DOCS_URL=""
+ENV APP_COMMIT=$APP_COMMIT VITE_DOCS_URL=$VITE_DOCS_URL
 RUN npm run build
 
 # --- Stage 2: static files + reverse proxy in a slim Caddy image ---

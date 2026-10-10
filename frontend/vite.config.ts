@@ -1,8 +1,22 @@
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, readFileSync, statSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+
+// Shown in the footer of the public pages. The commit comes from the APP_COMMIT env variable (the
+// Docker build has no .git directory, so frontend.Dockerfile passes it as a build arg) and falls
+// back to git for local builds.
+const appVersion: string = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version;
+function gitCommit(): string {
+  if (process.env.APP_COMMIT) return process.env.APP_COMMIT.slice(0, 7);
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    return "";
+  }
+}
 
 // Serves the on-device speech recognition model from <repo>/models at /models/ in development —
 // Caddy does the same in production (see docker/Caddyfile). The files are hundreds of MB, so they
@@ -32,6 +46,10 @@ function serveSttModels(): Plugin {
 }
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_COMMIT__: JSON.stringify(gitCommit()),
+  },
   // getUserMedia (voice input) and WebGPU (on-device speech recognition, see lib/parakeetStt.ts)
   // are both only available in a "secure context" — HTTPS, or the special-cased "localhost".
   // Testing either from another device over the LAN (e.g. `vite --host`) therefore needs real
