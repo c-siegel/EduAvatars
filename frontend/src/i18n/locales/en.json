@@ -352,6 +352,8 @@
         }
       },
       "avatarOnlyNeedsVoice": "\"Avatar only\" needs voice input and text-to-speech (step 2). While either is off, the chat page shows avatar and chat.",
+      "motionTitle": "Gestures and body language",
+      "motionText": "The avatar underlines its replies with gestures such as nodding, waving or a thumbs up. The AI model chooses them itself; they are not spoken or shown in the chat. Which gesture was used where is visible in the saved conversations. Has no effect when the chat page shows only the chat.",
       "avatarActionError": "That didn't work. Please try again.",
       "backgroundActionError": "That didn't work. Please try again."
     },
@@ -551,7 +553,11 @@
     "transcript": {
       "title": "Conversation",
       "loadError": "Couldn't load the conversation.",
-      "sources": "Sources:"
+      "sources": "Sources:",
+      "motions": "Gestures:",
+      "motionAtStart": "at the start",
+      "motionAtEnd": "at the end",
+      "motionBefore": "before “{{text}}”"
     },
     "pagination": {
       "zero": "0 of 0",

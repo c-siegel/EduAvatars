@@ -44,9 +44,19 @@ class TranscriptSourceOut(CamelModel):
     page: int | None
 
 
+class TranscriptMotionOut(CamelModel):
+    """An avatar gesture the LLM marked in a reply (see features/chat/motion.py)."""
+
+    name: str
+    # Character position in the message content where the marker stood.
+    offset: int
+
+
 class TranscriptMessageOut(ChatHistoryEntry):
     # Only on assistant messages of projects with a knowledge base; None otherwise.
     sources: list[TranscriptSourceOut] | None = None
+    # Only on assistant messages in which the LLM used gestures; None otherwise.
+    motions: list[TranscriptMotionOut] | None = None
 
 
 class ConversationDetailOut(CamelModel):

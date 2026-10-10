@@ -116,6 +116,12 @@ class Project(SQLModel, table=True):
     # chat), "avatar_chat_collapsed" (chat starts collapsed but can be expanded), "avatar_only"
     # (voice only, no chat column) or "chat_only" (no 3D avatar is loaded at all).
     chat_layout: str = "avatar_chat"
+    # Body language from the vendored MotionEngine (frontend/src/vendor/motion-engine): the LLM is
+    # told it may mark gestures as "::name::" in its reply (see features/chat/motion.py), which
+    # are stripped before TTS and played by the avatar. Has no effect with chat_layout
+    # "chat_only", where no avatar is shown. On by default; False keeps TalkingHead's own idle
+    # motion only.
+    motion_enabled: bool = True
     # Optional teacher-set access gate for the public chat link (see
     # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.

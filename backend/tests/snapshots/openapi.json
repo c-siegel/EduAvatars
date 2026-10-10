@@ -881,6 +881,14 @@
             ],
             "title": "Llmms"
           },
+          "motions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Motions",
+            "type": "array"
+          },
           "reply": {
             "title": "Reply",
             "type": "string"
@@ -2000,6 +2008,14 @@
             ],
             "title": "Contenttype"
           },
+          "motions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Motions",
+            "type": "array"
+          },
           "reply": {
             "title": "Reply",
             "type": "string"
@@ -2190,6 +2206,10 @@
               }
             ],
             "title": "Llmmodel"
+          },
+          "motionEnabled": {
+            "title": "Motionenabled",
+            "type": "boolean"
           },
           "passwordProtected": {
             "title": "Passwordprotected",
@@ -2412,6 +2432,7 @@
           "sttBrowserEnabled",
           "streamingEnabled",
           "chatLayout",
+          "motionEnabled",
           "passwordProtected",
           "requireVisitorName",
           "startAudioUrl",
@@ -2590,6 +2611,17 @@
               }
             ],
             "title": "Llmapikeyid"
+          },
+          "motionEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motionenabled"
           },
           "preprompt": {
             "anyOf": [
@@ -3321,6 +3353,11 @@
               }
             ],
             "title": "Llmmodel"
+          },
+          "motionEnabled": {
+            "default": false,
+            "title": "Motionenabled",
+            "type": "boolean"
           },
           "passwordProtected": {
             "default": false,
@@ -5125,6 +5162,20 @@
             "title": "Content",
             "type": "string"
           },
+          "motions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptMotionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motions"
+          },
           "role": {
             "enum": [
               "user",
@@ -5164,6 +5215,24 @@
           "content"
         ],
         "title": "TranscriptMessageOut",
+        "type": "object"
+      },
+      "TranscriptMotionOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "offset"
+        ],
+        "title": "TranscriptMotionOut",
         "type": "object"
       },
       "TranscriptSourceOut": {

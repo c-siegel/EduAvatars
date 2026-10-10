@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Download, ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Tile } from "@/components/Tile";
@@ -11,8 +12,22 @@ import { Scrim } from "@/components/Drawer";
 import { analyticsApi } from "@/api/analytics";
 import { projectsApi } from "@/api/projects";
 import { formatCompactNumber, formatDuration, formatEuro, numberLocale } from "@/lib/format";
-import type { AnalyticsFilters, Granularity } from "@/types/analytics";
+import type { AnalyticsFilters, Granularity, TranscriptMotion } from "@/types/analytics";
 import styles from "./Analytics.module.css";
+
+// How many words after a gesture's position identify where in the reply it happened.
+const MOTION_CONTEXT_WORDS = 4;
+
+// "nod_yes (before „Genau, das ist…“)" — where in the reply a gesture was used, readable without
+// counting characters. The raw offset is in the CSV export.
+function describeMotion(motion: TranscriptMotion, content: string, t: TFunction): string {
+  const rest = content.slice(motion.offset).trim();
+  if (motion.offset === 0) return `${motion.name} (${t("analytics.transcript.motionAtStart")})`;
+  if (!rest) return `${motion.name} (${t("analytics.transcript.motionAtEnd")})`;
+  const words = rest.split(/\s+/);
+  const excerpt = words.slice(0, MOTION_CONTEXT_WORDS).join(" ") + (words.length > MOTION_CONTEXT_WORDS ? "…" : "");
+  return `${motion.name} (${t("analytics.transcript.motionBefore", { text: excerpt })})`;
+}
 
 const PERIOD_OPTIONS = [
   { value: 7, days: 7 },
@@ -384,6 +399,12 @@ export function AnalyticsPage() {
                           ),
                         ),
                       ].join(", ")}
+                    </p>
+                  )}
+                  {message.motions && message.motions.length > 0 && (
+                    <p className={styles.transcriptSources}>
+                      {t("analytics.transcript.motions")}{" "}
+                      {message.motions.map((motion) => describeMotion(motion, message.content, t)).join(" · ")}
                     </p>
                   )}
                 </div>

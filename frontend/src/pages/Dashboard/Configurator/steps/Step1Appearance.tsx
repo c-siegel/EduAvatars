@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Input, Textarea } from "@/components/Input";
 import { Avatar } from "@/components/Avatar";
 import { Callout } from "@/components/Callout";
+import { AdvancedSection } from "@/components/AdvancedSection";
+import { ToggleWithInfo } from "@/components/InfoTip";
 import { errorMessage } from "@/api/client";
 import { avatarLibraryApi, type AvatarModel } from "@/api/avatarLibrary";
 import { backgroundLibraryApi, type BackgroundImage } from "@/api/backgroundLibrary";
@@ -26,8 +28,8 @@ function isSelectedAvatar(draft: ConfiguratorDraft, avatar: AvatarModel): boolea
   return draft.avatarModelId === ref.avatarModelId && draft.builtinAvatar === ref.builtinAvatar;
 }
 
-// Step 1 — appearance: project name, short description, avatar library, background image and
-// chat visibility.
+// Step 1 — appearance: project name, short description, avatar library, background image, chat
+// visibility and, under advanced settings, the avatar's gestures.
 export function Step1Appearance({ draft, onChange }: StepProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -266,6 +268,15 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
       {draft.chatLayout === "avatar_only" && !(draft.ttsEnabled && draft.sttEnabled) && (
         <Callout variant="warning">{t("configurator.step1.avatarOnlyNeedsVoice")}</Callout>
       )}
+
+      <AdvancedSection changed={draft.motionEnabled ? [] : [t("configurator.step1.motionTitle")]}>
+        <ToggleWithInfo
+          title={t("configurator.step1.motionTitle")}
+          checked={draft.motionEnabled}
+          onChange={(e) => onChange({ motionEnabled: e.target.checked })}
+          info={t("configurator.step1.motionText")}
+        />
+      </AdvancedSection>
     </>
   );
 }

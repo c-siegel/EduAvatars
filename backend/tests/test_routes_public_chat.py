@@ -6,6 +6,7 @@ import base64
 from conftest import LLM_REPLY, TTS_BYTES, create_project, parse_sse, publish
 
 from app.core.config import settings
+from app.features.chat.motion import MOTION_PROMPT
 
 
 def _audio(content_type: str = "audio/webm"):
@@ -89,7 +90,8 @@ def test_send_message_returns_reply_audio_and_saves_conversation(client, anon, c
     sent = fake_ai.completion_calls[-1]
     assert sent["model"] == "openai/gpt-4o-mini"
     assert sent["messages"] == [
-        {"role": "system", "content": "Du bist ein Tutor."},
+        # Motion is on by default, so the gesture instructions follow the teacher's prompt.
+        {"role": "system", "content": f"Du bist ein Tutor.\n\n{MOTION_PROMPT}"},
         {"role": "assistant", "content": "Willkommen!"},
         *history,
         {"role": "user", "content": "Was ist 2+2?"},

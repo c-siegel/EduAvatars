@@ -23,6 +23,7 @@ from app.features.analytics.schemas import (
     ConversationDetailOut,
     SessionRowOut,
     TranscriptMessageOut,
+    TranscriptMotionOut,
     TranscriptSourceOut,
 )
 from app.features.chat.models import Conversation, ProjectAccess
@@ -61,6 +62,9 @@ def get_conversation_detail(session: Session, user_id: str, conversation_id: str
                     for s in m["sources"]
                 ]
                 if m.get("sources") is not None
+                else None,
+                motions=[TranscriptMotionOut(name=x["name"], offset=x["offset"]) for x in m["motions"]]
+                if m.get("motions")
                 else None,
             )
             for m in messages

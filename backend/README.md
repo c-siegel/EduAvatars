@@ -146,7 +146,9 @@ The unauthenticated endpoints a published project's visitors actually use. See
 [Latency monitoring](#latency-monitoring) below for the timing fields `/messages`,
 `/messages/stream`, and `/transcriptions` ride along in their responses. `GET /public/{slug}`
 also returns `browserSttModelUrl` (where the on-device speech recognition model lives) unless the
-project or deployment opted out of transcribing in the visitor's browser.
+project or deployment opted out of transcribing in the visitor's browser. With the project's
+`motionEnabled` on, replies (and each SSE `chunk`) also carry `motions`: the avatar gestures the
+model marked, already removed from the text (see `features/chat/motion.py`).
 
 | Method & path | Auth | Description |
 |---|---|---|
@@ -375,6 +377,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | `features/users/service.py` | Own profile and admin account management | `update_profile(...)`, `change_password(...)`, `set_profile_picture(...)`.<br>`create_user_as_admin(...)`, `admin_reset_password(...)`, `admin_update_user(session, admin, target, data)` — guards against self-lockout and removing the last admin. |
 | `features/users/account.py` | Account deletion | `delete_user_account(session, user)` — cascades to projects, keys, conversations, the pronunciation word list, and uploaded files. |
 | `features/site_settings/service.py` | Instance-wide site settings | `get_or_create_site_settings(session)`, `update_site_settings(session, data)`. |
+| `features/chat/motion.py` | Avatar gestures the LLM marks as `::name::` in its reply (projects with `motion_enabled`) | `MOTIONS` — the ten offered gestures (must match `frontend/src/vendor/motion-engine/motions.json`).<br>`MOTION_PROMPT` — appended to the system prompt.<br>`extract_motions(text)` — cleaned text plus each gesture's name and position. |
 | `features/chat/streaming.py` | Splitting streamed LLM text into speakable sentence chunks | `SentenceChunker` — `feed()`/`flush()` for a live stream.<br>`chunk_text(text)` for an already-complete string; `sse_event(event, data)` for one SSE frame. |
 | `features/chat/unlock.py` | Chat password verification | `verify_chat_password(project, password)`, `issue_unlock_token(project, visitor_id)`.<br>`is_unlocked(...)` / `assert_unlocked(...)` — check vs. raise variants. |
 | `features/chat/visitor_name.py`, `visitor_log.py` | Visitor name and visit logging | `clean_visitor_name(...)`, `assert_visitor_name_provided(...)`, `log_access(session, project_id, visitor_id)`. |

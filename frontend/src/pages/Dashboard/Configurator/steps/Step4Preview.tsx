@@ -19,6 +19,8 @@ interface Step4Props {
   avatarModelUrl: string | null;
   avatarBackgroundUrl: string | null;
   ttsEnabled: boolean;
+  // The saved setting, like everything else the preview runs on (see below).
+  motionEnabled: boolean;
   hasUnsavedChanges: boolean;
 }
 
@@ -31,6 +33,7 @@ export function Step4Preview({
   avatarModelUrl,
   avatarBackgroundUrl,
   ttsEnabled,
+  motionEnabled,
   hasUnsavedChanges,
 }: Step4Props) {
   const { t } = useTranslation();
@@ -44,6 +47,7 @@ export function Step4Preview({
     onSuccess: async (res) => {
       avatarRef.current?.stopThinking();
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      avatarRef.current?.playMotions(res.motions);
       if (res.audioBase64) {
         // Same reasoning as PublicChat/index.tsx's plain path: decode+speak+wait instead of the
         // fire-and-forget speak() helper, so stopSpeaking() (see its own doc comment) can run once
@@ -81,6 +85,7 @@ export function Step4Preview({
             avatarUrl={avatarModelUrl ?? undefined}
             backgroundImageUrl={avatarBackgroundUrl ?? undefined}
             speechEnabled
+            motionEnabled={motionEnabled}
             fallback={<Avatar name={title} size="lg" />}
           />
         </div>

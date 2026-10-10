@@ -471,14 +471,17 @@ export function PublicChatPage() {
   const speakingStatsRef = useRef<SpeakingStats>(newSpeakingStats());
 
   function revealStreamedChunk(chunk: StreamChunkEvent) {
+    avatarRef.current?.playMotions(chunk.motions);
     setMessages((prev) => {
       if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text }];
+      // A chunk that held nothing but a gesture (see backend features/chat/motion.py).
+      if (!chunk.text) return prev;
       const next = [...prev];
       const last = next[next.length - 1];
       // Chunks come pre-trimmed (see features/chat/streaming.py), so the original spacing/newlines
       // between them is already lost — a single space is a reasonable stand-in for the few
       // hundred ms until the "done" event replaces this with the exact original text below.
-      next[next.length - 1] = { ...last, content: `${last.content} ${chunk.text}` };
+      next[next.length - 1] = { ...last, content: last.content ? `${last.content} ${chunk.text}` : chunk.text };
       return next;
     });
   }
@@ -642,6 +645,9 @@ export function PublicChatPage() {
         });
       }
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      // The whole reply arrives at once here, so its gestures play from the start rather than
+      // at their sentence like in the streamed path.
+      if (!abortControllerRef.current?.signal.aborted) avatarRef.current?.playMotions(res.motions);
       let audioReadyAt = replyReceivedAt;
       if (res.audioBase64 && !abortControllerRef.current?.signal.aborted) {
         // Deliberately awaited (not fire-and-forget), so decode time and total speaking duration
@@ -964,6 +970,7 @@ export function PublicChatPage() {
   function interruptResponse() {
     abortControllerRef.current?.abort();
     avatarRef.current?.stopSpeaking();
+    avatarRef.current?.stopMotion();
     speakingStatsRef.current.fpsResult = avatarRef.current?.stopFpsTracking() ?? null;
     setMessages((prev) => [...prev, { role: "system", content: t("publicChat.responseInterrupted") }]);
   }
@@ -1318,6 +1325,7 @@ export function PublicChatPage() {
                   avatarUrl={tutor.avatarModelUrl ?? undefined}
                   backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
                   speechEnabled={tutor.ttsEnabled}
+                  motionEnabled={tutor.motionEnabled}
                   fallback={<Avatar name={tutor.title} size="lg" />}
                   onReady={handleAvatarReady}
                   // Stays behind the static fallback until the greeting has actually started, instead

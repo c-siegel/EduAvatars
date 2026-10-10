@@ -352,6 +352,8 @@
         }
       },
       "avatarOnlyNeedsVoice": "„Nur Avatar“ braucht Spracheingabe und Sprachausgabe (Schritt 2). Solange eins davon aus ist, zeigt die Chat-Seite Avatar und Chat.",
+      "motionTitle": "Gesten und Körpersprache",
+      "motionText": "Der Avatar unterstreicht seine Antworten mit Gesten wie Nicken, Winken oder Daumen hoch. Das KI-Modell wählt sie selbst aus; sie werden weder gesprochen noch im Chat angezeigt. Welche Geste wo verwendet wurde, ist in den gespeicherten Unterhaltungen sichtbar. Ohne Wirkung, wenn die Chat-Seite nur den Chat zeigt.",
       "avatarActionError": "Das hat nicht funktioniert. Bitte erneut versuchen.",
       "backgroundActionError": "Das hat nicht funktioniert. Bitte erneut versuchen."
     },
@@ -551,7 +553,11 @@
     "transcript": {
       "title": "Gespräch",
       "loadError": "Gespräch konnte nicht geladen werden.",
-      "sources": "Quellen:"
+      "sources": "Quellen:",
+      "motions": "Gesten:",
+      "motionAtStart": "am Anfang",
+      "motionAtEnd": "am Ende",
+      "motionBefore": "vor „{{text}}“"
     },
     "pagination": {
       "zero": "0 von 0",

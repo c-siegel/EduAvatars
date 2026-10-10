@@ -9,6 +9,7 @@ export interface ConfiguratorDraft {
   builtinAvatar: string | null;
   avatarBackgroundId: string | null;
   chatLayout: ChatLayout;
+  motionEnabled: boolean;
   gradeLevel: string;
   preprompt: string;
   startPrompt: string;

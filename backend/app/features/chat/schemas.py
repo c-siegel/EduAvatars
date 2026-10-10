@@ -69,6 +69,9 @@ class PublicProjectOut(CamelModel):
     streaming_enabled: bool = False
     # Avatar and/or chat, see features/projects/models.py::Project.chat_layout.
     chat_layout: str = "avatar_chat"
+    # Whether the page loads the MotionEngine for the gestures in replies (see
+    # features/projects/models.py::Project.motion_enabled).
+    motion_enabled: bool = False
     # Already combined server-side with the respective checkbox (see
     # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.
@@ -144,6 +147,9 @@ class ChatMessageOut(CamelModel):
     # key), not that it was instant.
     llm_ms: float | None = None
     tts_ms: float | None = None
+    # Gestures for the avatar, in reply order (see features/chat/motion.py) — empty when the
+    # project has motion off.
+    motions: list[str] = []
 
 
 class TranscriptionOut(CamelModel):

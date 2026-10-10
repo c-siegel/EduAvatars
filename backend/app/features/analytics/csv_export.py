@@ -61,6 +61,12 @@ def _sources_cell(sources: list[dict], document_names: dict[str, str]) -> str:
     return "; ".join(dict.fromkeys(parts))
 
 
+def _motions_cell(motions: list[dict]) -> str:
+    """ "wave_right@0; nod_yes@42" — the gestures a reply used, each with its character position
+    in the reply (see features/chat/motion.py)."""
+    return "; ".join(f"{motion['name']}@{motion['offset']}" for motion in motions)
+
+
 def build_conversation_csv(
     conversation: Conversation, project: Project, document_names: dict[str, str] | None = None
 ) -> str:
@@ -73,7 +79,8 @@ def build_conversation_csv(
     app/features/chat/schemas.py::ChatHistoryEntry) leave the "Zeitpunkt" cell blank for that row.
 
     A conversation with a knowledge base gets a fourth "Quellen" column (the documents each reply
-    was given, see features/knowledge/); every other export keeps its three columns unchanged.
+    was given, see features/knowledge/), and one in which the avatar used gestures a "Gesten"
+    column (see features/chat/motion.py); every other export keeps its three columns unchanged.
     """
     messages = json.loads(conversation.messages_json)
 
@@ -85,7 +92,10 @@ def build_conversation_csv(
     writer.writerow(["Gestartet", conversation.started_at.isoformat()])
     writer.writerow([])
     with_sources = any("sources" in message for message in messages)
-    writer.writerow(["Zeitpunkt", "Avatar", "Schüler:in"] + (["Quellen"] if with_sources else []))
+    with_motions = any("motions" in message for message in messages)
+    writer.writerow(
+        ["Zeitpunkt", "Avatar", "Schüler:in"] + (["Quellen"] if with_sources else []) + (["Gesten"] if with_motions else [])
+    )
     for message in messages:
         timestamp = message.get("timestamp") or ""
         content = _csv_safe(message.get("content", ""))
@@ -93,8 +103,10 @@ def build_conversation_csv(
             row = [timestamp, content, ""]
             if with_sources:
                 row.append(_csv_safe(_sources_cell(message.get("sources") or [], document_names or {})))
+            if with_motions:
+                row.append(_motions_cell(message.get("motions") or []))
         else:
-            row = [timestamp, "", content] + ([""] if with_sources else [])
+            row = [timestamp, "", content] + ([""] if with_sources else []) + ([""] if with_motions else [])
         writer.writerow(row)
     return buffer.getvalue()
 

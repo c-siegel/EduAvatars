@@ -27,6 +27,8 @@ export interface PublicProject {
   streamingEnabled: boolean;
   // See types/project.ts.
   chatLayout: ChatLayout;
+  // See types/project.ts — whether the page loads the MotionEngine for the replies' gestures.
+  motionEnabled: boolean;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
   // Whether this chat requires a password, and whether this tab already unlocked it — see
@@ -73,6 +75,10 @@ export interface StreamChunkEvent {
   text: string;
   audioBase64: string | null;
   contentType: string | null;
+  // Gestures marked in this chunk, played when its audio starts (see TalkingHeadAvatar's
+  // playMotions). The chunk's text has them removed already, and may be empty when a chunk held
+  // nothing but a gesture.
+  motions: string[];
 }
 
 export interface StreamDoneEvent {
@@ -183,6 +189,7 @@ export const publicChatApi = {
       contentType: string | null;
       llmMs: number | null;
       ttsMs: number | null;
+      motions: string[];
     }>(`/public/${slug}/messages`, { message, history }, requestHeaders(slug), signal),
   sendMessageStream,
   // initialPrompt: text already transcribed earlier in the same recording (see the pause-triggered

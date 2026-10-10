@@ -23,6 +23,7 @@ def save_turn(
     reply_timestamp: datetime,
     visitor_name: str | None = None,
     sources: list[dict] | None = None,
+    motions: list[dict] | None = None,
 ) -> None:
     """Append one exchange to the visitor's saved conversation for this project, creating it on
     the first message.
@@ -39,6 +40,9 @@ def save_turn(
 
     `sources` are the knowledge-base passages the reply was given (IDs and page numbers only, see
     features/knowledge/retrieval.py::sources_for_transcript); None for projects without one.
+
+    `motions` are the avatar gestures the LLM marked in the reply, as {"name", "offset"} with the
+    offset into `reply` (see features/chat/motion.py); None when it used none.
     """
     with Session(engine) as session:
         existing = session.exec(
@@ -49,6 +53,8 @@ def save_turn(
         assistant_entry = {"role": "assistant", "content": reply, "timestamp": reply_timestamp.isoformat()}
         if sources is not None:
             assistant_entry["sources"] = sources
+        if motions:
+            assistant_entry["motions"] = motions
 
         if existing:
             messages = json.loads(existing.messages_json)

@@ -35,6 +35,7 @@ function toDraft(project: Project): ConfiguratorDraft {
     builtinAvatar: project.builtinAvatar,
     avatarBackgroundId: project.avatarBackgroundId,
     chatLayout: project.chatLayout,
+    motionEnabled: project.motionEnabled,
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
     startPrompt: project.startPrompt ?? "",
@@ -75,6 +76,7 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.builtinAvatar !== project.builtinAvatar ||
     draft.avatarBackgroundId !== project.avatarBackgroundId ||
     draft.chatLayout !== project.chatLayout ||
+    draft.motionEnabled !== project.motionEnabled ||
     (draft.gradeLevel || null) !== project.gradeLevel ||
     draft.preprompt !== (project.preprompt ?? "") ||
     draft.startPrompt !== (project.startPrompt ?? "") ||
@@ -138,6 +140,7 @@ export function ConfiguratorPage() {
         builtinAvatar: data.builtinAvatar,
         avatarBackgroundId: data.avatarBackgroundId,
         chatLayout: data.chatLayout,
+        motionEnabled: data.motionEnabled,
         gradeLevel: data.gradeLevel || null,
         preprompt: data.preprompt,
         startPrompt: data.startPrompt,
@@ -242,6 +245,7 @@ export function ConfiguratorPage() {
             avatarModelUrl={project.avatarModelUrl}
             avatarBackgroundUrl={project.avatarBackgroundUrl}
             ttsEnabled={project.ttsEnabled}
+            motionEnabled={project.motionEnabled}
             hasUnsavedChanges={isDirty(draft, project)}
           />
         )}

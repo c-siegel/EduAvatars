@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
 import type { TalkingHead } from "@met4citizen/talkinghead";
 import { Loader2 } from "lucide-react";
+import type { MotionEngine } from "@/vendor/motion-engine/MotionEngine.js";
 import { attachHeadAudio } from "./headAudioIntegration";
 import styles from "./TalkingHeadAvatar.module.css";
 
@@ -106,6 +107,13 @@ export interface TalkingHeadAvatarHandle {
    * hook in the calling code anyway, in case this later needs a real reset (e.g. on an error
    * shortly after sending). */
   stopThinking: () => void;
+  /** Plays the gestures the LLM marked in a reply (backend features/chat/motion.py), one after
+   * the other. A no-op without motionEnabled or before the avatar has loaded. */
+  playMotions: (names: string[]) => void;
+  /** Cuts off a running gesture — for an interrupted reply. Deliberately not part of
+   * stopSpeaking(), which also runs at a reply's natural end, where a closing gesture (e.g. a
+   * thumbs up after the last sentence) should still finish. */
+  stopMotion: () => void;
   /** Starts (or restarts) one FPS/dropped-frame measurement window — see stopFpsTracking. */
   startFpsTracking: () => void;
   /** Ends the current measurement window and returns its stats, or null if never started or the
@@ -145,17 +153,31 @@ interface TalkingHeadAvatarProps {
    * happening to fit.
    */
   backgroundImageUrl?: string;
+  /**
+   * Loads the MotionEngine (src/vendor/motion-engine) so playMotions() can make the avatar
+   * gesture — the project's motionEnabled setting. Left out (landing page): nothing to gesture to.
+   */
+  motionEnabled?: boolean;
 }
 
 // 3D avatar rendering (met4citizen/TalkingHead). Purely idle on the landing page (no speech);
 // in 1e/1i with speechEnabled for actual speech via HeadAudio (see headAudioIntegration.ts).
 export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHeadAvatarProps>(
   function TalkingHeadAvatar(
-    { fallback, avatarUrl = DEFAULT_AVATAR_URL, onReady, revealed = true, speechEnabled = false, backgroundImageUrl },
+    {
+      fallback,
+      avatarUrl = DEFAULT_AVATAR_URL,
+      onReady,
+      revealed = true,
+      speechEnabled = false,
+      backgroundImageUrl,
+      motionEnabled = false,
+    },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const headRef = useRef<TalkingHead | null>(null);
+    const motionEngineRef = useRef<MotionEngine | null>(null);
     const [status, setStatus] = useState<Status>("loading");
     // Plain ref, not React state — ticked at ~MODEL_FPS Hz from inside TalkingHead's own render
     // loop, so must never trigger a re-render.
@@ -264,6 +286,16 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
         stopThinking() {
           // No call needed — see the comment on the interface above.
         },
+        playMotions(names: string[]) {
+          if (names.length === 0) return;
+          // A gesture that fails to play must never break the reply it belongs to.
+          motionEngineRef.current?.playSequence(names).catch((error) => {
+            console.error("Avatar gesture could not be played.", error);
+          });
+        },
+        stopMotion() {
+          motionEngineRef.current?.stop();
+        },
         startFpsTracking() {
           const now = performance.now();
           fpsTrackerRef.current = { running: true, startedAt: now, lastTickAt: now, sampleCount: 0, droppedFrames: 0 };
@@ -346,6 +378,29 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
               tracker.droppedFrames += Math.max(0, Math.round(delta / TARGET_FRAME_INTERVAL_MS) - 1);
             };
           }
+          if (motionEnabled) {
+            try {
+              // Loaded on demand like TalkingHead itself, so projects without motion (and the
+              // landing page) never download it.
+              const [{ MotionEngine: MotionEngineClass }, { default: motions }] = await Promise.all([
+                import("@/vendor/motion-engine/MotionEngine.js"),
+                import("@/vendor/motion-engine/motions.json"),
+              ]);
+              if (cancelled) return;
+              const engine = new MotionEngineClass(head);
+              engine.registerMotions(motions);
+              // Composes over whatever is already installed (lip-sync, FPS tracking) instead of
+              // replacing it; the engine needs every frame for its bone overlays (e.g. a wave).
+              const previousUpdate = head.opt.update;
+              head.opt.update = (dt: number) => {
+                previousUpdate?.(dt);
+                engine.update(dt);
+              };
+              motionEngineRef.current = engine;
+            } catch (error) {
+              console.error("MotionEngine not available — the avatar runs without gestures.", error);
+            }
+          }
           if (!cancelled) {
             setStatus("ready");
             const avatarKey = `${avatarUrl}|${speechEnabled}`;
@@ -404,6 +459,9 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
         container?.removeEventListener("webglcontextlost", onContextLost, true);
         container?.removeEventListener("webglcontextrestored", onContextRestored, true);
         headRef.current = null;
+        // Clears the engine's pending gesture timers, which would otherwise fire on a disposed head.
+        motionEngineRef.current?.stop();
+        motionEngineRef.current = null;
         // stop() alone only pauses the render loop and suspends audioCtx — it leaves the WebGL
         // context and Three.js renderer alive. This component remounts a fresh TalkingHead on every
         // visit to any of its four call sites (Landing, Configurator Step1/Step4Preview,
@@ -418,7 +476,7 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
       // onReady deliberately not in the deps: a new inline function on every parent render must
       // not trigger an avatar reload (see avatarUrl/speechEnabled above, the actual triggers).
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [avatarUrl, speechEnabled, rebuildCount]);
+    }, [avatarUrl, speechEnabled, motionEnabled, rebuildCount]);
 
     return (
       <div className={styles.stage}>

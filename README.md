@@ -41,6 +41,9 @@ visitors need no account and no technical knowledge to use it.
 - **Talk by typing or by speaking.** Visitors can type a message or hold a button to speak —
   their speech is transcribed automatically, and the avatar answers out loud with matching lip
   movement.
+- **Body language.** The avatar underlines its replies with gestures (nodding, waving, a thumbs
+  up, …) that the AI picks from a short curated list. On by default; switch it off per project
+  under Appearance → Advanced settings. See [Gestures](#gestures).
 - **Share one link, nothing to install.** A published project gets a public chat URL. Visitors
   need no account, no API key, and no software.
 - **Protect access if needed.** Optionally require a password before the chat starts, or ask
@@ -429,6 +432,19 @@ The avatar rendering and lip-sync are built on two MIT-licensed libraries by the
   from the played audio signal in real time, instead of text-based timing estimation. No npm
   package; vendored into `frontend/public/headaudio/` (see that folder's `ATTRIBUTION.md` for
   license and details).
+
+### Gestures
+
+The avatar's gestures come from **[MotionEngine](https://github.com/lhupyn/motion-engine)** (MIT,
+by lhupyn), a TalkingHead plugin, vendored without its webcam feature (FaceMirror) into
+`frontend/src/vendor/motion-engine/` (see `ATTRIBUTION.md` there). With a project's
+"Gestures and body language" setting on, the system prompt lists ten gestures, and the model marks
+one where it fits by writing `::name::` into its reply, e.g. `::nod_yes:: Exactly!`. The backend
+(`backend/app/features/chat/motion.py`) cuts the markers out before anything is spoken, shown or
+saved, and sends the gesture names alongside each streamed sentence; the browser plays them when
+that sentence starts. Saved conversations keep which gesture was used where: shown under the
+reply in the Analytics transcript and in a "Gesten" column of the CSV export (`name@position`).
+The setting has no effect with the "Chat only" layout.
 
 ## Data privacy note
 

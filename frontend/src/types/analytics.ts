@@ -47,7 +47,17 @@ export interface TranscriptSource {
   page: number | null;
 }
 
-export type TranscriptMessage = ChatMessage & { sources?: TranscriptSource[] | null };
+// An avatar gesture the LLM marked in a reply (see backend features/chat/motion.py): its name and
+// the character position in the message content where the marker stood.
+export interface TranscriptMotion {
+  name: string;
+  offset: number;
+}
+
+export type TranscriptMessage = ChatMessage & {
+  sources?: TranscriptSource[] | null;
+  motions?: TranscriptMotion[] | null;
+};
 
 export type Granularity = "day" | "week" | "month";
 

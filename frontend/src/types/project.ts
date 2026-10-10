@@ -63,6 +63,9 @@ export interface Project {
   // What the public chat page shows: avatar + chat (open or starting collapsed), the avatar alone
   // (voice only) or the chat alone (no 3D model loaded) — see pages/PublicChat/index.tsx.
   chatLayout: ChatLayout;
+  // Whether the avatar uses body language: the LLM marks gestures in its replies, which the
+  // vendored MotionEngine plays (see backend features/chat/motion.py). No effect with "chat_only".
+  motionEnabled: boolean;
   // Whether a visitor must enter a password before the public chat unlocks (see
   // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
   // projectsApi.update's separate `chatPassword` field, never read back here.
