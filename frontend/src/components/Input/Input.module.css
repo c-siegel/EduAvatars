@@ -16,6 +16,12 @@
   justify-content: space-between;
 }
 
+.labelWithInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .hint {
   font-size: 0.75rem;
   color: var(--text-tertiary);

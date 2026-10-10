@@ -1,12 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AudioLines,
+  BookOpen,
+  Gauge,
   LayoutDashboard,
+  Timer,
   BarChart3,
   KeyRound,
+  Languages,
   Settings2,
   ShieldCheck,
   Menu,
@@ -22,6 +26,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useEvaluationStatus, useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -54,12 +59,40 @@ const BASE_NAV_ITEMS: NavConfigItem[] = [
     isActive: (p) => p.startsWith("/dashboard/voices"),
   },
   {
+    labelKey: "nav.pronunciation",
+    href: "/dashboard/pronunciation",
+    icon: Languages,
+    isActive: (p) => p.startsWith("/dashboard/pronunciation"),
+  },
+  {
+    labelKey: "nav.latencyLab",
+    href: "/dashboard/latency",
+    icon: Timer,
+    isActive: (p) => p.startsWith("/dashboard/latency"),
+  },
+  {
     labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
   },
 ];
+
+// Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
+const KNOWLEDGE_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.knowledge",
+  href: "/dashboard/knowledge",
+  icon: BookOpen,
+  isActive: (p) => p.startsWith("/dashboard/knowledge"),
+};
+
+// Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
+const EVALUATION_NAV_ITEM: NavConfigItem = {
+  labelKey: "nav.evaluation",
+  href: "/dashboard/evaluation",
+  icon: Gauge,
+  isActive: (p) => p.startsWith("/dashboard/evaluation"),
+};
 
 const ADMIN_NAV_ITEM: NavConfigItem = {
   labelKey: "nav.admin",
@@ -75,6 +108,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const { data: user, error } = useCurrentUser();
 
   // Auth guard: only a confirmed 401 sends teachers back to /login. A network/5xx error
@@ -99,7 +134,37 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
+  // Dismissing the drawer (Escape, scrim) hands focus back to the menu button that opened it, so
+  // keyboard users don't drop to the top of the page.
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+    menuButtonRef.current?.focus();
+  }
+
+  // Opening moves focus into the drawer, so the next Tab lands on a nav link instead of the page
+  // behind the scrim.
+  useEffect(() => {
+    if (mobileNavOpen) sidebarRef.current?.querySelector("a")?.focus();
+  }, [mobileNavOpen]);
+
+  // Escape closes the open drawer, as with any overlay.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeMobileNav();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileNavOpen]);
+
+  const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
+  const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
+  // Knowledge sits right after Voices — both are the teacher's libraries — and Evaluation after it.
+  const knowledgeItems = evaluationAvailable ? [KNOWLEDGE_NAV_ITEM, EVALUATION_NAV_ITEM] : [KNOWLEDGE_NAV_ITEM];
+  const baseItems = knowledgeAvailable
+    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, ...knowledgeItems] : [item]))
+    : BASE_NAV_ITEMS;
+  const navItems = user?.isAdmin ? [...baseItems, ADMIN_NAV_ITEM] : baseItems;
   const activeItem = navItems.find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
@@ -110,7 +175,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const sidebar = (
-    <aside className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
+    <aside ref={sidebarRef} className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
       <div className={styles.sidebarHeader}>
         <Wordmark />
       </div>
@@ -144,6 +209,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     <div className={styles.shell}>
       <header className={styles.mobileTopbar}>
         <button
+          ref={menuButtonRef}
           className={styles.menuButton}
           aria-label={mobileNavOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={mobileNavOpen}
@@ -155,7 +221,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Avatar name={user?.name ?? ""} size="sm" />
       </header>
 
-      {mobileNavOpen && <Scrim onClick={() => setMobileNavOpen(false)} />}
+      {mobileNavOpen && <Scrim onClick={closeMobileNav} />}
 
       {sidebar}
 

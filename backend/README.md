@@ -31,7 +31,7 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/core/` | Cross-cutting setup: settings (`config.py`), auth dependencies (`deps.py`), cookies, domain errors, middleware, public URLs (`urls.py`), the LLM/TTS/STT provider registry (`providers.py`), rate limiting, security helpers |
 | `app/db/` | Database session/engine setup; `base.py` imports every feature's models for Alembic |
 | `app/storage/` | Shared upload handling: content sniffing, saving/deleting files, cached file responses |
-| `app/tasks/` | Background work: the periodic data-retention purge |
+| `app/tasks/` | Background work: the periodic data-retention purge, and retrying deletes the knowledge service missed while it was down |
 | `app/features/auth/` | Register, login, logout, password reset |
 | `app/features/users/` | Own profile (`/me`), account deletion, admin account management (`/admin/users`) |
 | `app/features/site_settings/` | Instance-wide settings: public (`/settings/public`) and admin (`/admin/settings`) |
@@ -40,7 +40,10 @@ raise `DomainError`s (`app/core/errors.py`) instead of HTTP exceptions.
 | `app/features/ai/` | One package each for LLM, TTS and STT, with one module per provider behind a small interface (`get_llm_client`, `get_tts_client`, `get_stt_client`) — including the local-TTS sidecar and local Whisper fallbacks |
 | `app/features/api_keys/` | The user's stored provider keys (`/api-keys`), the provider registry and speech-option status routes (`/providers`), key resolution and encryption |
 | `app/features/media/` | Avatar model and background image libraries |
+| `app/features/pronunciation/` | Each teacher's TTS word list (`/pronunciation`), preset packs (`presets/*.json`), import/export and the test box; the matching engine itself is `app/features/ai/tts/pronunciation.py` |
 | `app/features/analytics/` | Dashboard stats, the saved-conversation list, CSV/ZIP export |
+| `app/features/knowledge/` | Knowledge bases (RAG): metadata, quotas and upload checks here; parsing, embedding and search in the optional knowledge service (`rag/`), reached through `rag_client.py`. `retrieval.py` and `prompt.py` add the passages to each chat turn. Source metadata of documents (`metadata.py`, `sources.py`, BibTeX import in `bibtex.py`) only goes into the prompt, never into the index |
+| `app/features/evaluation/` | Quality evaluation of knowledge-base answers: test sets, and runs that answer them through a project (`runner.py`, one background worker) and have the optional evaluation service (`rag-eval/`, Ragas) score them through `eval_client.py` |
 | `alembic/` | Database migrations; `alembic/versions/` holds one file per schema change |
 | `tests/` | Unit tests plus route-level tests (`test_routes_*.py`) and an OpenAPI contract snapshot (`test_openapi_contract.py`) that pins the HTTP interface |
 
@@ -134,6 +137,8 @@ library models) or `builtinAvatar` (a bundled default like `"julia"`), its backg
 | `GET /projects/{project_id}/start-audio` | `start_audio_router.py` | Owner, or public if published | Serve the pre-generated start-prompt audio file. |
 | `POST /projects/{project_id}/chat/messages` | `app/features/chat/preview_router.py` | Login required, own resource | Send a message to the project's LLM and return the reply, for the in-app preview chat. |
 | `POST /projects/{project_id}/chat/transcriptions` | `app/features/chat/preview_router.py` | Login required, own resource | Transcribe a voice message for the in-app preview chat. |
+| `POST /projects/{project_id}/latency-test/messages` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: answer a message as SSE with per-module timings, optionally with another of the owner's LLM keys (`llmApiKeyId`), another TTS path (`ttsMode`: `project`/`local`/`none`) or without streaming (`streaming: false`). Never saved. |
+| `POST /projects/{project_id}/latency-test/transcriptions` | `app/features/chat/latency_router.py` | Login required, own resource | Latency test: transcribe a recording on the server (`engine`: `project`/`whisper`/`parakeet`) and return `{text, sttMs, engine}`. |
 
 ### Public chat — `app/features/chat/public_router.py` (prefix `/public`)
 
@@ -192,6 +197,33 @@ long, and are stored as normalized 24 kHz mono WAV whatever format came in.
 | `POST /voice-clips/{clip_id}/preview` | Login required, own resource | Speak `{text, language}` in the clip's cloned voice via the local-TTS sidecar; returns WAV. |
 | `DELETE /voice-clips/{clip_id}` | Login required, own resource | Delete a clip; projects using it go back to the default voice and lose their start audio. |
 
+### Pronunciation word list — `app/features/pronunciation/router.py` (prefix `/pronunciation`)
+
+Each teacher's own list of terms the TTS should say differently, per spoken language (`de`/`en`).
+It applies to everything their projects speak in that language — chat replies (whole and
+streamed), the start audio and voice-clip previews — but never changes the displayed text. Rules
+are plain text, not regular expressions: a term matches literally (a space matches any
+whitespace), `{number}` stands for a number and is carried over into the spoken form, all rules
+apply in one longest-first pass, and they run after Markdown is stripped and before the built-in
+decimal/symbol rules (`app/features/ai/tts/normalizer.py`). At most 500 terms per language.
+
+| Endpoint | Auth | Description |
+|---|---|---|
+| `GET /pronunciation/entries?language=` | Login required | List the current user's terms (optionally for one language). |
+| `POST /pronunciation/entries` | Login required | Add a term `{language, term, spoken, wholeWord, caseSensitive, spellOut}`; `spellOut` generates the spoken form letter by letter. 409 on a duplicate term. |
+| `PUT /pronunciation/entries/{entry_id}` | Login required, own resource | Change a term (the language stays); an edited preset entry becomes the user's own. |
+| `DELETE /pronunciation/entries/{entry_id}` | Login required, own resource | Delete a term. |
+| `POST /pronunciation/import` | Login required | Import `{language, text, overwrite, dryRun}` — lines `term = spoken`, `term;spoken[;whole_word;case_sensitive]` or tab-separated; `!spell` as the spoken form spells the term out; `#` starts a comment. Invalid lines are reported, the rest is imported. |
+| `GET /pronunciation/export?language=` | Login required | The list as semicolon CSV (the format the import reads), with spreadsheet formulas escaped. |
+| `POST /pronunciation/preview` | Login required | The test box: `{text, language}` → the exact text the TTS gets plus the terms that matched; with `synthesize: true` also audio (base64) from one of the user's own TTS keys + voice, or the local sidecar + one of their voice clips. Audio previews are limited to 10 per minute per user. |
+| `GET /pronunciation/presets?language=` | Login required | The shipped preset packs with their entries and how many of them the user has. |
+| `POST /pronunciation/presets/{pack_id}/apply?language=` | Login required | Copy a pack into the user's list; terms they already have are kept. |
+| `DELETE /pronunciation/presets/{pack_id}?language=` | Login required | Remove the entries a pack added that the user hasn't edited. |
+
+A preset pack is a JSON file `app/features/pronunciation/presets/<id>.<language>.json` (see
+`presets.py` for the format); its display name and description go into the frontend locales under
+`pronunciation.presets.packs.<id>`. Every pack is validated by `tests/test_pronunciation_presets.py`.
+
 ### Analytics — `app/features/analytics/stats_router.py` (prefix `/analytics`)
 
 Read-only numbers for the teacher-facing dashboards, scoped to the current user's own projects.
@@ -217,7 +249,7 @@ one visitor's chat with a published project, not an HTTP/login session.
 
 ### API keys and providers — `app/features/api_keys/` (prefixes `/api-keys`, `/providers`)
 
-Store, edit, test, and delete a user's own LLM/TTS/STT provider API keys — the "bring your own
+Store, edit, test, and delete a user's own LLM/TTS/STT/embedding provider API keys — the "bring your own
 key" feature — plus the provider registry so the frontend can build its key form without
 duplicating that data. Keys are encrypted at rest.
 
@@ -232,6 +264,61 @@ duplicating that data. Keys are encrypted at rest.
 | `DELETE /api-keys/{key_id}` | `router.py` | Login required, own resource | Delete a key; projects using it fall back to "no key configured". |
 | `POST /api-keys/{key_id}/test` | `router.py` | Login required, own resource | Try the stored key against its provider and record whether it works. |
 
+### Knowledge bases — `app/features/knowledge/router.py` (prefixes `/knowledge-bases`, `/knowledge-documents`)
+
+A teacher's knowledge bases (RAG) and their documents. Every route answers `404
+KNOWLEDGE_DISABLED` unless `RAG_ENABLED` is set; the work behind them happens in the optional
+knowledge service (`rag/`, see [rag/README.md](../rag/README.md) and
+[docs/rag-plan.md](../docs/rag-plan.md)). Projects attach knowledge bases through `PUT
+/projects/{id}` (`knowledgeMode`, `knowledgeTopK`, `knowledgeBaseIds`).
+
+| Method & path | Auth | Description |
+|---|---|---|
+| `GET /providers/rag-status` | Login required | Whether this deployment offers knowledge bases, the service's state, the upload limits and the user's storage use. |
+| `GET /knowledge-bases` | Login required | The user's knowledge bases with document counts and how many projects use each. |
+| `POST /knowledge-bases` | Login required | Create one, embedded with the local model or one of the user's embedding keys (fixed afterwards). |
+| `PATCH /knowledge-bases/{kb_id}` | Login required, own resource | Rename or re-describe it. |
+| `DELETE /knowledge-bases/{kb_id}` | Login required, own resource | Delete it with all documents, including their indexed text in the knowledge service. |
+| `GET /knowledge-bases/{kb_id}/documents` | Login required, own resource | Its documents with their current indexing status. |
+| `POST /knowledge-bases/{kb_id}/documents` | Login required, own resource | Upload one document (multipart `file`, `parser`, `consent`); indexed in the background. Rate-limited, size- and quota-checked. |
+| `POST /knowledge-documents/{document_id}/retry` | Login required, own resource | Index a failed document again (optionally with Docling) while the knowledge service still keeps its original. Counts against the upload rate limit. |
+| `DELETE /knowledge-documents/{document_id}` | Login required, own resource | Delete one document and its indexed text. |
+| `POST /knowledge-bases/{kb_id}/search` | Login required, own resource | The passages a question would retrieve — the teacher's test search. |
+| `PATCH /knowledge-documents/{document_id}/metadata` | Login required, own resource | Replace the teacher's own source details (title, author, year, container, url, citation, sourceType, priority, note, bibtexKey). Empty fields fall back to the linked bibliography entry, then to the file's header. Never re-indexes. |
+| `POST /knowledge-bases/{kb_id}/bibliography` | Login required, own resource | Replace the knowledge base's bibliography with a BibTeX file (≤ 1 MB, ≤ 2,000 entries) and link documents to entries by key (from the file's header, the entry's `file` field, or the file name). Counts against the upload rate limit. |
+| `GET /knowledge-bases/{kb_id}/bibliography`, `DELETE …` | Login required, own resource | List the entries (for the key picker) / delete them; documents keep their keys. |
+
+### Evaluation — `app/features/evaluation/router.py` (prefixes `/test-sets`, `/test-cases`, `/evaluation/runs`)
+
+Measuring how well a project answers from its knowledge bases, with Ragas as LLM judge (see
+[rag-eval/README.md](../rag-eval/README.md) and [docs/rag-plan.md §7](../docs/rag-plan.md)).
+Every route answers `404 EVALUATION_DISABLED` unless both `RAG_ENABLED` and
+`RAG_EVALUATION_ENABLED` are set. The judge is one of the user's own LLM keys (not Arcana); its
+decrypted key only goes to the evaluation service with each request. Runs answer through the
+project's real retrieval and prompt, without speech and without saving a conversation, and keep
+copies of questions, answers and passages — so they are deleted with the knowledge base, the
+project or the account.
+
+| Route | Access | Purpose |
+|---|---|---|
+| `GET /providers/evaluation-status` | Login required | Whether this deployment offers evaluation, the service's state, the per-run question cap and the judge calls per metric (for the cost estimate). |
+| `GET /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | The knowledge base's test sets with question counts. |
+| `POST /knowledge-bases/{kb_id}/test-sets` | Login required, own resource | Create one (`name`, `language`: `de`/`en`). |
+| `GET /test-sets` | Login required | All the user's test sets (for the run form). |
+| `PATCH /test-sets/{id}`, `DELETE /test-sets/{id}` | Login required, own resource | Rename / delete it with its questions and every run that used it. |
+| `GET /test-sets/{id}/cases`, `POST /test-sets/{id}/cases` | Login required, own resource | List / add questions with optional reference answers and a `kind` (`grounded`, `topic` (default) or `offtopic`; at most 500 per set). |
+| `POST /test-sets/{id}/cases/import` | Login required, own resource | Add questions from a CSV (`question`/`frage`, optional `reference`/`referenz` and `kind`/`art`; `,` or `;`; at most 1 MB). |
+| `GET /test-sets/{id}/cases/export` | Login required, own resource | The approved questions as CSV (formula-guarded for spreadsheet apps). |
+| `POST /test-sets/{id}/generate` | Login required, own resource | Draft up to 10 questions with a judge key (`kind`): `grounded` from a sample of the material, with reference answers; `topic` / `offtopic` (need `projectId`, optional `objectives`) from the project's instructions, the knowledge base's description and the document titles only — the judge never sees passage text — without reference answers. Drafts start unapproved. |
+| `DELETE /test-sets/{id}/drafts` | Login required, own resource | Discard the unapproved drafts. |
+| `PATCH /test-cases/{id}`, `DELETE /test-cases/{id}` | Login required, own resource | Edit or approve / delete one question. |
+| `GET /evaluation/runs` | Login required | The user's runs (optionally `?projectId=`). |
+| `POST /evaluation/runs` | Login required, own resources | Start a run (`projectId`, `testSetId`, `judgeApiKeyId`, `metrics`) in the background. One active run per user; capped by the admin's questions-per-run setting. |
+| `GET /evaluation/runs/{id}` | Login required, own resource | Progress, configuration snapshot, summary (overall and per question kind) and per-question results. |
+| `POST /evaluation/runs/{id}/cancel` | Login required, own resource | Stop after the current question or batch; what's scored is kept. |
+| `DELETE /evaluation/runs/{id}` | Login required, own resource | Delete it. |
+| `GET /evaluation/runs/{id}/export?format=csv\|json` | Login required, own resource | Download the results. |
+
 ### Admin — `app/features/users/admin_users_router.py` and `app/features/site_settings/admin_router.py` (prefix `/admin`)
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
@@ -244,8 +331,9 @@ only way an account is actually deleted is the self-service `DELETE /me` above.
 | `POST /admin/users` | Admin only | Create an account with a temporary password the new user must change on first login. |
 | `PUT /admin/users/{user_id}` | Admin only | Promote/demote or enable/disable an account. |
 | `POST /admin/users/{user_id}/reset-password` | Admin only | Set a user's password on their behalf; they must change it on next login. |
-| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention). |
-| `PUT /admin/settings` | Admin only | Update the instance-wide site settings. |
+| `GET /admin/settings` | Admin only | The instance-wide site settings (contact email, self-registration toggle, retention, knowledge-base limits, questions per evaluation run). |
+| `PUT /admin/settings` | Admin only | Update the instance-wide site settings; knowledge limits are checked against the knowledge service's ceilings. |
+| `GET /admin/settings/knowledge-ceilings` | Admin only | The highest values the knowledge limits may be set to. |
 
 ### Site settings — `app/features/site_settings/public_router.py` (prefix `/settings`)
 
@@ -265,7 +353,10 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | File | Purpose | Key functions |
 |---|---|---|
 | `features/ai/llm/` | LLM chat completion (litellm, plus a direct integration for GWDG Arcana) | `get_llm_client(api_key_record)` → `.complete(request)`, `.stream(request)`, `.test()`.<br>`complete(api_key_record, ChatRequest(...))` — one-shot reply.<br>`stream(api_key_record, ChatRequest(...))` — text deltas, falling back to a plain call if streaming fails before the first delta. |
-| `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language)` — routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
+| `features/ai/tts/` | Text-to-speech (TTS) synthesis | `synthesize_speech(text, tts_voice, api_key_record, language, pronunciation=None)` — normalizes the text for speech (with the teacher's word list, if given), routes to the right provider, or the local-TTS sidecar for `api_key_record=None`, and returns `(audio_bytes, content_type)`. Raises `VoiceRequiredError` if the provider needs a voice that wasn't given.<br>`get_tts_client(api_key_record)` — the provider client itself. |
+| `features/ai/tts/pronunciation.py` | Matching a teacher's word list | `compile_rules(rules)` → a cached `PronunciationMatcher`; `.apply(text, applied=None)` rewrites the text in one longest-first pass. `PronunciationRule(term, spoken, whole_word, case_sensitive)`, `spell_out(term)`. |
+| `features/pronunciation/service.py` | Managing the word list | `list_entries(...)`, `create_entry(...)`, `update_entry(...)`, `delete_entry(...)`, `get_owned_entry(...)`.<br>`matcher_for(session, user_id, language)` — what to pass as `synthesize_speech(..., pronunciation=)`.<br>`import_text(...)`, `export_csv(...)`. |
+| `features/pronunciation/presets.py` | Preset packs | `all_packs()`, `get_pack(id, language)`, `apply_pack(...)`, `remove_pack(...)`, `applied_count(...)`. |
 | `features/ai/stt/` | Speech-to-text (STT) transcription | `transcribe_audio(audio_bytes, language, initial_prompt, api_key_record)` — locally via faster-whisper or Parakeet (`Settings.stt_engine`), or a cloud provider if configured.<br>`get_stt_client(api_key_record)` → `.transcribe(...)`; a SAIA client also has `.test()`.<br>`capacity.transcription_slot()` — limits concurrent local transcriptions. |
 | `features/chat/pipeline.py` | One chat turn for the public and preview chat | `prepare_chat(session, project)` — resolve keys and snapshot the project.<br>`reply_turn(context, turn)` — LLM → save → TTS.<br>`stream_turn(context, turn)` — `(event, data)` pairs for the SSE stream. |
 | `features/api_keys/resolve.py` | Which of a project's API keys to use | `resolve_llm_key(session, project)`, `resolve_tts_key(...)`, `resolve_stt_key(...)`.<br>`get_user_api_key(...)`, `get_key_by_id(...)`, `get_owned_key_of_type(...)` — lookups.<br>`provider_from_model(llm_model)`, `browser_stt_model_url_for(project)`, `effective_api_base(key)`. |
@@ -282,7 +373,7 @@ underscore); helpers named `_like_this` are file-private and left out. Paths are
 | `features/analytics/service.py` | Analytics queries behind the dashboard | `get_stats(...)`, `get_project_overview(...)`, `get_sessions_paginated(...)`, `get_session_ids(...)`, `get_timeseries_data(...)`.<br>`get_conversation_detail(...)`, `get_conversations_for_export(...)`, `delete_conversations(...)`. |
 | `features/analytics/csv_export.py` | Conversation CSV/ZIP export | `build_export(rows)`, `build_conversation_csv(conversation, project)`, `conversation_export_filename(...)`. |
 | `features/users/service.py` | Own profile and admin account management | `update_profile(...)`, `change_password(...)`, `set_profile_picture(...)`.<br>`create_user_as_admin(...)`, `admin_reset_password(...)`, `admin_update_user(session, admin, target, data)` — guards against self-lockout and removing the last admin. |
-| `features/users/account.py` | Account deletion | `delete_user_account(session, user)` — cascades to projects, keys, conversations, and uploaded files. |
+| `features/users/account.py` | Account deletion | `delete_user_account(session, user)` — cascades to projects, keys, conversations, the pronunciation word list, and uploaded files. |
 | `features/site_settings/service.py` | Instance-wide site settings | `get_or_create_site_settings(session)`, `update_site_settings(session, data)`. |
 | `features/chat/streaming.py` | Splitting streamed LLM text into speakable sentence chunks | `SentenceChunker` — `feed()`/`flush()` for a live stream.<br>`chunk_text(text)` for an already-complete string; `sse_event(event, data)` for one SSE frame. |
 | `features/chat/unlock.py` | Chat password verification | `verify_chat_password(project, password)`, `issue_unlock_token(project, visitor_id)`.<br>`is_unlocked(...)` / `assert_unlocked(...)` — check vs. raise variants. |
@@ -327,6 +418,10 @@ A few backend behaviors worth knowing about if you're deploying or extending thi
 - **Conversation exports are CSV-injection-safe** (`app/features/analytics/csv_export.py`): a
   visitor name or message starting with `=`, `+`, `-`, or `@` is escaped before being written to
   the exported CSV/ZIP, so it can't turn into a live spreadsheet formula when a teacher opens it.
+  The pronunciation word-list export does the same (and its import strips the escape again).
+- **Pronunciation rules are never regular expressions.** Teachers' terms are escaped before they
+  are compiled (`app/features/ai/tts/pronunciation.py`), so a word list can't inject a pattern or
+  cause catastrophic backtracking; the only syntax is the `{number}` placeholder.
 
 ## Latency monitoring
 
@@ -342,13 +437,17 @@ means a stage didn't run at all (e.g. TTS disabled or no key configured), never 
 | `POST /{slug}/messages/stream` (SSE `done` event) | `llmMs` | Time from request start to the full LLM reply being assembled. |
 | | `firstChunkTextReadyMs` | Time until the first sentence chunk was handed to TTS (isolates LLM/chunking speed from TTS speed). |
 | | `firstChunkMs` | Time until that first chunk's TTS synthesis *finished*. |
+| | `llmFirstTokenMs` | Time until the LLM's first token arrived. |
 | | `ttsMs` | Summed synthesis time across all chunks. |
+| (SSE `chunk` events) | `textReadyMs`, `ttsMs`, `sentMs` | Per chunk: when its text was handed to TTS, how long its synthesis took (`null` without TTS), and when it was sent — all since the request started. |
 | `POST /{slug}/transcriptions` | `sttMs` | Wall-clock time inside the STT (speech-to-text) call — local Whisper or Parakeet, or the cloud provider. |
 
 How to use: open the public chat page with `?latencyTest=1` appended to the URL — the frontend logs
 these numbers to the browser console, combined with client-side timings (network round trip, audio
 decode/playback, time to first spoken word). See [frontend/README.md](../frontend/README.md#debugging)
-for the full breakdown and what each logged field means.
+for the full breakdown and what each logged field means. The dashboard's latency test page
+(`/dashboard/latency`, routes `/projects/{id}/latency-test/*` above) shows the same numbers per
+message and compares configurations; the `chunk` and `done` fields are the same there.
 
 ## Tests
 

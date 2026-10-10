@@ -16,12 +16,18 @@
 }
 
 .dismiss {
-  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* WCAG 2.2 minimum target size (24 x 24 CSS px). */
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0;
   border: none;
-  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.875rem;
-  line-height: 1;
 }
 
 @keyframes slideIn {

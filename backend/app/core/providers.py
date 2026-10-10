@@ -31,9 +31,12 @@ from app.core.error_codes import ErrorCode
 KEY_TYPE_LLM = "llm"
 KEY_TYPE_TTS = "tts"
 KEY_TYPE_STT = "stt"
-KEY_TYPES = (KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_STT)
+# Embedding keys turn text into vectors for a knowledge base (see features/knowledge/) — optional:
+# by default the knowledge service embeds locally, without any key.
+KEY_TYPE_EMBEDDING = "embedding"
+KEY_TYPES = (KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_STT, KEY_TYPE_EMBEDDING)
 
-KEY_TYPE_LABELS = {KEY_TYPE_LLM: "LLM", KEY_TYPE_TTS: "TTS", KEY_TYPE_STT: "STT"}
+KEY_TYPE_LABELS = {KEY_TYPE_LLM: "LLM", KEY_TYPE_TTS: "TTS", KEY_TYPE_STT: "STT", KEY_TYPE_EMBEDDING: "Embedding"}
 
 # Generic provider for anything that mimics the OpenAI API (self-hosted models, Together.ai, Groq, ...).
 OPENAI_COMPATIBLE_PROVIDER = "openai_compatible"
@@ -87,6 +90,12 @@ class ProviderSpec:
     # Only relevant for GWDG Arcana — requires an Arcana ID (which knowledge base to query) in
     # addition to the model, see features/ai/llm/arcana.py::ArcanaClient.
     requires_arcana_id: bool = False
+    # Curated embedding models for KEY_TYPE_EMBEDDING keys (value without prefix, label), shown in
+    # the key form like `models` is for LLM keys.
+    embedding_models: tuple[tuple[str, str], ...] = ()
+    # litellm prefix for embedding calls when it differs from model_prefix — Ollama's chat models
+    # go through "ollama_chat/", its embedding models through "ollama/".
+    embedding_model_prefix: str | None = None
 
 
 # Ordered for the frontend dropdown (features/api_keys/providers_router.py::list_providers returns PROVIDERS as-is,
@@ -165,7 +174,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://generativelanguage.googleapis.com",
         api_base_required=False,
         key_required=True,
-        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS),
+        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_EMBEDDING),
         model_prefix="gemini/",
         models=(
             ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite"),
@@ -175,6 +184,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         # No default_voice: no verified Gemini voice name on hand — better to leave it unset
         # (fails visibly via litellm instead of silently using a made-up voice).
         tts_model="gemini/gemini-2.5-flash-preview-tts",
+        embedding_models=(("gemini-embedding-001", "Gemini Embedding"),),
     ),
     ProviderSpec(
         value=GWDG_ARCANA_PROVIDER,
@@ -225,13 +235,14 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://api.mistral.ai/v1",
         api_base_required=False,
         key_required=True,
-        supported_types=(KEY_TYPE_LLM,),
+        supported_types=(KEY_TYPE_LLM, KEY_TYPE_EMBEDDING),
         model_prefix="mistral/",
         models=(
             ("mistral-small-latest", "Mistral Small"),
             ("mistral-large-latest", "Mistral Large"),
         ),
         test_model="mistral/mistral-small-latest",
+        embedding_models=(("mistral-embed", "Mistral Embed"),),
     ),
     ProviderSpec(
         value="openai",
@@ -240,7 +251,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://api.openai.com/v1",
         api_base_required=False,
         key_required=True,
-        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS),
+        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_EMBEDDING),
         model_prefix="openai/",
         models=(
             ("gpt-4o", "GPT-4o"),
@@ -249,6 +260,10 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         test_model="openai/gpt-4o-mini",
         tts_model="openai/tts-1",
         default_voice="alloy",
+        embedding_models=(
+            ("text-embedding-3-small", "text-embedding-3-small"),
+            ("text-embedding-3-large", "text-embedding-3-large"),
+        ),
     ),
     ProviderSpec(
         value=OLLAMA_PROVIDER,
@@ -259,7 +274,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="http://localhost:11434",
         api_base_required=True,
         key_required=False,
-        supported_types=(KEY_TYPE_LLM,),
+        supported_types=(KEY_TYPE_LLM, KEY_TYPE_EMBEDDING),
         # litellm recommends "ollama_chat/" (not "ollama/") for chat models.
         model_prefix="ollama_chat/",
         models=(
@@ -268,6 +283,8 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
             ("qwen2.5", "Qwen 2.5"),
         ),
         test_model="ollama_chat/llama3.2",
+        embedding_models=(("bge-m3", "BGE-M3"), ("nomic-embed-text", "Nomic Embed Text")),
+        embedding_model_prefix="ollama/",
         hint="Ollama läuft meist ohne Zugriffsschutz im (Schul-)Netz — ein API-Key ist nur nötig, "
         "falls dein Server das verlangt.",
     ),
@@ -278,7 +295,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base=None,
         api_base_required=True,
         key_required=True,
-        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS),
+        supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_EMBEDDING),
         # Addressed via litellm's "openai/" prefix + api_base, regardless of which provider
         # actually sits behind it.
         model_prefix="openai/",
@@ -310,6 +327,16 @@ def provider_label(value: str) -> str:
     """Human-readable label for a provider value, falling back to the raw value if unknown."""
     spec = _BY_VALUE.get(value)
     return spec.label if spec else value
+
+
+def build_embedding_model_string(provider: str, model_id: str) -> str:
+    """Like build_model_string, but with the provider's embedding prefix where it differs."""
+    if "/" in model_id:
+        return model_id
+    spec = _BY_VALUE.get(provider)
+    if spec is None:
+        return model_id
+    return f"{spec.embedding_model_prefix or spec.model_prefix}{model_id}"
 
 
 def build_model_string(provider: str, model_id: str) -> str:

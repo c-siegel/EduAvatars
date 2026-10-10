@@ -59,6 +59,9 @@ function toDraft(project: Project): ConfiguratorDraft {
     sttEnabled: project.sttEnabled,
     sttBrowserEnabled: project.sttBrowserEnabled,
     streamingEnabled: project.streamingEnabled,
+    knowledgeMode: project.knowledgeMode,
+    knowledgeTopK: project.knowledgeTopK,
+    knowledgeBaseIds: project.knowledgeBaseIds,
   };
 }
 
@@ -93,7 +96,10 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.sttServerEngine !== project.sttServerEngine ||
     draft.sttEnabled !== project.sttEnabled ||
     draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
-    draft.streamingEnabled !== project.streamingEnabled
+    draft.streamingEnabled !== project.streamingEnabled ||
+    draft.knowledgeMode !== project.knowledgeMode ||
+    draft.knowledgeTopK !== project.knowledgeTopK ||
+    draft.knowledgeBaseIds.join() !== project.knowledgeBaseIds.join()
   );
 }
 
@@ -154,6 +160,9 @@ export function ConfiguratorPage() {
         sttEnabled: data.sttEnabled,
         sttBrowserEnabled: data.sttBrowserEnabled,
         streamingEnabled: data.streamingEnabled,
+        knowledgeMode: data.knowledgeMode,
+        knowledgeTopK: data.knowledgeTopK,
+        knowledgeBaseIds: data.knowledgeBaseIds,
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(["projects", projectId], updated);

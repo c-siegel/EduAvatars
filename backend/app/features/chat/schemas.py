@@ -152,3 +152,24 @@ class TranscriptionOut(CamelModel):
     # pages/PublicChat/index.tsx) — left None by callers that don't measure it (e.g. the
     # configurator preview's transcribe route).
     stt_ms: float | None = None
+
+
+class LatencyTestMessageIn(ChatMessageIn):
+    """A message for the dashboard's latency test (latency_router.py): the project's chat, with
+    some of its configuration overridden for this one request — never saved."""
+
+    # Another of the teacher's own LLM keys (each key carries its model), None: the project's.
+    llm_api_key_id: str | None = None
+    # "project": as configured; "local": the local-TTS sidecar; "none": text only (also what the
+    # page uses when it synthesizes speech in the browser instead).
+    tts_mode: Literal["project", "local", "none"] = "project"
+    # False: the whole reply is generated and synthesized first, like the plain /messages route.
+    streaming: bool = True
+
+
+class LatencyTranscriptionOut(CamelModel):
+    text: str
+    # Server-side transcription time only, without upload — the page measures the round trip.
+    stt_ms: float
+    # What actually transcribed: "whisper", "parakeet", or the STT key's provider.
+    engine: str

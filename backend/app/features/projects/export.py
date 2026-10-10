@@ -121,6 +121,9 @@ def import_project(session: Session, user_id: str, data: ProjectExportData) -> P
     fields["avatar_model_id"] = _owned(session, AvatarModel, user_id, fields["avatar_model_id"])
     fields["avatar_background_id"] = _owned(session, BackgroundImage, user_id, fields["avatar_background_id"])
     fields["tts_voice_clip_id"] = _owned(session, VoiceClip, user_id, fields["tts_voice_clip_id"])
+    # Knowledge bases aren't part of an export, so an imported project has none attached — it
+    # must not claim to answer from material it doesn't have.
+    fields["knowledge_mode"] = "off"
     project = Project(user_id=user_id, **fields)
     session.add(project)
     session.commit()

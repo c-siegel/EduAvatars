@@ -75,8 +75,9 @@ export default defineConfig({
     // import()/new URL() at runtime, inside workers/parakeetWorker.ts — invisible to Vite's
     // cold-start dependency scan. Without excluding it, the dev server only discovers that
     // dependency once the worker reaches that code (partway through the model download) and
-    // force-reloads the whole page to re-optimize.
-    exclude: ["@met4citizen/talkinghead", "onnxruntime-web"],
+    // force-reloads the whole page to re-optimize. @soprotts/onnx-web (workers/soproWorker.ts)
+    // loads its runtime the same way.
+    exclude: ["@met4citizen/talkinghead", "onnxruntime-web", "@soprotts/onnx-web"],
   },
   server: {
     proxy: {

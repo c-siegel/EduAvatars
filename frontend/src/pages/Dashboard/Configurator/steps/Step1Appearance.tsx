@@ -8,25 +8,11 @@ import { Callout } from "@/components/Callout";
 import { errorMessage } from "@/api/client";
 import { avatarLibraryApi, type AvatarModel } from "@/api/avatarLibrary";
 import { backgroundLibraryApi, type BackgroundImage } from "@/api/backgroundLibrary";
+import { BUILTIN_AVATARS, isBuiltinAvatar } from "@/lib/builtinAvatars";
 import { CHAT_LAYOUTS } from "@/types/project";
 import type { ConfiguratorDraft, StepProps } from "../types";
 import styles from "./Step1Appearance.module.css";
 import sharedStyles from "./shared.module.css";
-
-// Bundled under frontend/public/avatars/ (see ATTRIBUTION.md there) instead of coming from the
-// user's own upload library — shown in every project's avatar grid below so a project always has
-// a usable face without requiring an upload first. Not real AvatarModel rows (no DB id; their
-// thumbnails are static PNGs next to the .glb files), so isBuiltinAvatar() below keys off the "builtin-" id prefix to skip the delete
-// button and the removeAvatarMutation call, which only work on the user's own library entries. A
-// project stores one of these by name (builtinAvatar, the part after "builtin-"), see avatarRef().
-const BUILTIN_AVATARS: AvatarModel[] = [
-  { id: "builtin-julia", name: "Julia", fileUrl: "/avatars/julia.glb", thumbnailUrl: "/avatars/julia.png", createdAt: "" },
-  { id: "builtin-david", name: "David", fileUrl: "/avatars/david.glb", thumbnailUrl: "/avatars/david.png", createdAt: "" },
-];
-
-function isBuiltinAvatar(avatar: AvatarModel): boolean {
-  return avatar.id.startsWith("builtin-");
-}
 
 // The draft fields that select `avatar` — exactly one of the two references is set.
 function avatarRef(avatar: AvatarModel): Pick<ConfiguratorDraft, "avatarModelId" | "builtinAvatar"> {

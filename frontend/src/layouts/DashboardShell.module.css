@@ -30,7 +30,8 @@
 }
 
 .sidebar {
-  width: 196px;
+  /* Fits "Profileinstellungen" and "Antwortqualität" on one line next to their icons. */
+  width: 228px;
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
@@ -144,9 +145,15 @@
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh;
     width: 240px;
     transform: translateX(-100%);
-    transition: transform var(--duration-base) var(--ease-out);
+    /* Hidden, not just moved off-screen, so keyboard and screen-reader users can't land in a closed
+       drawer. The visibility switch waits for the slide-out to finish. */
+    visibility: hidden;
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      visibility 0s linear var(--duration-base);
     z-index: 50;
     box-shadow: var(--shadow-lg);
     /* Full-height drawer here, unlike the desktop sidebar's short content-sized panel — no
@@ -157,6 +164,8 @@
 
   .sidebarOpen {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform var(--duration-base) var(--ease-out);
   }
 
   .content {

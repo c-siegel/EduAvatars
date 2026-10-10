@@ -14,9 +14,13 @@ How to use:
     from app.features.ai.tts.normalizer import normalize_for_speech
 
     spoken_text = normalize_for_speech(reply_text, language=project.spoken_language)
+    # With the project owner's own word list (see pronunciation.py):
+    spoken_text = normalize_for_speech(reply_text, project.spoken_language, pronunciation=matcher)
 """
 
 import re
+
+from app.features.ai.tts.pronunciation import PronunciationMatcher
 
 _DEFAULT_LANGUAGE = "de"
 
@@ -176,11 +180,26 @@ def _spell_out_decimal_digits(text: str, language: str) -> str:
     return pattern.sub(_replace, text)
 
 
-def normalize_for_speech(text: str, language: str) -> str:
+def normalize_for_speech(
+    text: str,
+    language: str,
+    pronunciation: PronunciationMatcher | None = None,
+    applied: list | None = None,
+) -> str:
     """Rewrites Markdown, decimal numbers, and math symbols in `text` into a form a TTS engine
-    reads correctly."""
+    reads correctly.
+
+    `pronunciation` is the teacher's own word list (see pronunciation.py); `applied`, if given,
+    collects the rules from it that matched (for the dashboard's test box).
+    """
     result = _strip_markdown(text)
     result = _strip_math_delimiters(result)
+    # The teacher's rules run after the Markdown/math delimiters are gone (so "**pH**" still
+    # matches "pH") but before every built-in rewrite below: their terms are written the way the
+    # reply shows them ("1,5 m/s", "E=mc²"), not the way the decimal and symbol rules would
+    # already have rewritten them.
+    if pronunciation:
+        result = pronunciation.apply(result, applied)
     result = _despeak_em_dash(result)
     result = _spell_out_co2(result, language)
     result = _spell_out_decimal_digits(result, language)
