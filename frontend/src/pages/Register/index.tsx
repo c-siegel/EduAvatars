@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
+import { Input, PasswordInput } from "@/components/Input";
 import { Callout } from "@/components/Callout";
 import { authApi } from "@/api/auth";
 import { errorMessage } from "@/api/client";
@@ -103,15 +103,15 @@ export function RegisterPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <Input
+        <PasswordInput
           label={t("auth.passwordLabel")}
-          type="password"
           name="password"
           autoComplete="new-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <p className={styles.hint}>{t("auth.passwordHint")}</p>
         <label className={styles.checkboxLabel}>
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} required />
           {t("auth.register.terms")}
