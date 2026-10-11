@@ -459,8 +459,6 @@
     "exportError": "Export fehlgeschlagen. Bitte erneut versuchen.",
     "sessionsOverTime": "Sessions im Zeitverlauf",
     "chartEmpty": "Keine Daten für diesen Zeitraum.",
-    "table": { "project": "Projekt", "model": "Modell", "status": "Status", "created": "Erstellt", "actions": "Aktionen" },
-    "empty": "Hier gibt es noch keine Projekte.",
     "filters": {
       "projectAll": "Projekt: Alle",
       "period": "Zeitraum: {{days}} Tage",
@@ -517,6 +515,8 @@
       "sessions7d": "Sessions (7 T.)",
       "messages": "Nachrichten"
     },
+    "table": { "project": "Projekt", "model": "Modell", "status": "Status", "created": "Erstellt", "actions": "Aktionen" },
+    "empty": "Hier gibt es noch keine Projekte.",
     "filters": { "all": "Alle", "draft": "Entwürfe", "published": "Publiziert" },
     "card": {
       "published": "Publiziert",

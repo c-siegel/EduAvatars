@@ -459,8 +459,6 @@
     "exportError": "Export failed. Please try again.",
     "sessionsOverTime": "Sessions over time",
     "chartEmpty": "No data for this period.",
-    "table": { "project": "Project", "model": "Model", "status": "Status", "created": "Created", "actions": "Actions" },
-    "empty": "No projects here yet.",
     "filters": {
       "projectAll": "Project: All",
       "period": "Period: {{days}} days",
@@ -517,6 +515,8 @@
       "sessions7d": "Sessions (7d)",
       "messages": "Messages"
     },
+    "table": { "project": "Project", "model": "Model", "status": "Status", "created": "Created", "actions": "Actions" },
+    "empty": "No projects here yet.",
     "filters": { "all": "All", "draft": "Drafts", "published": "Published" },
     "card": {
       "published": "Published",

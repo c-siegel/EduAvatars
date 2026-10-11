@@ -9,6 +9,12 @@
   vertical-align: middle;
 }
 
+/* max-width: 0 lets the long-title ellipsis work inside a table cell instead of widening the table. */
+.projectCell {
+  width: 45%;
+  max-width: 0;
+}
+
 .cell {
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -31,6 +37,7 @@
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actionsCell {
@@ -124,6 +131,10 @@
 }
 
 @media (max-width: 860px) {
+  .projectCell {
+    width: auto;
+  }
+
   .modelCell,
   .createdCell {
     display: none;
