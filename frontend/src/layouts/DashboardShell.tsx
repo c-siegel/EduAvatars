@@ -33,40 +33,54 @@ interface NavConfigItem {
   isActive: (pathname: string) => boolean;
 }
 
-const BASE_NAV_ITEMS: NavConfigItem[] = [
-  { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
-  {
+const NAV_ITEMS = {
+  overview: { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
+  analytics: {
     labelKey: "nav.analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
     isActive: (p) => p.startsWith("/dashboard/analytics"),
   },
-  {
+  apiDashboard: {
     labelKey: "nav.apiDashboard",
     href: "/dashboard/api",
     icon: KeyRound,
     isActive: (p) => p.startsWith("/dashboard/api"),
   },
-  {
+  voices: {
     labelKey: "nav.voices",
     href: "/dashboard/voices",
     icon: AudioLines,
     isActive: (p) => p.startsWith("/dashboard/voices"),
   },
-  {
+  profile: {
     labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
   },
-];
+  admin: {
+    labelKey: "nav.admin",
+    href: "/dashboard/admin",
+    icon: ShieldCheck,
+    isActive: (p) => p.startsWith("/dashboard/admin"),
+  },
+} satisfies Record<string, NavConfigItem>;
 
-const ADMIN_NAV_ITEM: NavConfigItem = {
-  labelKey: "nav.admin",
-  href: "/dashboard/admin",
-  icon: ShieldCheck,
-  isActive: (p) => p.startsWith("/dashboard/admin"),
-};
+interface NavGroup {
+  id: string;
+  labelKey: string;
+  items: NavConfigItem[];
+  adminOnly?: boolean;
+}
+
+// Sidebar sections: what teachers build, what they learn from it, and the one-time setup around it.
+const NAV_GROUPS: NavGroup[] = [
+  { id: "create", labelKey: "nav.groups.create", items: [NAV_ITEMS.overview, NAV_ITEMS.voices] },
+  { id: "insights", labelKey: "nav.groups.insights", items: [NAV_ITEMS.analytics] },
+  { id: "setup", labelKey: "nav.groups.setup", items: [NAV_ITEMS.apiDashboard, NAV_ITEMS.profile] },
+  { id: "admin", labelKey: "nav.groups.admin", items: [NAV_ITEMS.admin], adminOnly: true },
+];
 
 // Layout for 1c–1h — sidebar (desktop) or hamburger + overlay drawer (<1024px) + content area
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -99,8 +113,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
-  const activeItem = navItems.find((item) => item.isActive(location.pathname));
+  const navGroups = NAV_GROUPS.filter((group) => !group.adminOnly || user?.isAdmin);
+  const activeItem = navGroups.flatMap((group) => group.items).find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
   async function handleLogout() {
@@ -115,10 +129,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Wordmark />
       </div>
       <nav className={styles.nav} aria-label={t("nav.dashboardNavAriaLabel")}>
-        {navItems.map((item) => (
-          <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
-            {t(item.labelKey)}
-          </NavItem>
+        {navGroups.map((group) => (
+          <div key={group.id} role="group" aria-labelledby={`nav-group-${group.id}`} className={styles.navGroup}>
+            <p id={`nav-group-${group.id}`} className={styles.navGroupLabel}>
+              {t(group.labelKey)}
+            </p>
+            {group.items.map((item) => (
+              <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
+                {t(item.labelKey)}
+              </NavItem>
+            ))}
+          </div>
         ))}
       </nav>
       <div className={styles.sidebarFooter}>

@@ -16,6 +16,7 @@
     "apiDashboard": "API dashboard",
     "profile": "Profile settings",
     "admin": "Admin",
+    "groups": { "create": "Create", "insights": "Insights", "setup": "Setup", "admin": "Admin" },
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard navigation",
     "logout": "Log out",
@@ -456,6 +457,8 @@
     "exportError": "Export failed. Please try again.",
     "sessionsOverTime": "Sessions over time",
     "chartEmpty": "No data for this period.",
+    "table": { "project": "Project", "model": "Model", "status": "Status", "created": "Created", "actions": "Actions" },
+    "empty": "No projects here yet.",
     "filters": {
       "projectAll": "Project: All",
       "period": "Period: {{days}} days",
@@ -509,8 +512,6 @@
     "importError": "Couldn't import this file. Make sure it's a project export from eduavatars (.yml).",
     "myProjects": "My projects",
     "stats": {
-      "projects": "Projects",
-      "published": "Published",
       "sessions7d": "Sessions (7d)",
       "messages": "Messages"
     },

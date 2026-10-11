@@ -117,7 +117,7 @@ export function AnalyticsPage() {
   }
 
   function handleDeleteSelected() {
-    // Deliberate second step, like deleting a whole project (see ProjectCard) — this cannot be
+    // Deliberate second step, like deleting a whole project (see ProjectRow) — this cannot be
     // undone.
     if (window.confirm(t("analytics.selection.deleteConfirm", { count: selectedIds.size }))) {
       deleteMutation.mutate([...selectedIds]);

@@ -4,14 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/Button";
-import { Tile } from "@/components/Tile";
 import { Callout } from "@/components/Callout";
 import { projectsApi } from "@/api/projects";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { ProjectCard } from "./ProjectCard";
+import { ProjectRow } from "./ProjectRow";
 import styles from "./Overview.module.css";
 
 type Filter = "all" | "draft" | "published";
+
+const TABS: { id: Filter; labelKey: string }[] = [
+  { id: "all", labelKey: "overview.filters.all" },
+  { id: "published", labelKey: "overview.filters.published" },
+  { id: "draft", labelKey: "overview.filters.draft" },
+];
 
 // Screen 1d — overview tab
 export function OverviewPage() {
@@ -54,6 +59,12 @@ export function OverviewPage() {
     return true;
   });
 
+  const counts: Record<Filter, number> = {
+    all: projects.length,
+    published: projects.filter((project) => project.published).length,
+    draft: projects.filter((project) => !project.published).length,
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.greetingRow}>
@@ -93,47 +104,63 @@ export function OverviewPage() {
       {createProject.isError && <Callout variant="danger">{t("overview.createError")}</Callout>}
       {importProject.isError && <Callout variant="danger">{t("overview.importError")}</Callout>}
 
-      <div className={styles.statGrid}>
-        <Tile label={t("overview.stats.projects")} value={statsQuery.data?.totalProjects ?? "–"} />
-        <Tile label={t("overview.stats.published")} value={statsQuery.data?.publishedProjects ?? "–"} />
-        <Tile label={t("overview.stats.sessions7d")} value={statsQuery.data?.sessionsLast7Days ?? "–"} />
-        <Tile label={t("overview.stats.messages")} value={statsQuery.data?.messagesLast7Days ?? "–"} />
+      <div className={styles.activityStrip}>
+        <span>
+          {t("overview.stats.sessions7d")}: <strong>{statsQuery.data?.sessionsLast7Days ?? "–"}</strong>
+        </span>
+        <span>
+          {t("overview.stats.messages")}: <strong>{statsQuery.data?.messagesLast7Days ?? "–"}</strong>
+        </span>
       </div>
 
-      <div>
-        <div className={styles.sectionHeader}>
-          <h2>{t("overview.myProjects")}</h2>
-          <div className={styles.filters}>
+      <div className={styles.projects}>
+        <div className={styles.tabs} role="tablist" aria-label={t("overview.myProjects")}>
+          {TABS.map(({ id, labelKey }) => (
             <button
-              className={`${styles.filterButton} ${filter === "all" ? styles.filterActive : ""}`}
-              onClick={() => setFilter("all")}
+              key={id}
+              role="tab"
+              id={`overview-tab-${id}`}
+              aria-selected={filter === id}
+              aria-controls="overview-projects-panel"
+              className={`${styles.tab} ${filter === id ? styles.tabActive : ""}`}
+              onClick={() => setFilter(id)}
             >
-              {t("overview.filters.all")}
+              {t(labelKey)} <span className={styles.tabCount}>{counts[id]}</span>
             </button>
-            <span aria-hidden="true">·</span>
-            <button
-              className={`${styles.filterButton} ${filter === "draft" ? styles.filterActive : ""}`}
-              onClick={() => setFilter("draft")}
-            >
-              {t("overview.filters.draft")}
-            </button>
-            <span aria-hidden="true">·</span>
-            <button
-              className={`${styles.filterButton} ${filter === "published" ? styles.filterActive : ""}`}
-              onClick={() => setFilter("published")}
-            >
-              {t("overview.filters.published")}
-            </button>
-          </div>
+          ))}
         </div>
 
-        <div className={styles.projectGrid}>
-          {filteredProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-          <button className={styles.newProjectTile} onClick={() => createProject.mutate()}>
-            {t("overview.newProject")}
-          </button>
+        <div
+          className={styles.tableWrapper}
+          role="tabpanel"
+          id="overview-projects-panel"
+          aria-labelledby={`overview-tab-${filter}`}
+        >
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">{t("overview.table.project")}</th>
+                <th scope="col">{t("overview.table.model")}</th>
+                <th scope="col">{t("overview.table.status")}</th>
+                <th scope="col">{t("overview.table.created")}</th>
+                <th scope="col">
+                  <span className={styles.srOnly}>{t("overview.table.actions")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProjects.map((project) => (
+                <ProjectRow key={project.id} project={project} />
+              ))}
+              {filteredProjects.length === 0 && !projectsQuery.isPending && (
+                <tr>
+                  <td colSpan={5} className={styles.empty}>
+                    {t("overview.empty")}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
