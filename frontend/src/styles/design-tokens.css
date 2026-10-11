@@ -136,3 +136,45 @@
   --font-heading: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
+
+/*
+ * Dark theme. Only the semantic tokens are redefined — components never reference the raw scales
+ * for surfaces, borders or text. Applied via data-theme="dark" on <html>, which the dashboard
+ * (hooks/useDashboardTheme.ts) sets; the public chat and landing pages stay light.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --gradient-brand-soft: linear-gradient(135deg, #0e2a21, #0d2a28);
+
+  --surface-page: #0f1110;
+  --surface-card: #1a1c1b;
+  --surface-sunken: #141615;
+  --surface-inverse: #f2f4f3;
+  --surface-accent-soft: #0e2a21;
+
+  --border-default: #2c2f2e;
+  --border-strong: #3d4140;
+
+  --text-primary: #f2f4f3;
+  --text-secondary: #b2b8b5;
+  --text-tertiary: #7f8683;
+  --text-inverse: #0f1110;
+  --text-accent: #5eead4;
+  --text-link: var(--teal-300);
+  --text-link-hover: var(--teal-200);
+
+  --color-success: #34d399;
+  --color-success-bg: #0e2a21;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #3a2a08;
+  --color-danger: #f87171;
+  --color-danger-bg: #3b1616;
+  --color-info: #60a5fa;
+  --color-info-bg: #12233f;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+}

@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   LogOut,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { NavItem } from "@/components/NavItem";
@@ -22,6 +24,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useDashboardTheme } from "@/hooks/useDashboardTheme";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -90,6 +93,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { data: user, error } = useCurrentUser();
+  const { theme, toggleTheme } = useDashboardTheme();
 
   // Auth guard: only a confirmed 401 sends teachers back to /login. A network/5xx error
   // (e.g. backend not running yet during frontend-only work) just falls back to "…" below,
@@ -152,6 +156,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
         <div className={styles.languageSwitcherRow}>
           <LanguageSwitcher />
+          <button
+            className={styles.themeButton}
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? t("nav.themeToLight") : t("nav.themeToDark")}
+            title={theme === "dark" ? t("nav.themeToLight") : t("nav.themeToDark")}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
         <button className={styles.logoutButton} onClick={handleLogout}>
           <LogOut size={16} strokeWidth={2} />

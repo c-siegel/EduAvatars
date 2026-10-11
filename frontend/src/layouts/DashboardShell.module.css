@@ -84,7 +84,28 @@
 }
 
 .languageSwitcherRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 var(--space-3);
+}
+
+.themeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.themeButton:hover {
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 
 .userInfo {

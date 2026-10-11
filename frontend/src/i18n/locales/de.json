@@ -20,6 +20,8 @@
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard-Navigation",
     "logout": "Abmelden",
+    "themeToDark": "Zum dunklen Modus wechseln",
+    "themeToLight": "Zum hellen Modus wechseln",
     "closeMenu": "Menü schließen",
     "openMenu": "Menü öffnen"
   },

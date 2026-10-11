@@ -106,7 +106,7 @@
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
   border: 2px solid transparent;
-  background-color: var(--neutral-200);
+  background-color: var(--surface-sunken);
   background-size: cover;
   background-position: center;
   cursor: pointer;
