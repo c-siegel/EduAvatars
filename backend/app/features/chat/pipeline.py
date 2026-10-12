@@ -205,10 +205,10 @@ def _save(
 
 
 def _split_motions(context: ChatContext, text: str) -> tuple[str, list[MotionMark]]:
-    """`text` without gesture markers, and the gestures — a no-op for projects without motion."""
-    if not context.motion_enabled:
-        return text, []
-    return extract_motions(text)
+    """`text` without gesture markers, and the gestures — none for projects without motion, whose
+    replies are still cleaned: the model may write a marker anyway, and students never see one."""
+    clean, marks = extract_motions(text)
+    return clean, marks if context.motion_enabled else []
 
 
 def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None, float]:

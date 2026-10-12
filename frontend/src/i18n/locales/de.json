@@ -776,7 +776,7 @@
     "title": "Gesten-Prompt",
     "subtitle": "Die Anweisungen zur Körpersprache, die an den System-Prompt deines Avatars angehängt werden – pro Projekt bearbeitbar.",
     "label": "Gesten-Anweisungen",
-    "hint": "Die Gestennamen müssen unverändert als ::name:: genannt bleiben, sonst werden sie nicht erkannt.",
+    "hint": "Die Gestennamen müssen unverändert als ::name:: genannt bleiben – nur diese kennt der Avatar. Jedes andere ::name:: wird ohne Geste aus der Antwort entfernt.",
     "inactive": "Gesten sind für dieses Projekt aus (oder das Layout zeigt keinen Avatar) – dieser Text wird derzeit nicht gesendet.",
     "reset": "Auf Standard zurücksetzen",
     "loadError": "Der Gesten-Prompt konnte nicht geladen werden.",

@@ -776,7 +776,7 @@
     "title": "Motion prompt",
     "subtitle": "The body-language instructions appended to your avatar's system prompt – editable per project.",
     "label": "Gesture instructions",
-    "hint": "Keep the gesture names unchanged as ::name:: or they will not be recognized.",
+    "hint": "Keep the gesture names unchanged as ::name:: – the avatar only knows these. Any other ::name:: is removed from the reply without a gesture.",
     "inactive": "Gestures are off for this project (or its layout shows no avatar) – this text is currently not sent.",
     "reset": "Reset to default",
     "loadError": "The motion prompt could not be loaded.",
