@@ -127,6 +127,10 @@ class Project(SQLModel, table=True):
     # frontend/src/components/TalkingHeadAvatar). Needs motion_enabled, since it uses the same
     # MotionEngine. Off by default: it is a matter of taste and of how fast replies arrive.
     thinking_motions_enabled: bool = False
+    # The teacher's own wording of the gesture instructions appended to the system prompt (see
+    # features/chat/motion.py::effective_motion_prompt). None = the built-in MOTION_PROMPT, so
+    # existing projects follow future improvements to it.
+    motion_prompt: str | None = None
     # Optional teacher-set access gate for the public chat link (see
     # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.

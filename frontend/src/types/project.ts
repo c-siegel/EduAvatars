@@ -69,6 +69,9 @@ export interface Project {
   // Random thinking gestures while the reply is generated (see TalkingHeadAvatar's startThinking).
   // Only has an effect together with motionEnabled.
   thinkingMotionsEnabled: boolean;
+  // The teacher's own gesture instructions for the system prompt; null = the built-in default
+  // (see backend features/chat/motion.py::effective_motion_prompt).
+  motionPrompt: string | null;
   // Whether a visitor must enter a password before the public chat unlocks (see
   // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
   // projectsApi.update's separate `chatPassword` field, never read back here.
@@ -90,6 +93,16 @@ export interface Project {
 export type ProjectUpdate = Partial<
   Omit<Project, "avatarModelUrl" | "avatarBackgroundUrl" | "startAudioUrl" | "llmModel" | "passwordProtected">
 > & { chatPassword?: string | null };
+
+// The system prompt a chat turn really sends, in its parts (GET /projects/{id}/system-prompt).
+export interface SystemPrompt {
+  preprompt: string;
+  motionPrompt: string;
+  defaultMotionPrompt: string;
+  motionCustomized: boolean;
+  motionActive: boolean;
+  full: string;
+}
 
 export type SpokenLanguage = "de" | "en";
 

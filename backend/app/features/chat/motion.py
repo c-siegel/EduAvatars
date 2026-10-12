@@ -40,10 +40,23 @@ MOTIONS: dict[str, str] = {
 MOTION_PROMPT = (
     "You appear as an animated 3D avatar and can use body language. To make a gesture, write its "
     "marker exactly as ::name:: in your reply, right where the gesture should happen, e.g. "
-    '"::wave_right:: Hello!". Markers are neither spoken nor shown, so never mention them. Use at '
+    '"That is a good question, but ::shrug_confused:: I don\'t know.". Markers are neither spoken nor shown, so never mention them. Use at '
     "most one marker per sentence and only when it fits naturally; many replies need none. Use "
     "only these gestures:\n" + "\n".join(f"- {name}: {use}" for name, use in MOTIONS.items())
 )
+
+def effective_motion_prompt(custom: str | None) -> str:
+    """The teacher's own gesture instructions if set, else the built-in MOTION_PROMPT."""
+    return custom.strip() if custom and custom.strip() else MOTION_PROMPT
+
+
+def compose_system_prompt(preprompt: str, motion_prompt: str | None, motion_enabled: bool) -> str:
+    """The preprompt with the gesture instructions appended (when gestures are on)."""
+    if not motion_enabled:
+        return preprompt
+    motion = effective_motion_prompt(motion_prompt)
+    return f"{preprompt}\n\n{motion}" if preprompt else motion
+
 
 # Whitespace inside the colons is tolerated because models sometimes write ":: nod_yes ::".
 _MARKER_RE = re.compile(r"::\s*(" + "|".join(map(re.escape, MOTIONS)) + r")\s*::", re.IGNORECASE)

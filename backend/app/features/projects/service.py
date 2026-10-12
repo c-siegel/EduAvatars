@@ -79,6 +79,7 @@ def sync_llm_model(session: Session, project: Project) -> None:
 # field as optional, but a null on title/temperature/... would be a malformed request and would
 # fail the DB's NOT NULL constraint anyway.
 _CLEARABLE_FIELDS = {
+    "motion_prompt",
     "llm_api_key_id",
     "avatar_model_id",
     "builtin_avatar",
@@ -203,6 +204,8 @@ def apply_update(session: Session, project: Project, data: ProjectUpdate) -> Pro
     """Validate and apply a ProjectUpdate (only the fields actually sent), including the chat password."""
     _check_references(session, project.user_id, data)
     update_data = data.model_dump(exclude_unset=True)
+    if "motion_prompt" in update_data and not (update_data["motion_prompt"] or "").strip():
+        update_data["motion_prompt"] = None
     chat_password = update_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)

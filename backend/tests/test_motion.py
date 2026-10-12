@@ -165,3 +165,35 @@ def test_exports_without_the_thinking_setting_import_with_it_off() -> None:
 def test_exports_without_the_setting_import_with_motion_on() -> None:
     assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n").motion_enabled is True
     assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n  motion_enabled: false\n").motion_enabled is False
+
+
+# --- Editable motion prompt ---
+
+
+def test_system_prompt_route_shows_the_assembled_prompt(client, chat_project) -> None:
+    body = client.get(f"/projects/{chat_project['id']}/system-prompt").json()
+
+    assert body["motionActive"] is True
+    assert body["motionCustomized"] is False
+    assert body["motionPrompt"] == body["defaultMotionPrompt"] == MOTION_PROMPT
+    assert body["full"] == f"{body['preprompt']}\n\n{MOTION_PROMPT}"
+
+
+def test_custom_motion_prompt_is_sent_and_blank_restores_the_default(client, anon, chat_project, fake_ai) -> None:
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+
+    updated = client.put(f"/projects/{chat_project['id']}", json={"motionPrompt": "Only wave at the start."}).json()
+    assert updated["motionPrompt"] == "Only wave at the start."
+    anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
+    system = fake_ai.completion_calls[-1]["messages"][0]["content"]
+    assert system.endswith("Only wave at the start.") and MOTION_PROMPT not in system
+    assert client.get(f"/projects/{chat_project['id']}/system-prompt").json()["full"] == system
+
+    assert client.put(f"/projects/{chat_project['id']}", json={"motionPrompt": "  "}).json()["motionPrompt"] is None
+    anon.post(f"/public/{slug}/messages", json={"message": "Hallo"})
+    assert fake_ai.completion_calls[-1]["messages"][0]["content"].endswith(MOTION_PROMPT)
+
+
+def test_system_prompt_route_needs_an_owned_project(client, chat_project) -> None:
+    assert client.get("/projects/does-not-exist/system-prompt").status_code == 404

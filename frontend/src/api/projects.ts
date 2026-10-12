@@ -1,13 +1,14 @@
 import { apiClient, API_BASE_URL, ApiError, filenameFromContentDisposition } from "./client";
 import i18n from "@/i18n";
 import type { ChatMessage } from "@/types/chat";
-import type { Project, ProjectStats, ProjectUpdate } from "@/types/project";
+import type { Project, ProjectStats, ProjectUpdate, SystemPrompt } from "@/types/project";
 
 export const projectsApi = {
   list: () => apiClient.get<Project[]>("/projects"),
   stats: () => apiClient.get<ProjectStats>("/analytics/overview"),
   create: () => apiClient.post<Project>("/projects", { title: i18n.t("configurator.newProject") }),
   get: (id: string) => apiClient.get<Project>(`/projects/${id}`),
+  systemPrompt: (id: string) => apiClient.get<SystemPrompt>(`/projects/${id}/system-prompt`),
   // chatPassword isn't part of Project (write-only, see types/project.ts) — null clears/disables
   // the chat password, a non-empty string sets/changes it, omitted leaves it unchanged.
   update: (id: string, data: ProjectUpdate) =>

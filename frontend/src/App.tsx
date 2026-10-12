@@ -29,6 +29,9 @@ const PronunciationPage = lazy(() =>
 const KnowledgePage = lazy(() => import("./pages/Dashboard/Knowledge").then((m) => ({ default: m.KnowledgePage })));
 const EvaluationPage = lazy(() => import("./pages/Dashboard/Evaluation").then((m) => ({ default: m.EvaluationPage })));
 const LatencyLabPage = lazy(() => import("./pages/Dashboard/LatencyLab").then((m) => ({ default: m.LatencyLabPage })));
+const MotionPromptPage = lazy(() =>
+  import("./pages/Dashboard/MotionPrompt").then((m) => ({ default: m.MotionPromptPage })),
+);
 const ProfilePage = lazy(() => import("./pages/Dashboard/Profile").then((m) => ({ default: m.ProfilePage })));
 const AdminUsersPage = lazy(() => import("./pages/Dashboard/Admin/Users").then((m) => ({ default: m.AdminUsersPage })));
 const AdminSettingsPage = lazy(() =>
@@ -91,6 +94,7 @@ export function App() {
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="evaluation" element={<EvaluationPage />} />
             <Route path="latency" element={<LatencyLabPage />} />
+            <Route path="motion-prompt" element={<MotionPromptPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="change-password-required" element={<ForcePasswordChangePage />} />
             <Route path="admin" element={<RequireAdmin> <AdminUsersPage /> </RequireAdmin> } />

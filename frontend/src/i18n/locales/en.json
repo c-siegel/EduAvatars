@@ -31,6 +31,7 @@
     "themeToLight": "Switch to light mode",
     "closeMenu": "Close menu",
     "openMenu": "Open menu",
+    "motionPrompt": "Motion prompt",
     "latencyLab": "Latency test",
     "knowledge": "Knowledge",
     "evaluation": "Answer quality"
@@ -770,6 +771,19 @@
       "failed": "The import didn't work.",
       "exportFailed": "The export didn't work."
     }
+  },
+  "motionPrompt": {
+    "project": "Project",
+    "noProject": "You have no projects yet.",
+    "title": "Motion prompt",
+    "subtitle": "The body-language instructions appended to your avatar's system prompt – editable per project.",
+    "label": "Gesture instructions",
+    "hint": "Keep the gesture names unchanged as ::name:: or they will not be recognized.",
+    "inactive": "Gestures are off for this project (or its layout shows no avatar) – this text is currently not sent.",
+    "reset": "Reset to default",
+    "loadError": "The motion prompt could not be loaded.",
+    "saveError": "Saving failed.",
+    "saved": "Saved."
   },
   "latencyLab": {
     "title": "Latency test",

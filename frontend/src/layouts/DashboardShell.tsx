@@ -8,6 +8,7 @@ import {
   Gauge,
   LayoutDashboard,
   Timer,
+  ScrollText,
   BarChart3,
   KeyRound,
   Languages,
@@ -72,6 +73,12 @@ const NAV_ITEMS = {
     href: "/dashboard/latency",
     icon: Timer,
     isActive: (p) => p.startsWith("/dashboard/latency"),
+  },
+  motionPrompt: {
+    labelKey: "nav.motionPrompt",
+    href: "/dashboard/motion-prompt",
+    icon: ScrollText,
+    isActive: (p) => p.startsWith("/dashboard/motion-prompt"),
   },
   profile: {
     labelKey: "nav.profile",
@@ -182,7 +189,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     {
       id: "insights",
       labelKey: "nav.groups.insights",
-      items: [NAV_ITEMS.analytics, ...(knowledgeAvailable && evaluationAvailable ? [NAV_ITEMS.evaluation] : []), NAV_ITEMS.latencyLab],
+      items: [NAV_ITEMS.analytics, ...(knowledgeAvailable && evaluationAvailable ? [NAV_ITEMS.evaluation] : []), NAV_ITEMS.latencyLab, NAV_ITEMS.motionPrompt],
     },
     { id: "setup", labelKey: "nav.groups.setup", items: [NAV_ITEMS.apiDashboard, NAV_ITEMS.profile] },
     ...(user?.isAdmin ? [{ id: "admin", labelKey: "nav.groups.admin", items: [NAV_ITEMS.admin] }] : []),

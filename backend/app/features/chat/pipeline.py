@@ -32,7 +32,7 @@ from app.features.ai.tts.pronunciation import PronunciationMatcher
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import resolve_llm_key, resolve_tts_key
 from app.features.chat.conversation_store import save_turn
-from app.features.chat.motion import MOTION_PROMPT, MotionMark, extract_motions
+from app.features.chat.motion import MotionMark, compose_system_prompt, extract_motions
 from app.features.chat.streaming import SentenceChunker
 from app.features.knowledge.prompt import reference_block
 from app.features.knowledge.retrieval import KnowledgeContext, Passage, prepare_knowledge, retrieve, sources_for_transcript
@@ -85,6 +85,8 @@ class ChatContext:
     # Whether the LLM may mark gestures for the avatar (see features/chat/motion.py) — already
     # False when the project's layout shows no avatar.
     motion_enabled: bool = False
+    # The project's own gesture instructions, None = built-in default (see chat/motion.py).
+    motion_prompt: str | None = None
 
 
 @dataclass
@@ -150,6 +152,7 @@ def prepare_chat(session: Session, project: Project, llm_key: UserApiKey | None 
         knowledge=prepare_knowledge(session, project, api_key.provider),
         pronunciation=matcher_for(session, project.user_id, project.spoken_language) if project.tts_enabled else None,
         motion_enabled=project.motion_enabled and project.chat_layout != "chat_only",
+        motion_prompt=project.motion_prompt,
     )
 
 
@@ -167,9 +170,7 @@ def _chat_request(
     context: ChatContext, turn: ChatTurn, passages: list[Passage], *, with_motion: bool = True
 ) -> llm.ChatRequest:
     reference = reference_block(context.knowledge.mode, passages) if context.knowledge else None
-    preprompt = context.preprompt
-    if with_motion and context.motion_enabled:
-        preprompt = f"{preprompt}\n\n{MOTION_PROMPT}" if preprompt else MOTION_PROMPT
+    preprompt = compose_system_prompt(context.preprompt, context.motion_prompt, with_motion and context.motion_enabled)
     return llm.ChatRequest(
         preprompt,
         turn.message,

@@ -2211,6 +2211,17 @@
             "title": "Motionenabled",
             "type": "boolean"
           },
+          "motionPrompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motionprompt"
+          },
           "passwordProtected": {
             "title": "Passwordprotected",
             "type": "boolean"
@@ -2438,6 +2449,7 @@
           "chatLayout",
           "motionEnabled",
           "thinkingMotionsEnabled",
+          "motionPrompt",
           "passwordProtected",
           "requireVisitorName",
           "startAudioUrl",
@@ -2627,6 +2639,18 @@
               }
             ],
             "title": "Motionenabled"
+          },
+          "motionPrompt": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motionprompt"
           },
           "preprompt": {
             "anyOf": [
@@ -4908,6 +4932,44 @@
           }
         },
         "title": "SourceMetadataOut",
+        "type": "object"
+      },
+      "SystemPromptOut": {
+        "properties": {
+          "defaultMotionPrompt": {
+            "title": "Defaultmotionprompt",
+            "type": "string"
+          },
+          "full": {
+            "title": "Full",
+            "type": "string"
+          },
+          "motionActive": {
+            "title": "Motionactive",
+            "type": "boolean"
+          },
+          "motionCustomized": {
+            "title": "Motioncustomized",
+            "type": "boolean"
+          },
+          "motionPrompt": {
+            "title": "Motionprompt",
+            "type": "string"
+          },
+          "preprompt": {
+            "title": "Preprompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preprompt",
+          "motionPrompt",
+          "defaultMotionPrompt",
+          "motionCustomized",
+          "motionActive",
+          "full"
+        ],
+        "title": "SystemPromptOut",
         "type": "object"
       },
       "TestCaseCreate": {
@@ -8329,6 +8391,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/system-prompt": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemPromptOut"
                 }
               }
             },

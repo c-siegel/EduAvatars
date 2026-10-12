@@ -18,7 +18,8 @@ from sqlmodel import Session
 from app.core.deps import get_current_user, get_owned_project, get_session
 from app.features.projects import service
 from app.features.projects.models import Project
-from app.features.projects.schemas import ProjectOut, ProjectUpdate
+from app.features.chat.motion import MOTION_PROMPT, compose_system_prompt, effective_motion_prompt
+from app.features.projects.schemas import ProjectOut, ProjectUpdate, SystemPromptOut
 from app.features.users.models import User
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -44,6 +45,21 @@ def get_projects(current_user: User = Depends(get_current_user), session: Sessio
 def get_project(project: Project = Depends(get_owned_project)):
     """A single project owned by the current user."""
     return project
+
+
+@router.get("/{project_id}/system-prompt", response_model=SystemPromptOut)
+def get_system_prompt(project: Project = Depends(get_owned_project)):
+    """The system prompt as the model receives it: preprompt plus the gesture instructions."""
+    active = project.motion_enabled and project.chat_layout != "chat_only"
+    preprompt = project.preprompt or ""
+    return SystemPromptOut(
+        preprompt=preprompt,
+        motion_prompt=effective_motion_prompt(project.motion_prompt),
+        default_motion_prompt=MOTION_PROMPT,
+        motion_customized=bool(project.motion_prompt),
+        motion_active=active,
+        full=compose_system_prompt(preprompt, project.motion_prompt, active),
+    )
 
 
 @router.put("/{project_id}", response_model=ProjectOut)

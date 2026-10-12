@@ -31,6 +31,7 @@
     "themeToLight": "Zum hellen Modus wechseln",
     "closeMenu": "Menü schließen",
     "openMenu": "Menü öffnen",
+    "motionPrompt": "Gesten-Prompt",
     "latencyLab": "Latenztest",
     "knowledge": "Wissen",
     "evaluation": "Antwortqualität"
@@ -770,6 +771,19 @@
       "failed": "Der Import hat nicht funktioniert.",
       "exportFailed": "Der Export hat nicht funktioniert."
     }
+  },
+  "motionPrompt": {
+    "project": "Projekt",
+    "noProject": "Du hast noch keine Projekte.",
+    "title": "Gesten-Prompt",
+    "subtitle": "Die Anweisungen zur Körpersprache, die an den System-Prompt deines Avatars angehängt werden – pro Projekt bearbeitbar.",
+    "label": "Gesten-Anweisungen",
+    "hint": "Die Gestennamen müssen unverändert als ::name:: genannt bleiben, sonst werden sie nicht erkannt.",
+    "inactive": "Gesten sind für dieses Projekt aus (oder das Layout zeigt keinen Avatar) – dieser Text wird derzeit nicht gesendet.",
+    "reset": "Auf Standard zurücksetzen",
+    "loadError": "Der Gesten-Prompt konnte nicht geladen werden.",
+    "saveError": "Speichern fehlgeschlagen.",
+    "saved": "Gespeichert."
   },
   "latencyLab": {
     "title": "Latenztest",
