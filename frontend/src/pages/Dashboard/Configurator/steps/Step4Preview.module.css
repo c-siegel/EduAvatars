@@ -1,8 +1,25 @@
+/* Side by side like the public chat; stacked on narrow screens. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .avatarStage {
+    height: 16rem;
+  }
+}
+
 .avatarStage {
-  height: 16rem;
+  min-height: 16rem;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  margin-bottom: var(--space-4);
   /* Only the fallback surface for "no background image chosen" now — TalkingHeadAvatar renders
      the image itself (.backdrop), see TalkingHeadAvatar.module.css/.tsx. */
   background-color: var(--surface-sunken);

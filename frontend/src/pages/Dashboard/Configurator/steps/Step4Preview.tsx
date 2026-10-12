@@ -80,6 +80,7 @@ export function Step4Preview({
     <>
       {hasUnsavedChanges && <Callout variant="info">{t("configurator.step4.unsavedChanges")}</Callout>}
 
+      <div className={ttsEnabled ? styles.layout : undefined}>
       {ttsEnabled && (
         <div className={styles.avatarStage}>
           <TalkingHeadAvatar
@@ -134,6 +135,7 @@ export function Step4Preview({
             <Send size={16} />
           </Button>
         </form>
+      </div>
       </div>
     </>
   );
