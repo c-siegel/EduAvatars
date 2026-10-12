@@ -1,4 +1,4 @@
-import type { ChatLayout, SpokenLanguage, SttServerEngine } from "@/types/project";
+import type { ChatLayout, KnowledgeMode, SpokenLanguage, SttServerEngine } from "@/types/project";
 
 // Local wizard state for screen 1e.
 export interface ConfiguratorDraft {
@@ -9,6 +9,7 @@ export interface ConfiguratorDraft {
   builtinAvatar: string | null;
   avatarBackgroundId: string | null;
   chatLayout: ChatLayout;
+  motionEnabled: boolean;
   gradeLevel: string;
   preprompt: string;
   startPrompt: string;
@@ -32,6 +33,9 @@ export interface ConfiguratorDraft {
   sttEnabled: boolean;
   sttBrowserEnabled: boolean;
   streamingEnabled: boolean;
+  knowledgeMode: KnowledgeMode;
+  knowledgeTopK: number;
+  knowledgeBaseIds: string[];
 }
 
 export interface StepProps {

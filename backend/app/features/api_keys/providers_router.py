@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends
 
 from app.core.config import settings
 from app.core.deps import get_current_user
-from app.core.providers import PROVIDERS
+from app.core.providers import KEY_TYPE_EMBEDDING, PROVIDERS
 from app.features.ai.stt import parakeet_local
 from app.features.api_keys.schemas import (
     BrowserSttStatusOut,
@@ -38,8 +38,10 @@ def list_providers(_: User = Depends(get_current_user)):
             default_api_base=spec.default_api_base,
             api_base_required=spec.api_base_required,
             key_required=spec.key_required,
-            supported_types=list(spec.supported_types),
+            # Embedding keys only exist for knowledge bases — hidden where that feature is off.
+            supported_types=[t for t in spec.supported_types if t != KEY_TYPE_EMBEDDING or settings.rag_enabled],
             models=[ProviderModelOut(value=value, label=label) for value, label in spec.models],
+            embedding_models=[ProviderModelOut(value=value, label=label) for value, label in spec.embedding_models],
             hint=spec.hint,
             tts_model_fixed=spec.tts_model is not None,
             stt_model_fixed=spec.stt_model is not None,

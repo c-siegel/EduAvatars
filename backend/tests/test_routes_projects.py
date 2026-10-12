@@ -141,7 +141,12 @@ def test_preview_message(client, chat_project, fake_ai):
     )
     assert response.status_code == 200
     body = response.json()
-    assert body == {"reply": LLM_REPLY, "audioBase64": base64.b64encode(TTS_BYTES).decode(), "contentType": "audio/mpeg"}
+    assert body == {
+        "reply": LLM_REPLY,
+        "audioBase64": base64.b64encode(TTS_BYTES).decode(),
+        "contentType": "audio/mpeg",
+        "motions": [],
+    }
     assert fake_ai.completion_calls[-1]["messages"][-2:] == [
         {"role": "assistant", "content": "Hallo"},
         {"role": "user", "content": "Test"},

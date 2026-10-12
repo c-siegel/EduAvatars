@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UserCog, Share2, SlidersHorizontal } from "lucide-react";
 import { ButtonLink } from "@/components/Button";
@@ -7,6 +6,7 @@ import { Badge } from "@/components/Badge";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Wordmark } from "@/components/Wordmark";
 import { TalkingHeadAvatar } from "@/components/TalkingHeadAvatar";
+import { SiteFooter } from "@/components/SiteFooter";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import styles from "./Landing.module.css";
 
@@ -129,23 +129,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Footer: copyright + legal links; "Kontakt" is dropped on mobile to save space */}
-      <footer className={styles.footer}>
-        <span>© EduAvatars</span>
-        {/* Link, not <a href>: these are client-side routes, so a plain anchor would throw away
-            the SPA and reload the whole app. */}
-        <nav className={styles.footerLinks} aria-label={t("landing.footer.legalAriaLabel")}>
-          <Link to="/datenschutz">{t("landing.footer.privacy")}</Link>
-          <span aria-hidden="true">·</span>
-          <Link to="/impressum">{t("landing.footer.imprint")}</Link>
-          <span aria-hidden="true" className={styles.footerLinksFull}>
-            ·
-          </span>
-          <Link to="/credits" className={styles.footerLinksFull}>
-            {t("landing.footer.credits")}
-          </Link>
-        </nav>
-      </footer>
+      <SiteFooter />
     </PublicLayout>
   );
 }

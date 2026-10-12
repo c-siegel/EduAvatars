@@ -20,7 +20,7 @@ export const projectsApi = {
   // button in Step3Behavior.
   generateStartAudio: (id: string) => apiClient.post<Project>(`/projects/${id}/start-audio`),
   previewMessage: (id: string, message: string, history: ChatMessage[]) =>
-    apiClient.post<{ reply: string; audioBase64: string | null; contentType: string | null }>(
+    apiClient.post<{ reply: string; audioBase64: string | null; contentType: string | null; motions: string[] }>(
       `/projects/${id}/chat/messages`,
       { message, history },
     ),

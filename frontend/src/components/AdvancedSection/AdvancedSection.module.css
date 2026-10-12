@@ -1,0 +1,52 @@
+.section {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  list-style: none;
+}
+
+/* The chevron replaces the browser's own disclosure triangle. */
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  background: var(--surface-sunken);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.section[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.changed {
+  font-size: 0.8125rem;
+  color: var(--text-accent);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-4) var(--space-4);
+}

@@ -117,6 +117,11 @@ class SentenceChunker:
             if ch == "\n":
                 self._scan_pos = i
                 return i
+            # The closing "::" of a gesture marker (see features/chat/motion.py) is no sentence end:
+            # a chunk must never split a marker, and a marker mid-sentence mustn't split the sentence.
+            if ch == ":" and i > 0 and buf[i - 1] == ":":
+                i += 1
+                continue
             if ch in _SENTENCE_MARKS:
                 if i + 1 >= n:
                     # The scanner never decides on the final character of the buffer — a lone

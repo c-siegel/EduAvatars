@@ -5,6 +5,7 @@ import { Copy } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { HeadingWithInfo, ToggleWithInfo } from "@/components/InfoTip";
 import { Input } from "@/components/Input";
 import { errorMessage } from "@/api/client";
 import { projectsApi } from "@/api/projects";
@@ -69,74 +70,54 @@ export function Step5Publish({ draft, onChange, project, projectId, hasUnsavedCh
 
   return (
     <>
-      <label className={styles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.saveConversations}
-          onChange={(e) => onChange({ saveConversations: e.target.checked })}
-        />
-        <span className={styles.toggleCopy}>
-          <strong>{t("configurator.step5.recordConversationsTitle")}</strong>
-          <span>{t("configurator.step5.recordConversationsText")}</span>
-        </span>
-      </label>
+      <ToggleWithInfo
+        title={t("configurator.step5.recordConversationsTitle")}
+        checked={draft.saveConversations}
+        onChange={(e) => onChange({ saveConversations: e.target.checked })}
+        info={t("configurator.step5.recordConversationsText")}
+      />
 
-      <label className={styles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.requireVisitorName}
-          onChange={(e) => onChange({ requireVisitorName: e.target.checked })}
-        />
-        <span className={styles.toggleCopy}>
-          <strong>{t("configurator.step5.requireVisitorNameTitle")}</strong>
-          <span>{t("configurator.step5.requireVisitorNameText")}</span>
-        </span>
-      </label>
+      <ToggleWithInfo
+        title={t("configurator.step5.requireVisitorNameTitle")}
+        checked={draft.requireVisitorName}
+        onChange={(e) => onChange({ requireVisitorName: e.target.checked })}
+        info={t("configurator.step5.requireVisitorNameText")}
+      />
 
       <Callout variant="info">{t("configurator.step5.surveyNotice")}</Callout>
 
       <div className={styles.field}>
-        <label className={styles.toggleRow}>
-          <input
-            type="checkbox"
-            checked={draft.surveyBeforeEnabled}
-            onChange={(e) => onChange({ surveyBeforeEnabled: e.target.checked })}
-          />
-          <span className={styles.toggleCopy}>
-            <strong>{t("configurator.step5.surveyBeforeTitle")}</strong>
-            <span>{t("configurator.step5.surveyBeforeText")}</span>
-          </span>
-        </label>
+        <ToggleWithInfo
+          title={t("configurator.step5.surveyBeforeTitle")}
+          checked={draft.surveyBeforeEnabled}
+          onChange={(e) => onChange({ surveyBeforeEnabled: e.target.checked })}
+          info={t("configurator.step5.surveyBeforeText")}
+        />
         <Input
           label={t("configurator.step5.surveyBeforeUrl")}
           type="url"
           placeholder="https://tally.so/r/xxxxxx"
           value={draft.surveyBeforeUrl}
           onChange={(e) => onChange({ surveyBeforeUrl: e.target.value })}
+          info={t("configurator.step5.surveyBeforeHint")}
         />
-        <p className={styles.hint}>{t("configurator.step5.surveyBeforeHint")}</p>
       </div>
 
       <div className={styles.field}>
-        <label className={styles.toggleRow}>
-          <input
-            type="checkbox"
-            checked={draft.surveyAfterEnabled}
-            onChange={(e) => onChange({ surveyAfterEnabled: e.target.checked })}
-          />
-          <span className={styles.toggleCopy}>
-            <strong>{t("configurator.step5.surveyAfterTitle")}</strong>
-            <span>{t("configurator.step5.surveyAfterText")}</span>
-          </span>
-        </label>
+        <ToggleWithInfo
+          title={t("configurator.step5.surveyAfterTitle")}
+          checked={draft.surveyAfterEnabled}
+          onChange={(e) => onChange({ surveyAfterEnabled: e.target.checked })}
+          info={t("configurator.step5.surveyAfterText")}
+        />
         <Input
           label={t("configurator.step5.surveyAfterUrl")}
           type="url"
           placeholder="https://tally.so/r/yyyyyy"
           value={draft.surveyAfterUrl}
           onChange={(e) => onChange({ surveyAfterUrl: e.target.value })}
+          info={t("configurator.step5.surveyAfterHint")}
         />
-        <p className={styles.hint}>{t("configurator.step5.surveyAfterHint")}</p>
       </div>
 
       <div className={styles.publishCard}>
@@ -173,10 +154,12 @@ export function Step5Publish({ draft, onChange, project, projectId, hasUnsavedCh
 
       <div className={styles.publishCard}>
         <div className={styles.publishHeader}>
-          <span className={styles.toggleCopy}>
-            <strong>{t("configurator.step5.passwordProtection.title")}</strong>
-            <span>{t("configurator.step5.passwordProtection.text")}</span>
-          </span>
+          <HeadingWithInfo
+            as="h4"
+            className={styles.cardTitle}
+            title={t("configurator.step5.passwordProtection.title")}
+            info={t("configurator.step5.passwordProtection.text")}
+          />
           <Badge variant={project.passwordProtected ? "accent" : "default"}>
             {project.passwordProtected
               ? t("configurator.step5.passwordProtection.protected")
