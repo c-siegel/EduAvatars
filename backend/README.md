@@ -326,7 +326,9 @@ project or the account.
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
 admin-initiated delete endpoint — disabling (`User.enabled`) is how an admin removes access; the
-only way an account is actually deleted is the self-service `DELETE /me` above.
+only way an account is actually deleted is the self-service `DELETE /me` above. A disabled
+account's published chats go offline with it (404, including their avatar, background and greeting
+audio) and come back unchanged when it's re-enabled.
 
 | Method & path | Auth | Description |
 |---|---|---|

@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.features.ai.tts.local import VoiceReference, forget_voice
 from app.features.media.models import AvatarModel, BackgroundImage, VoiceClip
 from app.features.projects.models import Project
+from app.features.users.models import User
 from app.storage.files import save_file, unlink_quietly
 
 
@@ -27,7 +28,12 @@ def is_used_by_published_project(session: Session, column, item_id: str, owner_i
     the public chat needs the avatar/background visible to students."""
     # Only the asset owner's own projects count: otherwise anyone could publish a project pointing
     # at a guessed or leaked ID and so make someone else's private upload public.
-    query = select(Project).where(column == item_id, Project.published == True, Project.user_id == owner_id)  # noqa: E712
+    # A disabled owner's chats are offline (see core/deps.py::get_published_project), so their files are too.
+    query = (
+        select(Project)
+        .join(User, User.id == Project.user_id)
+        .where(column == item_id, Project.published == True, Project.user_id == owner_id, User.enabled == True)  # noqa: E712
+    )
     return session.exec(query).first() is not None
 
 
