@@ -464,9 +464,10 @@ them with:
 cd backend && pytest
 ```
 
-Tests need a `JWT_SECRET`/`API_KEY_ENCRYPTION_SECRET` in the environment (the repo root `.env` from
-[Deploy A](../README.md#deploy-a-local-development) already has both, so local runs need no extra
-setup) — see `app/core/config.py`'s startup validation above.
+Tests need no setup: `tests/conftest.py` sets throwaway `JWT_SECRET`/`API_KEY_ENCRYPTION_SECRET`
+values and sets `EDUAVATARS_ENV_FILE=""`, so the repo root `.env` is not read and your local
+settings can't change the results. Outside tests, `EDUAVATARS_ENV_FILE` (a real environment
+variable — it can't be set from inside a `.env`) points the backend at a different `.env` file.
 
 Most of the app (routes, DB access, provider calls) still has no test coverage — this is a start,
 not full coverage. CI (`.github/workflows/docker-publish.yml`) runs this suite, plus the frontend
