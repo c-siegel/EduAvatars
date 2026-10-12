@@ -29,7 +29,12 @@ local-tts/.cache/
 # everything else in .claude/ and a local CLAUDE.md stay untracked.
 .claude/*
 !.claude/agents/
-CLAUDE.md
+
 
 # On-device STT model files (see scripts/fetch-stt-model.sh)
 models/
+
+# rag/rag-eval data
+rag-eval/.data/
+rag/.data/
+
