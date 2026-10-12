@@ -294,7 +294,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         key_placeholder="…",
         default_api_base=None,
         api_base_required=True,
-        key_required=True,
+        key_required=False,
         supported_types=(KEY_TYPE_LLM, KEY_TYPE_TTS, KEY_TYPE_EMBEDDING),
         # Addressed via litellm's "openai/" prefix + api_base, regardless of which provider
         # actually sits behind it.
