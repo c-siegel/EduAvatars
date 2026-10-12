@@ -82,9 +82,11 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
     setRecording(true);
     const startedAt = Date.now();
     timerRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setSeconds(elapsed);
-      if (elapsed >= MAX_RECORDING_SECONDS) stop();
+      const elapsedMs = Date.now() - startedAt;
+      setSeconds(Math.min(Math.floor(elapsedMs / 1000), MAX_RECORDING_SECONDS));
+      // Stop a little early: the timer ticks every 250 ms and the recorder flushes after stop(),
+      // so stopping at exactly the limit would produce a clip slightly longer than the backend allows.
+      if (elapsedMs >= (MAX_RECORDING_SECONDS - 0.5) * 1000) stop();
     }, 250);
   }
 

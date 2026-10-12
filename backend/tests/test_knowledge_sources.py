@@ -302,6 +302,8 @@ def test_a_teachers_link_is_never_overwritten(client, teacher, fake_rag):
         (b"@article{a, title={x}}\x00", 400, "KNOWLEDGE_BIB_INVALID"),
         (b"%" * (bibtex.MAX_BIB_BYTES + 1), 413, "KNOWLEDGE_BIB_TOO_LARGE"),
     ],
+    # The oversized payload would otherwise be the test id and overflow PYTEST_CURRENT_TEST on Windows.
+    ids=["no-entries", "nul-byte", "too-large"],
 )
 def test_unreadable_bibliographies_are_refused(client, teacher, fake_rag, data, status, code):
     kb = _kb(client)

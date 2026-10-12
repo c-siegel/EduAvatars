@@ -14,6 +14,7 @@ How to use:
 import json
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlmodel import Field, SQLModel
 
@@ -167,7 +168,13 @@ class Project(SQLModel, table=True):
     @property
     def start_audio_url(self) -> str | None:
         """URL of the cached start-prompt audio, or None if it hasn't been generated yet."""
-        return start_audio_url(self.id) if self.start_audio_path else None
+        if not self.start_audio_path:
+            return None
+        try:
+            version = Path(self.start_audio_path).stat().st_mtime_ns
+        except OSError:
+            version = None
+        return start_audio_url(self.id, version)
 
     @property
     def avatar_model_url(self) -> str | None:

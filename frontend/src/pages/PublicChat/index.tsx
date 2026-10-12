@@ -852,6 +852,8 @@ export function PublicChatPage() {
 
   // Voice recording in the browser
   async function toggleRecording() {
+    // Same reason as in sendFromComposer: the spoken reply arrives long after this gesture.
+    avatarRef.current?.unlockAudio();
     // Already recording -> stop the recording
     if (isRecording) {
       // Earliest unambiguous "end of speech" time (click handler) for the latency log —
@@ -984,6 +986,10 @@ export function PublicChatPage() {
   // transcribeSegment's isFinal branch). While a stop is already in flight (isFinalizingRecording),
   // that pending finalization will send on its own — sending here too would double-send.
   function sendFromComposer() {
+    // The reply is played long after this click, outside any gesture. Without a gesture-time
+    // resume, a still-suspended AudioContext (autoplay policy, no greeting played yet) would
+    // swallow the reply's audio silently.
+    avatarRef.current?.unlockAudio();
     if (isRecording) {
       toggleRecording();
       return;

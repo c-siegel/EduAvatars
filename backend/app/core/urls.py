@@ -39,8 +39,10 @@ def voice_clip_file_url(clip_id: str) -> str:
     return api_url(f"/voice-clips/{clip_id}/file")
 
 
-def start_audio_url(project_id: str) -> str:
-    return api_url(f"/projects/{project_id}/start-audio")
+def start_audio_url(project_id: str, version: int | None = None) -> str:
+    """`version` busts the browser cache: regenerating overwrites the same file under the same URL."""
+    suffix = f"?v={version}" if version is not None else ""
+    return api_url(f"/projects/{project_id}/start-audio{suffix}")
 
 
 def profile_picture_url(version: int) -> str:

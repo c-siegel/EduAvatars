@@ -1402,7 +1402,6 @@
     "VOICE_CLIP_TOO_LARGE": "Die Datei ist zu groß (max. 15 MB).",
     "VOICE_CLIP_INVALID_AUDIO": "Die Datei ist keine lesbare Audioaufnahme.",
     "VOICE_CLIP_TOO_SHORT": "Der Clip ist zu kurz — mindestens 3 Sekunden sind nötig.",
-    "VOICE_CLIP_TOO_LONG": "Der Clip ist zu lang — höchstens 30 Sekunden.",
     "VOICE_CLIP_CONSENT_REQUIRED": "Bitte bestätige, dass du diese Stimme nutzen darfst.",
     "VOICE_CLIP_NAME_REQUIRED": "Bitte gib dem Stimmclip einen Namen.",
     "VOICE_PREVIEW_FAILED": "Der lokale Sprachdienst konnte die Hörprobe nicht erzeugen.",
