@@ -69,6 +69,12 @@ class PublicProjectOut(CamelModel):
     streaming_enabled: bool = False
     # Avatar and/or chat, see features/projects/models.py::Project.chat_layout.
     chat_layout: str = "avatar_chat"
+    # Whether the page loads the MotionEngine for the gestures in replies (see
+    # features/projects/models.py::Project.motion_enabled).
+    motion_enabled: bool = False
+    # Random thinking gestures while the reply is generated (see
+    # features/projects/models.py::Project.thinking_motions_enabled).
+    thinking_motions_enabled: bool = False
     # Already combined server-side with the respective checkbox (see
     # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.
@@ -144,6 +150,9 @@ class ChatMessageOut(CamelModel):
     # key), not that it was instant.
     llm_ms: float | None = None
     tts_ms: float | None = None
+    # Gestures for the avatar, in reply order (see features/chat/motion.py) — empty when the
+    # project has motion off.
+    motions: list[str] = []
 
 
 class TranscriptionOut(CamelModel):
@@ -152,3 +161,24 @@ class TranscriptionOut(CamelModel):
     # pages/PublicChat/index.tsx) — left None by callers that don't measure it (e.g. the
     # configurator preview's transcribe route).
     stt_ms: float | None = None
+
+
+class LatencyTestMessageIn(ChatMessageIn):
+    """A message for the dashboard's latency test (latency_router.py): the project's chat, with
+    some of its configuration overridden for this one request — never saved."""
+
+    # Another of the teacher's own LLM keys (each key carries its model), None: the project's.
+    llm_api_key_id: str | None = None
+    # "project": as configured; "local": the local-TTS sidecar; "none": text only (also what the
+    # page uses when it synthesizes speech in the browser instead).
+    tts_mode: Literal["project", "local", "none"] = "project"
+    # False: the whole reply is generated and synthesized first, like the plain /messages route.
+    streaming: bool = True
+
+
+class LatencyTranscriptionOut(CamelModel):
+    text: str
+    # Server-side transcription time only, without upload — the page measures the round trip.
+    stt_ms: float
+    # What actually transcribed: "whisper", "parakeet", or the STT key's provider.
+    engine: str

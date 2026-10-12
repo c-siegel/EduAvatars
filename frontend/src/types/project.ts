@@ -63,6 +63,15 @@ export interface Project {
   // What the public chat page shows: avatar + chat (open or starting collapsed), the avatar alone
   // (voice only) or the chat alone (no 3D model loaded) — see pages/PublicChat/index.tsx.
   chatLayout: ChatLayout;
+  // Whether the avatar uses body language: the LLM marks gestures in its replies, which the
+  // vendored MotionEngine plays (see backend features/chat/motion.py). No effect with "chat_only".
+  motionEnabled: boolean;
+  // Random thinking gestures while the reply is generated (see TalkingHeadAvatar's startThinking).
+  // Only has an effect together with motionEnabled.
+  thinkingMotionsEnabled: boolean;
+  // The teacher's own gesture instructions for the system prompt; null = the built-in default
+  // (see backend features/chat/motion.py::effective_motion_prompt).
+  motionPrompt: string | null;
   // Whether a visitor must enter a password before the public chat unlocks (see
   // pages/PublicChat/index.tsx). The password itself is write-only — set/change/remove it via
   // projectsApi.update's separate `chatPassword` field, never read back here.
@@ -71,6 +80,11 @@ export interface Project {
   // pages/PublicChat/index.tsx's "name-gate" stage) — the entered value shows up next to that
   // visitor's saved conversation in the analytics export, but only if saveConversations is also on.
   requireVisitorName: boolean;
+  // Knowledge bases (see pages/Dashboard/Knowledge): how the avatar uses them, how many passages
+  // it gets per turn, and which of the teacher's knowledge bases are attached.
+  knowledgeMode: KnowledgeMode;
+  knowledgeTopK: number;
+  knowledgeBaseIds: string[];
   createdAt: string;
 }
 
@@ -80,7 +94,21 @@ export type ProjectUpdate = Partial<
   Omit<Project, "avatarModelUrl" | "avatarBackgroundUrl" | "startAudioUrl" | "llmModel" | "passwordProtected">
 > & { chatPassword?: string | null };
 
+// The system prompt a chat turn really sends, in its parts (GET /projects/{id}/system-prompt).
+export interface SystemPrompt {
+  preprompt: string;
+  motionPrompt: string;
+  defaultMotionPrompt: string;
+  motionCustomized: boolean;
+  motionActive: boolean;
+  full: string;
+}
+
 export type SpokenLanguage = "de" | "en";
+
+// "supplement": use the material where it helps; "strict": answer only from it.
+export type KnowledgeMode = "off" | "supplement" | "strict";
+export const KNOWLEDGE_MODES: KnowledgeMode[] = ["off", "supplement", "strict"];
 
 // The local server STT engines (backend Settings.stt_engine / Project.stt_server_engine).
 export type SttServerEngine = "whisper" | "parakeet";

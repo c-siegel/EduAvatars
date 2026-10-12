@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     int8 is offered for weaker hosts but its quality trade-off hasn't been verified here.
     """
 
-    max_concurrent_synthesis: int = 1
+    max_concurrent_synthesis: int = 2
     """
     How many synthesis requests may run at the same time, in this one process.
 
@@ -65,8 +65,14 @@ class Settings(BaseSettings):
     than finishing more work sooner.
     """
 
-    synthesis_queue_timeout_seconds: float = 5.0
-    """How long a synthesis request waits for a free slot (see max_concurrent_synthesis) before giving up."""
+    synthesis_queue_timeout_seconds: float = 30.0
+    """
+    How long a synthesis request waits for a free slot (see max_concurrent_synthesis) before giving up.
+
+    A streamed chat reply sends all of its sentences at once, and each takes several seconds on a
+    CPU, so the later ones legitimately wait for the earlier ones. Matches the backend's
+    local_tts_request_timeout_seconds — it stops waiting after that anyway.
+    """
 
 
 settings = Settings()

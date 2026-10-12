@@ -35,6 +35,8 @@ function toDraft(project: Project): ConfiguratorDraft {
     builtinAvatar: project.builtinAvatar,
     avatarBackgroundId: project.avatarBackgroundId,
     chatLayout: project.chatLayout,
+    motionEnabled: project.motionEnabled,
+    thinkingMotionsEnabled: project.thinkingMotionsEnabled,
     gradeLevel: project.gradeLevel ?? "",
     preprompt: project.preprompt ?? "",
     startPrompt: project.startPrompt ?? "",
@@ -59,6 +61,9 @@ function toDraft(project: Project): ConfiguratorDraft {
     sttEnabled: project.sttEnabled,
     sttBrowserEnabled: project.sttBrowserEnabled,
     streamingEnabled: project.streamingEnabled,
+    knowledgeMode: project.knowledgeMode,
+    knowledgeTopK: project.knowledgeTopK,
+    knowledgeBaseIds: project.knowledgeBaseIds,
   };
 }
 
@@ -72,6 +77,8 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.builtinAvatar !== project.builtinAvatar ||
     draft.avatarBackgroundId !== project.avatarBackgroundId ||
     draft.chatLayout !== project.chatLayout ||
+    draft.motionEnabled !== project.motionEnabled ||
+    draft.thinkingMotionsEnabled !== project.thinkingMotionsEnabled ||
     (draft.gradeLevel || null) !== project.gradeLevel ||
     draft.preprompt !== (project.preprompt ?? "") ||
     draft.startPrompt !== (project.startPrompt ?? "") ||
@@ -93,7 +100,10 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.sttServerEngine !== project.sttServerEngine ||
     draft.sttEnabled !== project.sttEnabled ||
     draft.sttBrowserEnabled !== project.sttBrowserEnabled ||
-    draft.streamingEnabled !== project.streamingEnabled
+    draft.streamingEnabled !== project.streamingEnabled ||
+    draft.knowledgeMode !== project.knowledgeMode ||
+    draft.knowledgeTopK !== project.knowledgeTopK ||
+    draft.knowledgeBaseIds.join() !== project.knowledgeBaseIds.join()
   );
 }
 
@@ -132,6 +142,8 @@ export function ConfiguratorPage() {
         builtinAvatar: data.builtinAvatar,
         avatarBackgroundId: data.avatarBackgroundId,
         chatLayout: data.chatLayout,
+        motionEnabled: data.motionEnabled,
+        thinkingMotionsEnabled: data.thinkingMotionsEnabled,
         gradeLevel: data.gradeLevel || null,
         preprompt: data.preprompt,
         startPrompt: data.startPrompt,
@@ -154,6 +166,9 @@ export function ConfiguratorPage() {
         sttEnabled: data.sttEnabled,
         sttBrowserEnabled: data.sttBrowserEnabled,
         streamingEnabled: data.streamingEnabled,
+        knowledgeMode: data.knowledgeMode,
+        knowledgeTopK: data.knowledgeTopK,
+        knowledgeBaseIds: data.knowledgeBaseIds,
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(["projects", projectId], updated);
@@ -233,6 +248,8 @@ export function ConfiguratorPage() {
             avatarModelUrl={project.avatarModelUrl}
             avatarBackgroundUrl={project.avatarBackgroundUrl}
             ttsEnabled={project.ttsEnabled}
+            motionEnabled={project.motionEnabled}
+            thinkingMotionsEnabled={project.thinkingMotionsEnabled}
             hasUnsavedChanges={isDirty(draft, project)}
           />
         )}

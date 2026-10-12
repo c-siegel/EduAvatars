@@ -10,6 +10,8 @@ One session = one visitor's conversation with a published project (grouped by vi
 Conversation in app/features/chat/models.py) — not an HTTP/login session.
 """
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlmodel import Session
@@ -25,6 +27,7 @@ from app.features.analytics.service import (
     get_session_ids,
     get_sessions_paginated,
 )
+from app.features.knowledge.service import document_names
 from app.features.users.models import User
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -92,7 +95,13 @@ def export_conversations(
     rows = get_conversations_for_export(session, current_user.id, data.conversation_ids)
     if not rows:
         raise HTTPException(status_code=404, detail=ErrorCode.CONVERSATION_NOT_FOUND)
-    content, media_type, filename = build_export(rows)
+    document_ids = [
+        source["documentId"]
+        for conversation, _ in rows
+        for message in json.loads(conversation.messages_json)
+        for source in message.get("sources") or []
+    ]
+    content, media_type, filename = build_export(rows, document_names(session, document_ids))
     return Response(
         content=content,
         media_type=media_type,

@@ -104,6 +104,8 @@ export const AudioOnlySpeaker = forwardRef<TalkingHeadAvatarHandle, AudioOnlySpe
       stopListening() {},
       startThinking() {},
       stopThinking() {},
+      playMotions() {},
+      stopMotion() {},
       startFpsTracking() {},
       stopFpsTracking() {
         return null;

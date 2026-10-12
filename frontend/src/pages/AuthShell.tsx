@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Card } from "@/components/Card";
 import { Callout } from "@/components/Callout";
 import { Wordmark } from "@/components/Wordmark";
+import { SiteFooter } from "@/components/SiteFooter";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import styles from "./AuthShell.module.css";
 
@@ -55,6 +56,7 @@ export function AuthShell({ active, subtitle, error, children, footer }: AuthShe
           <p className={styles.footerNote}>{footer}</p>
         </Card>
       </div>
+      <SiteFooter />
     </PublicLayout>
   );
 }

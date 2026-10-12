@@ -20,6 +20,7 @@ import threading
 from functools import lru_cache
 from pathlib import Path
 
+import numpy as np
 import soundfile as sf
 from sopro import SoproTTS
 
@@ -28,6 +29,9 @@ from app.config import settings
 # Bounds how many synthesis calls run at once — see Settings.max_concurrent_synthesis for why a
 # BoundedSemaphore (not a plain lock) instead of just serializing everything.
 _synthesis_slots = threading.BoundedSemaphore(max(1, settings.max_concurrent_synthesis))
+
+# Silence appended to every synthesized clip, see _wav_bytes.
+TAIL_SILENCE_SECONDS = 0.4
 
 # Also what keeps a hash from being used as a path (no "/" or ".." can get through).
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -103,8 +107,13 @@ def _wav_bytes(wav) -> bytes:
     wav = wav.detach().cpu().float()
     if wav.dim() == 2:
         wav = wav[0] if wav.shape[0] == 1 else wav.mean(dim=0)
+    sample_rate = _model().sample_rate
+    # sopro ends the audio right at its last token (plus an 80 ms fade), often while the voice is
+    # still sounding. Players and audio devices that stop a hair early then swallow the end of the
+    # sentence, so the clip gets a short silent tail.
+    samples = np.concatenate([wav.numpy(), np.zeros(int(TAIL_SILENCE_SECONDS * sample_rate), dtype=np.float32)])
     buffer = io.BytesIO()
-    sf.write(buffer, wav.numpy(), _model().sample_rate, format="WAV", subtype="PCM_16")
+    sf.write(buffer, samples, sample_rate, format="WAV", subtype="PCM_16")
     return buffer.getvalue()
 
 

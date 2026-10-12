@@ -24,6 +24,7 @@ from app.features.ai.tts.google import GoogleCloudTTSClient
 from app.features.ai.tts.litellm_provider import LiteLLMSpeechClient
 from app.features.ai.tts.local import LocalTTSClient, VoiceReference
 from app.features.ai.tts.normalizer import normalize_for_speech
+from app.features.ai.tts.pronunciation import PronunciationMatcher
 from app.features.api_keys.models import UserApiKey
 
 __all__ = ["TTSClient", "VoiceReference", "VoiceRequiredError", "get_tts_client", "synthesize_speech"]
@@ -58,15 +59,17 @@ def synthesize_speech(
     language: str = "de",
     voice_clip: VoiceReference | None = None,
     local_timeout_seconds: float | None = None,
+    pronunciation: PronunciationMatcher | None = None,
 ) -> tuple[bytes, str]:
     """Generate speech for `text`, dispatching to the right provider integration for the given key.
 
     `text` is normalized for speech first (see normalizer.py) — decimal numbers and math symbols
-    read correctly, but this only affects what's spoken, never what's displayed.
+    read correctly, but this only affects what's spoken, never what's displayed. `pronunciation` is
+    the teacher's own word list for `language` (see features/pronunciation/service.py::matcher_for).
 
     `api_key_record` is None when the caller has TTS enabled but no cloud key configured — same
     convention as features/ai/stt/__init__.py::transcribe_audio's `api_key_record` (see get_tts_client).
     """
-    text = normalize_for_speech(text, language)
+    text = normalize_for_speech(text, language, pronunciation)
     client = get_tts_client(api_key_record, voice_clip, local_timeout_seconds)
     return client.synthesize(text, tts_voice, language)

@@ -42,4 +42,6 @@ def get_start_audio(
     if servable is None:
         raise HTTPException(status_code=404, detail=ErrorCode.START_AUDIO_NOT_FOUND)
     path, media_type = servable
-    return FileResponse(path, media_type=media_type)
+    # Same URL for every regeneration — revalidate (cheap, via ETag) instead of letting the browser
+    # heuristically reuse an outdated copy.
+    return FileResponse(path, media_type=media_type, headers={"Cache-Control": "no-cache"})

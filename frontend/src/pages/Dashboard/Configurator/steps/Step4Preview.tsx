@@ -19,6 +19,9 @@ interface Step4Props {
   avatarModelUrl: string | null;
   avatarBackgroundUrl: string | null;
   ttsEnabled: boolean;
+  // The saved setting, like everything else the preview runs on (see below).
+  motionEnabled: boolean;
+  thinkingMotionsEnabled: boolean;
   hasUnsavedChanges: boolean;
 }
 
@@ -31,6 +34,8 @@ export function Step4Preview({
   avatarModelUrl,
   avatarBackgroundUrl,
   ttsEnabled,
+  motionEnabled,
+  thinkingMotionsEnabled,
   hasUnsavedChanges,
 }: Step4Props) {
   const { t } = useTranslation();
@@ -44,6 +49,7 @@ export function Step4Preview({
     onSuccess: async (res) => {
       avatarRef.current?.stopThinking();
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      avatarRef.current?.playMotions(res.motions);
       if (res.audioBase64) {
         // Same reasoning as PublicChat/index.tsx's plain path: decode+speak+wait instead of the
         // fire-and-forget speak() helper, so stopSpeaking() (see its own doc comment) can run once
@@ -74,6 +80,7 @@ export function Step4Preview({
     <>
       {hasUnsavedChanges && <Callout variant="info">{t("configurator.step4.unsavedChanges")}</Callout>}
 
+      <div className={ttsEnabled ? styles.layout : undefined}>
       {ttsEnabled && (
         <div className={styles.avatarStage}>
           <TalkingHeadAvatar
@@ -81,6 +88,8 @@ export function Step4Preview({
             avatarUrl={avatarModelUrl ?? undefined}
             backgroundImageUrl={avatarBackgroundUrl ?? undefined}
             speechEnabled
+            motionEnabled={motionEnabled}
+            thinkingMotionsEnabled={thinkingMotionsEnabled}
             fallback={<Avatar name={title} size="lg" />}
           />
         </div>
@@ -116,10 +125,17 @@ export function Step4Preview({
             onChange={(e) => setInput(e.target.value)}
             aria-label={t("configurator.step4.testMessageAriaLabel")}
           />
-          <Button type="submit" size="sm" disabled={sendMutation.isPending}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={sendMutation.isPending}
+            aria-label={t("publicChat.send")}
+            title={t("publicChat.send")}
+          >
             <Send size={16} />
           </Button>
         </form>
+      </div>
       </div>
     </>
   );

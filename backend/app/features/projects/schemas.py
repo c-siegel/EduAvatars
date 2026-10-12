@@ -39,6 +39,12 @@ SttServerEngine = Literal["whisper", "parakeet"]
 # STT is off (see frontend pages/PublicChat/index.tsx).
 ChatLayout = Literal["avatar_chat", "avatar_chat_collapsed", "avatar_only", "chat_only"]
 
+# How a project uses its knowledge bases (see features/knowledge/prompt.py): not at all, as
+# supplementary material, or as the only source it may answer from.
+KnowledgeMode = Literal["off", "supplement", "strict"]
+MAX_KNOWLEDGE_TOP_K = 8
+MAX_KNOWLEDGE_BASES_PER_PROJECT = 10
+
 # A bundled default avatar is addressed by its file name in frontend/public/avatars/ (e.g.
 # "julia" -> /avatars/julia.glb) — restricted to a plain slug so it can never point anywhere else.
 _BUILTIN_AVATAR_RE = re.compile(r"^[a-z0-9-]{1,40}$")
@@ -49,6 +55,9 @@ def _check_builtin_avatar(value: str | None) -> str | None:
         raise ValueError(ErrorCode.INVALID_BUILTIN_AVATAR)
     return value
 
+
+# Generous: the default is ~900 characters; this only stops absurd inputs.
+MAX_MOTION_PROMPT_LENGTH = 4000
 
 class ProjectOut(CamelModel):
     id: str
@@ -88,12 +97,18 @@ class ProjectOut(CamelModel):
     stt_browser_enabled: bool
     streaming_enabled: bool
     chat_layout: ChatLayout
+    motion_enabled: bool
+    thinking_motions_enabled: bool
+    motion_prompt: str | None
     password_protected: bool
     require_visitor_name: bool
     # URL of the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
     # see features/projects/start_audio.py. Read-only: generated via its own endpoint, never
     # written directly through ProjectUpdate.
     start_audio_url: str | None
+    knowledge_mode: KnowledgeMode
+    knowledge_top_k: int
+    knowledge_base_ids: list[str]
     created_at: datetime
 
 
@@ -128,11 +143,20 @@ class ProjectUpdate(CamelModel):
     stt_browser_enabled: bool | None = None
     streaming_enabled: bool | None = None
     chat_layout: ChatLayout | None = None
+    motion_enabled: bool | None = None
+    thinking_motions_enabled: bool | None = None
+    # Blank clears it, i.e. back to the built-in default (see service.py::apply_update).
+    motion_prompt: str | None = Field(default=None, max_length=MAX_MOTION_PROMPT_LENGTH)
     require_visitor_name: bool | None = None
     # None = no change (field omitted); "" or explicit null clears/disables the password; a
     # non-empty string sets/changes it — handled separately in features/projects/service.py, never
     # written straight to the DB (see features/projects/service.py::set_or_clear_chat_password).
     chat_password: str | None = None
+    knowledge_mode: KnowledgeMode | None = None
+    knowledge_top_k: int | None = Field(default=None, ge=1, le=MAX_KNOWLEDGE_TOP_K)
+    # Replaces the whole list; only the owner's own knowledge bases are accepted (checked in
+    # features/projects/service.py).
+    knowledge_base_ids: list[str] | None = Field(default=None, max_length=MAX_KNOWLEDGE_BASES_PER_PROJECT)
 
     @field_validator("builtin_avatar")
     @classmethod
@@ -165,6 +189,21 @@ class ProjectUpdate(CamelModel):
         return value
 
 
+class SystemPromptOut(CamelModel):
+    """The system prompt a chat turn really sends, in its parts (see chat/motion.py)."""
+
+    preprompt: str
+    # Always the effective text: the teacher's own, or the built-in default.
+    motion_prompt: str
+    default_motion_prompt: str
+    motion_customized: bool
+    # False when the project's layout or settings switch gestures off — motion_prompt isn't sent then.
+    motion_active: bool
+    # preprompt + motion prompt exactly as joined for the model (without knowledge-base excerpts,
+    # which are added per message).
+    full: str
+
+
 class ProjectStats(CamelModel):
     total_projects: int
     published_projects: int
@@ -181,6 +220,8 @@ class PreviewMessageResponse(CamelModel):
     reply: str
     audio_base64: str | None = None
     content_type: str | None = None
+    # Avatar gestures, see features/chat/schemas.py::ChatMessageOut.motions.
+    motions: list[str] = []
 
 
 class ProjectExportData(BaseModel):
@@ -214,7 +255,14 @@ class ProjectExportData(BaseModel):
     stt_browser_enabled: bool = True
     streaming_enabled: bool = True
     chat_layout: ChatLayout = "avatar_chat"
+    motion_enabled: bool = True
+    thinking_motions_enabled: bool = False
+    motion_prompt: str | None = Field(default=None, max_length=MAX_MOTION_PROMPT_LENGTH)
     require_visitor_name: bool = False
+    # The knowledge bases themselves stay in the teacher's library and aren't exported; an
+    # imported project starts with knowledge_mode "off" (see export.py::import_project).
+    knowledge_mode: KnowledgeMode = "off"
+    knowledge_top_k: int = Field(default=4, ge=1, le=MAX_KNOWLEDGE_TOP_K)
 
     @model_validator(mode="before")
     @classmethod

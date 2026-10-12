@@ -9,7 +9,7 @@ How to use:
     from app.features.site_settings.schemas import SiteSettingsOut
 """
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from app.core.schema import CamelModel
 
@@ -31,6 +31,24 @@ class SiteSettingsOut(PublicSiteSettingsOut):
     """Everything an admin sees — the public fields plus operational settings."""
 
     conversation_retention_days: int
+    # Knowledge-base (RAG) limits, see SiteSettings and features/knowledge/limits.py.
+    rag_max_upload_mb: int
+    rag_max_pages: int
+    rag_max_chars_per_document: int
+    rag_max_documents_per_kb: int
+    rag_max_kb_per_user: int
+    rag_user_quota_mb: int
+    rag_upload_rate_per_10min: int
+    rag_eval_max_cases_per_run: int
+
+
+class KnowledgeCeilingsOut(CamelModel):
+    """The operator's ceilings for the admin-editable knowledge limits (GET /admin/settings/knowledge-ceilings)."""
+
+    enabled: bool
+    max_upload_mb: int
+    max_pages: int
+    max_chars: int
 
 
 class SiteSettingsUpdate(CamelModel):
@@ -42,6 +60,16 @@ class SiteSettingsUpdate(CamelModel):
     provider_country: str | None = None
     registration_enabled: bool | None = None
     conversation_retention_days: int | None = None
+    # Each at least 1 (a limit of 0 would silently disable uploads); upper bounds for the first
+    # three come from the knowledge service, checked in admin_router.py.
+    rag_max_upload_mb: int | None = Field(default=None, ge=1)
+    rag_max_pages: int | None = Field(default=None, ge=1)
+    rag_max_chars_per_document: int | None = Field(default=None, ge=1000)
+    rag_max_documents_per_kb: int | None = Field(default=None, ge=1, le=10_000)
+    rag_max_kb_per_user: int | None = Field(default=None, ge=1, le=1000)
+    rag_user_quota_mb: int | None = Field(default=None, ge=1, le=1_000_000)
+    rag_upload_rate_per_10min: int | None = Field(default=None, ge=1, le=10_000)
+    rag_eval_max_cases_per_run: int | None = Field(default=None, ge=1, le=500)
 
     @field_validator("conversation_retention_days")
     @classmethod

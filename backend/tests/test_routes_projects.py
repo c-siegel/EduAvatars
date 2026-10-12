@@ -141,7 +141,12 @@ def test_preview_message(client, chat_project, fake_ai):
     )
     assert response.status_code == 200
     body = response.json()
-    assert body == {"reply": LLM_REPLY, "audioBase64": base64.b64encode(TTS_BYTES).decode(), "contentType": "audio/mpeg"}
+    assert body == {
+        "reply": LLM_REPLY,
+        "audioBase64": base64.b64encode(TTS_BYTES).decode(),
+        "contentType": "audio/mpeg",
+        "motions": [],
+    }
     assert fake_ai.completion_calls[-1]["messages"][-2:] == [
         {"role": "assistant", "content": "Hallo"},
         {"role": "user", "content": "Test"},
@@ -210,19 +215,21 @@ def test_start_audio_lifecycle(client, anon, teacher, fake_ai):
     fake_ai.tts_error = None
 
     generated = client.post(f"/projects/{pid}/start-audio").json()
-    assert generated["startAudioUrl"] == f"/api/v1/projects/{pid}/start-audio"
+    # The version query makes a regenerated file load fresh instead of from the browser cache.
+    assert generated["startAudioUrl"].startswith(f"/api/v1/projects/{pid}/start-audio?v=")
 
     owner_get = client.get(browser_url(generated["startAudioUrl"]))
     assert owner_get.status_code == 200
     assert owner_get.content == TTS_BYTES
     assert owner_get.headers["content-type"] == "audio/mpeg"
+    assert owner_get.headers["cache-control"] == "no-cache"
 
     hidden = anon.get(f"/projects/{pid}/start-audio")
     assert hidden.status_code == 404
     assert hidden.json() == {"detail": "START_AUDIO_NOT_FOUND"}
     slug = publish(client, pid)
     assert anon.get(f"/projects/{pid}/start-audio").content == TTS_BYTES
-    assert anon.get(f"/public/{slug}").json()["startAudioUrl"] == f"/api/v1/projects/{pid}/start-audio"
+    assert anon.get(f"/public/{slug}").json()["startAudioUrl"] == generated["startAudioUrl"]
 
     # Changing the start prompt invalidates the cached file.
     assert client.put(f"/projects/{pid}", json={"startPrompt": "Neu"}).json()["startAudioUrl"] is None

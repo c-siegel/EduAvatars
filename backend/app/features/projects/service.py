@@ -11,6 +11,8 @@ How to use:
     projects = list_projects(session, user_id)
 """
 
+import json
+
 from sqlalchemy import delete
 from sqlmodel import Session, select
 
@@ -21,6 +23,8 @@ from app.core.security import hash_password
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import get_owned_key_of_type
 from app.features.chat.models import Conversation, ProjectAccess
+from app.features.evaluation import cleanup as evaluation_cleanup
+from app.features.knowledge.models import KnowledgeBase
 from app.features.media.service import get_owned_avatar, get_owned_background
 from app.features.projects.models import Project
 from app.features.projects.schemas import ProjectUpdate
@@ -44,6 +48,11 @@ class UnknownAvatar(DomainError):
 class UnknownBackground(DomainError):
     status_code = 400
     detail = ErrorCode.BACKGROUND_NOT_FOUND
+
+
+class UnknownKnowledgeBase(DomainError):
+    status_code = 400
+    detail = ErrorCode.KNOWLEDGE_BASE_NOT_FOUND
 
 
 def list_projects(session: Session, user_id: str) -> list[Project]:
@@ -70,6 +79,7 @@ def sync_llm_model(session: Session, project: Project) -> None:
 # field as optional, but a null on title/temperature/... would be a malformed request and would
 # fail the DB's NOT NULL constraint anyway.
 _CLEARABLE_FIELDS = {
+    "motion_prompt",
     "llm_api_key_id",
     "avatar_model_id",
     "builtin_avatar",
@@ -101,6 +111,7 @@ def delete_project(session: Session, project: Project) -> None:
     unlink_quietly(project.start_audio_path)
     session.execute(delete(Conversation).where(Conversation.project_id == project.id))
     session.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
+    evaluation_cleanup.delete_for_project(session, project.id)
     session.delete(project)
     session.commit()
 
@@ -121,6 +132,11 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
     ):
         unlink_quietly(project.start_audio_path)
         project.start_audio_path = None
+    if "knowledge_base_ids" in data:
+        ids = data.pop("knowledge_base_ids")
+        if ids is not None:
+            # dict.fromkeys: de-duplicated, order kept.
+            project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(ids)))
     for field, value in data.items():
         if value is not None or field in _CLEARABLE_FIELDS:
             setattr(project, field, value)
@@ -157,6 +173,10 @@ def _check_references(session: Session, user_id: str, data: ProjectUpdate) -> No
         raise UnknownAvatar()
     if data.avatar_background_id and get_owned_background(session, user_id, data.avatar_background_id) is None:
         raise UnknownBackground()
+    for kb_id in data.knowledge_base_ids or []:
+        kb = session.get(KnowledgeBase, kb_id)
+        if kb is None or kb.user_id != user_id:
+            raise UnknownKnowledgeBase()
 
 
 def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Project:
@@ -167,7 +187,10 @@ def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Proje
     _check_references(session, user_id, data)
     create_data = data.model_dump(exclude_unset=True)
     chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
+    knowledge_base_ids = create_data.pop("knowledge_base_ids", None)
     project = Project(user_id=user_id, **create_data)
+    if knowledge_base_ids:
+        project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(knowledge_base_ids)))
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)
     sync_llm_model(session, project)
@@ -181,6 +204,8 @@ def apply_update(session: Session, project: Project, data: ProjectUpdate) -> Pro
     """Validate and apply a ProjectUpdate (only the fields actually sent), including the chat password."""
     _check_references(session, project.user_id, data)
     update_data = data.model_dump(exclude_unset=True)
+    if "motion_prompt" in update_data and not (update_data["motion_prompt"] or "").strip():
+        update_data["motion_prompt"] = None
     chat_password = update_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)

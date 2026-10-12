@@ -109,6 +109,14 @@ def test_a_browser_recording_is_accepted(client, teacher) -> None:
     assert response.json()["durationSeconds"] == pytest.approx(4, abs=0.1)
 
 
+@pytest.mark.parametrize("seconds", [30.4, 45])
+def test_clips_over_the_limit_are_cut_to_30_seconds(client, teacher, seconds) -> None:
+    # The in-browser recorder ends a few hundred ms over "30 s"; longer uploads are trimmed too.
+    response = upload(client, tone_wav(seconds, channels=1))
+    assert response.status_code == 200, response.text
+    assert response.json()["durationSeconds"] == pytest.approx(30, abs=0.01)
+
+
 @pytest.mark.parametrize(
     ("content", "consent", "name", "code"),
     [
@@ -117,8 +125,10 @@ def test_a_browser_recording_is_accepted(client, teacher) -> None:
         (b"just some text, not audio at all", True, "Stimme", "VOICE_CLIP_INVALID_AUDIO"),
         (b"RIFF\x00\x00\x00\x00WAVEgarbage", True, "Stimme", "VOICE_CLIP_INVALID_AUDIO"),
         (tone_wav(1), True, "Stimme", "VOICE_CLIP_TOO_SHORT"),
-        (tone_wav(35, channels=1), True, "Stimme", "VOICE_CLIP_TOO_LONG"),
     ],
+    # Readable ids: the raw bytes would otherwise become the test id, which overflows the
+    # PYTEST_CURRENT_TEST environment variable on Windows.
+    ids=["no-consent", "blank-name", "text-file", "broken-wav", "too-short"],
 )
 def test_rejected_uploads(client, teacher, content, consent, name, code) -> None:
     response = upload(client, content, name=name, consent=consent)

@@ -11,8 +11,10 @@ How to use:
     project = session.get(Project, project_id)
 """
 
+import json
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlmodel import Field, SQLModel
 
@@ -115,6 +117,20 @@ class Project(SQLModel, table=True):
     # chat), "avatar_chat_collapsed" (chat starts collapsed but can be expanded), "avatar_only"
     # (voice only, no chat column) or "chat_only" (no 3D avatar is loaded at all).
     chat_layout: str = "avatar_chat"
+    # Body language from the vendored MotionEngine (frontend/src/vendor/motion-engine): the LLM is
+    # told it may mark gestures as "::name::" in its reply (see features/chat/motion.py), which
+    # are stripped before TTS and played by the avatar. Has no effect with chat_layout
+    # "chat_only", where no avatar is shown. On by default; False keeps TalkingHead's own idle
+    # motion only.
+    motion_enabled: bool = True
+    # While the reply is being generated, the avatar plays random "thinking" gestures (see
+    # frontend/src/components/TalkingHeadAvatar). Needs motion_enabled, since it uses the same
+    # MotionEngine. Off by default: it is a matter of taste and of how fast replies arrive.
+    thinking_motions_enabled: bool = False
+    # The teacher's own wording of the gesture instructions appended to the system prompt (see
+    # features/chat/motion.py::effective_motion_prompt). None = the built-in MOTION_PROMPT, so
+    # existing projects follow future improvements to it.
+    motion_prompt: str | None = None
     # Optional teacher-set access gate for the public chat link (see
     # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.
@@ -131,6 +147,16 @@ class Project(SQLModel, table=True):
     # text. Cleared automatically whenever start_prompt/tts_voice/tts_api_key_id changes (see
     # features/projects/service.py::update_project), so a stale voice/text is never served.
     start_audio_path: str | None = None
+    # Knowledge base (RAG, see features/knowledge/): "off", "supplement" (use the attached
+    # material where it helps) or "strict" (answer only from it). Only takes effect when the
+    # deployment has Settings.rag_enabled and at least one knowledge base is attached.
+    knowledge_mode: str = "off"
+    # How many passages are added to the system prompt per turn.
+    knowledge_top_k: int = 4
+    # IDs of the owner's knowledge bases, as a JSON list — a list of a handful of IDs that's only
+    # ever read whole, so a join table would add queries without adding anything. Kept clean by
+    # features/knowledge/service.py when a knowledge base is deleted.
+    knowledge_base_ids_json: str = "[]"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
@@ -139,9 +165,24 @@ class Project(SQLModel, table=True):
         return self.chat_password_hash is not None
 
     @property
+    def knowledge_base_ids(self) -> list[str]:
+        """The attached knowledge bases' IDs (see knowledge_base_ids_json)."""
+        try:
+            ids = json.loads(self.knowledge_base_ids_json or "[]")
+        except ValueError:
+            return []
+        return [i for i in ids if isinstance(i, str)] if isinstance(ids, list) else []
+
+    @property
     def start_audio_url(self) -> str | None:
         """URL of the cached start-prompt audio, or None if it hasn't been generated yet."""
-        return start_audio_url(self.id) if self.start_audio_path else None
+        if not self.start_audio_path:
+            return None
+        try:
+            version = Path(self.start_audio_path).stat().st_mtime_ns
+        except OSError:
+            version = None
+        return start_audio_url(self.id, version)
 
     @property
     def avatar_model_url(self) -> str | None:

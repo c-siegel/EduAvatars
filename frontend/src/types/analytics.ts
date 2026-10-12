@@ -36,8 +36,28 @@ export interface SessionDetail {
   // Full message-by-message transcript — what GET /conversations/{id} returns, unlike
   // SessionRow's truncated lastQuestion. Reused from types/chat.ts since the shape matches
   // exactly (role "user"/"assistant", never "system" — that's a PublicChat-only local notice).
-  messages: ChatMessage[];
+  messages: TranscriptMessage[];
 }
+
+// A knowledge-base passage a reply was given (see backend features/knowledge/) — the document
+// and page only; filename is null once the document was deleted.
+export interface TranscriptSource {
+  documentId: string;
+  filename: string | null;
+  page: number | null;
+}
+
+// An avatar gesture the LLM marked in a reply (see backend features/chat/motion.py): its name and
+// the character position in the message content where the marker stood.
+export interface TranscriptMotion {
+  name: string;
+  offset: number;
+}
+
+export type TranscriptMessage = ChatMessage & {
+  sources?: TranscriptSource[] | null;
+  motions?: TranscriptMotion[] | null;
+};
 
 export type Granularity = "day" | "week" | "month";
 
