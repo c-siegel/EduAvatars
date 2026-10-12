@@ -1487,5 +1487,27 @@
     "PRONUNCIATION_PREVIEW_FAILED": "The speech output didn't work.",
     "PRONUNCIATION_PRESET_NOT_FOUND": "This preset pack doesn't exist.",
     "RATE_LIMIT_TTS_PREVIEW": "Too many listening tests in a short time — please wait a minute."
+  },
+  "providers": {
+    "ollama": {
+      "label": "Ollama (self-hosted)",
+      "hint": "Ollama usually runs without access control on the (school) network — an API key is only needed if your server requires one."
+    },
+    "openai_compatible": {
+      "label": "OpenAI-compatible (own endpoint)",
+      "hint": "For self-hosted or third-party endpoints that mimic the OpenAI API (e.g. Together.ai, Groq, vLLM). For TTS: an endpoint that mimics OpenAI's speech API (/v1/audio/speech)."
+    },
+    "cartesia": {
+      "hint": "Direct Cartesia connection (litellm doesn't support Cartesia). Without a stored voice (the project's “Voice” field) speech output fails — the voice ID comes from the Cartesia documentation; there's no curated selection here."
+    },
+    "google_cloud_tts": {
+      "hint": "Enter a full Google voice for the project's speech output, e.g. \"de-DE-Wavenet-F\" or \"en-US-Neural2-C\" (the language is part of the name). Full list: https://cloud.google.com/text-to-speech/docs/voices"
+    },
+    "gwdg_arcana": {
+      "hint": "Direct connection to the GWDG Academic Cloud knowledge base (RAG) — litellm knows neither the required request header nor the Arcana field, so there's no curated model selection here. Arcana ID in the format \"username/project-name\", see https://docs.hpc.gwdg.de/services/ai-services/arcana/."
+    },
+    "gwdg_saia": {
+      "hint": "Direct connection to GWDG's SAIA speech-to-text API (litellm doesn't support it), see https://docs.hpc.gwdg.de/services/ai-services/saia/index.html. Note: GWDG's example only lists wav/mp4/mp3/flac as audio formats — whether the browser's WebM/Opus recordings work there too is untested. The language hint (\"language\") and context prompt (\"prompt\") aren't documented in GWDG's example either and are only sent because they're part of the OpenAI Whisper API that GWDG mimics — not verified against a real account."
+    }
   }
 }

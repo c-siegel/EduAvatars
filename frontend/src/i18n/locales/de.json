@@ -1487,5 +1487,27 @@
     "PRONUNCIATION_PREVIEW_FAILED": "Die Sprachausgabe hat nicht funktioniert.",
     "PRONUNCIATION_PRESET_NOT_FOUND": "Dieses Vorlagenpaket gibt es nicht.",
     "RATE_LIMIT_TTS_PREVIEW": "Zu viele Hörproben in kurzer Zeit – bitte warte eine Minute."
+  },
+  "providers": {
+    "ollama": {
+      "label": "Ollama (selbst gehostet)",
+      "hint": "Ollama läuft meist ohne Zugriffsschutz im (Schul-)Netz — ein API-Key ist nur nötig, falls dein Server das verlangt."
+    },
+    "openai_compatible": {
+      "label": "OpenAI-kompatibel (eigener Endpunkt)",
+      "hint": "Für selbst gehostete oder Drittanbieter-Endpunkte, die die OpenAI-API nachbilden (z. B. Together.ai, Groq, vLLM). Für TTS: ein Endpunkt, der OpenAIs Sprach-API (/v1/audio/speech) nachbildet."
+    },
+    "cartesia": {
+      "hint": "Direkte Cartesia-Anbindung (litellm unterstützt Cartesia nicht). Ohne hinterlegte Stimme (Feld „Stimme“ im Projekt) schlägt die Sprachausgabe fehl — die Stimmen-ID kommt aus der Cartesia-Dokumentation, dafür gibt es hier keine kuratierte Auswahl."
+    },
+    "google_cloud_tts": {
+      "hint": "Für die Sprachausgabe im Projekt eine vollständige Google-Stimme eintragen, z. B. \"de-DE-Wavenet-F\" oder \"en-US-Neural2-C\" (Sprache steckt im Namen). Vollständige Liste: https://cloud.google.com/text-to-speech/docs/voices"
+    },
+    "gwdg_arcana": {
+      "hint": "Direkte Anbindung an die GWDG Academic-Cloud-Wissensbasis (RAG) — litellm kennt weder den nötigen Anfrage-Header noch das Arcana-Feld, es gibt hier keine kuratierte Modell-Auswahl. Arcana-ID im Format \"nutzername/Projektname\", siehe https://docs.hpc.gwdg.de/services/ai-services/arcana/."
+    },
+    "gwdg_saia": {
+      "hint": "Direkte Anbindung an GWDGs SAIA-Sprache-zu-Text-API (litellm unterstützt sie nicht), siehe https://docs.hpc.gwdg.de/services/ai-services/saia/index.html. Wichtig: GWDGs Beispiel nennt nur wav/mp4/mp3/flac als Audioformate — ob die vom Browser aufgenommenen WebM/Opus-Clips dort ebenfalls funktionieren, ist ungeprüft. Auch Sprachhinweis (\"language\") und Kontext-Prompt (\"prompt\") sind in GWDGs Beispiel nicht dokumentiert und werden nur mitgeschickt, weil sie Teil der von GWDG nachgebildeten OpenAI-Whisper-API sind — nicht gegen einen echten Account verifiziert."
+    }
   }
 }
