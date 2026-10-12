@@ -415,8 +415,8 @@ A few backend behaviors worth knowing about if you're deploying or extending thi
   including the conversation history a client echoes back on every request — otherwise nothing
   stopped an anonymous visitor from sending arbitrarily large text against the project owner's own
   LLM API key.
-- **A stored key's endpoint (`api_base`) is validated** against cloud-metadata addresses
-  (`app/features/api_keys/schemas.py`) — see the [root README](../README.md#supported-ai-providers)
+- **A stored key's endpoint (`api_base`) is validated** against cloud-metadata addresses and the
+  deployment's own Docker service names (`app/features/api_keys/schemas.py`) — see the [root README](../README.md#supported-ai-providers)
   for what this does and doesn't restrict.
 - **Data retention** (`app/tasks/retention.py`) is enforced both at startup and
   periodically (every 6 hours, see `app/main.py`) for as long as the process runs, not just once
