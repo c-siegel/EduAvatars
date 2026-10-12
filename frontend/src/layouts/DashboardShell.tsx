@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   LogOut,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { NavItem } from "@/components/NavItem";
@@ -26,6 +28,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useDashboardTheme } from "@/hooks/useDashboardTheme";
 import { useEvaluationStatus, useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
@@ -38,68 +41,71 @@ interface NavConfigItem {
   isActive: (pathname: string) => boolean;
 }
 
-const BASE_NAV_ITEMS: NavConfigItem[] = [
-  { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
-  {
+const NAV_ITEMS = {
+  overview: { labelKey: "nav.overview", href: "/dashboard", icon: LayoutDashboard, isActive: (p) => p === "/dashboard" },
+  analytics: {
     labelKey: "nav.analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
     isActive: (p) => p.startsWith("/dashboard/analytics"),
   },
-  {
+  apiDashboard: {
     labelKey: "nav.apiDashboard",
     href: "/dashboard/api",
     icon: KeyRound,
     isActive: (p) => p.startsWith("/dashboard/api"),
   },
-  {
+  voices: {
     labelKey: "nav.voices",
     href: "/dashboard/voices",
     icon: AudioLines,
     isActive: (p) => p.startsWith("/dashboard/voices"),
   },
-  {
+  pronunciation: {
     labelKey: "nav.pronunciation",
     href: "/dashboard/pronunciation",
     icon: Languages,
     isActive: (p) => p.startsWith("/dashboard/pronunciation"),
   },
-  {
+  latencyLab: {
     labelKey: "nav.latencyLab",
     href: "/dashboard/latency",
     icon: Timer,
     isActive: (p) => p.startsWith("/dashboard/latency"),
   },
-  {
+  profile: {
     labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
   },
-];
+  // Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
+  knowledge: {
+    labelKey: "nav.knowledge",
+    href: "/dashboard/knowledge",
+    icon: BookOpen,
+    isActive: (p) => p.startsWith("/dashboard/knowledge"),
+  },
+  // Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
+  evaluation: {
+    labelKey: "nav.evaluation",
+    href: "/dashboard/evaluation",
+    icon: Gauge,
+    isActive: (p) => p.startsWith("/dashboard/evaluation"),
+  },
+  admin: {
+    labelKey: "nav.admin",
+    href: "/dashboard/admin",
+    icon: ShieldCheck,
+    isActive: (p) => p.startsWith("/dashboard/admin"),
+  },
+} satisfies Record<string, NavConfigItem>;
 
-// Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
-const KNOWLEDGE_NAV_ITEM: NavConfigItem = {
-  labelKey: "nav.knowledge",
-  href: "/dashboard/knowledge",
-  icon: BookOpen,
-  isActive: (p) => p.startsWith("/dashboard/knowledge"),
-};
-
-// Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
-const EVALUATION_NAV_ITEM: NavConfigItem = {
-  labelKey: "nav.evaluation",
-  href: "/dashboard/evaluation",
-  icon: Gauge,
-  isActive: (p) => p.startsWith("/dashboard/evaluation"),
-};
-
-const ADMIN_NAV_ITEM: NavConfigItem = {
-  labelKey: "nav.admin",
-  href: "/dashboard/admin",
-  icon: ShieldCheck,
-  isActive: (p) => p.startsWith("/dashboard/admin"),
-};
+interface NavGroup {
+  id: string;
+  labelKey: string;
+  items: NavConfigItem[];
+}
 
 // Layout for 1c–1h — sidebar (desktop) or hamburger + overlay drawer (<1024px) + content area
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -111,6 +117,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const { data: user, error } = useCurrentUser();
+  const { theme, toggleTheme } = useDashboardTheme();
 
   // Auth guard: only a confirmed 401 sends teachers back to /login. A network/5xx error
   // (e.g. backend not running yet during frontend-only work) just falls back to "…" below,
@@ -159,13 +166,28 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
   const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
-  // Knowledge sits right after Voices — both are the teacher's libraries — and Evaluation after it.
-  const knowledgeItems = evaluationAvailable ? [KNOWLEDGE_NAV_ITEM, EVALUATION_NAV_ITEM] : [KNOWLEDGE_NAV_ITEM];
-  const baseItems = knowledgeAvailable
-    ? BASE_NAV_ITEMS.flatMap((item) => (item.labelKey === "nav.voices" ? [item, ...knowledgeItems] : [item]))
-    : BASE_NAV_ITEMS;
-  const navItems = user?.isAdmin ? [...baseItems, ADMIN_NAV_ITEM] : baseItems;
-  const activeItem = navItems.find((item) => item.isActive(location.pathname));
+  // Sidebar sections: what teachers build (including their libraries), what they learn from it,
+  // and the one-time setup around it. Empty sections are dropped.
+  const navGroups: NavGroup[] = [
+    {
+      id: "create",
+      labelKey: "nav.groups.create",
+      items: [
+        NAV_ITEMS.overview,
+        NAV_ITEMS.voices,
+        ...(knowledgeAvailable ? [NAV_ITEMS.knowledge] : []),
+        NAV_ITEMS.pronunciation,
+      ],
+    },
+    {
+      id: "insights",
+      labelKey: "nav.groups.insights",
+      items: [NAV_ITEMS.analytics, ...(knowledgeAvailable && evaluationAvailable ? [NAV_ITEMS.evaluation] : []), NAV_ITEMS.latencyLab],
+    },
+    { id: "setup", labelKey: "nav.groups.setup", items: [NAV_ITEMS.apiDashboard, NAV_ITEMS.profile] },
+    ...(user?.isAdmin ? [{ id: "admin", labelKey: "nav.groups.admin", items: [NAV_ITEMS.admin] }] : []),
+  ];
+  const activeItem = navGroups.flatMap((group) => group.items).find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
   async function handleLogout() {
@@ -180,10 +202,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Wordmark />
       </div>
       <nav className={styles.nav} aria-label={t("nav.dashboardNavAriaLabel")}>
-        {navItems.map((item) => (
-          <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
-            {t(item.labelKey)}
-          </NavItem>
+        {navGroups.map((group) => (
+          <div key={group.id} role="group" aria-labelledby={`nav-group-${group.id}`} className={styles.navGroup}>
+            <p id={`nav-group-${group.id}`} className={styles.navGroupLabel}>
+              {t(group.labelKey)}
+            </p>
+            {group.items.map((item) => (
+              <NavItem key={item.labelKey} to={item.href} icon={item.icon} active={item.isActive(location.pathname)}>
+                {t(item.labelKey)}
+              </NavItem>
+            ))}
+          </div>
         ))}
       </nav>
       <div className={styles.sidebarFooter}>
@@ -196,6 +225,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
         <div className={styles.languageSwitcherRow}>
           <LanguageSwitcher />
+          <button
+            className={styles.themeButton}
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? t("nav.themeToLight") : t("nav.themeToDark")}
+            title={theme === "dark" ? t("nav.themeToLight") : t("nav.themeToDark")}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
         <button className={styles.logoutButton} onClick={handleLogout}>
           <LogOut size={16} strokeWidth={2} />

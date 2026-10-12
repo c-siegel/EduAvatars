@@ -23,9 +23,12 @@
     "apiDashboard": "API dashboard",
     "profile": "Profile settings",
     "admin": "Admin",
+    "groups": { "create": "Create", "insights": "Insights", "setup": "Setup", "admin": "Admin" },
     "dashboardFallback": "Dashboard",
     "dashboardNavAriaLabel": "Dashboard navigation",
     "logout": "Log out",
+    "themeToDark": "Switch to dark mode",
+    "themeToLight": "Switch to light mode",
     "closeMenu": "Close menu",
     "openMenu": "Open menu",
     "latencyLab": "Latency test",
@@ -573,11 +576,11 @@
     "importError": "Couldn't import this file. Make sure it's a project export from eduavatars (.yml).",
     "myProjects": "My projects",
     "stats": {
-      "projects": "Projects",
-      "published": "Published",
       "sessions7d": "Sessions (7d)",
       "messages": "Messages"
     },
+    "table": { "project": "Project", "model": "Model", "status": "Status", "created": "Created", "actions": "Actions" },
+    "empty": "No projects here yet.",
     "filters": { "all": "All", "draft": "Drafts", "published": "Published" },
     "card": {
       "published": "Published",
