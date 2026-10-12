@@ -61,7 +61,7 @@ def stream(api_key_record: UserApiKey, request: ChatRequest) -> Iterator[str]:
         # function it may already have been spoken, so a mid-stream failure has to stay a failure.
         if yielded:
             raise
-        logger.warning("Streaming fehlgeschlagen, fällt auf eine normale Anfrage zurück: %s", exc)
+        logger.warning("Streaming failed, falling back to a plain request: %s", exc)
         reply = client.complete(request)
         if reply:
             yield reply

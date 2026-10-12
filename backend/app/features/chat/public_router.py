@@ -176,7 +176,7 @@ def send_message(
     try:
         reply = reply_turn(context, turn)
     except LLMFailed as exc:
-        logger.exception("LLM-Anfrage fehlgeschlagen (project_id=%s)", context.project_id)
+        logger.exception("LLM request failed (project_id=%s)", context.project_id)
         raise HTTPException(status_code=503, detail=ErrorCode.CHAT_UNAVAILABLE) from exc
     return ChatMessageOut(
         reply=reply.text,
@@ -266,7 +266,7 @@ def transcribe(
         )
     except Exception as exc:
         # Generic message for visitors (no technical detail), consistent with send_message.
-        logger.exception("Transkription fehlgeschlagen (project_id=%s)", project.id)
+        logger.exception("Transcription failed (project_id=%s)", project.id)
         raise HTTPException(status_code=503, detail=ErrorCode.VOICE_INPUT_UNAVAILABLE) from exc
     stt_ms = (time.perf_counter() - stt_start) * 1000
     return TranscriptionOut(text=text, stt_ms=stt_ms)

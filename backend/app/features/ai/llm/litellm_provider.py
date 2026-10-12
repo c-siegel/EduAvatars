@@ -70,7 +70,7 @@ def _retry_transient(call):
             if attempt == _LLM_MAX_ATTEMPTS:
                 raise
             logger.warning(
-                "LLM-Anfrage fehlgeschlagen (Versuch %d/%d), erneuter Versuch folgt: %s",
+                "LLM request failed (attempt %d/%d), retrying: %s",
                 attempt,
                 _LLM_MAX_ATTEMPTS,
                 exc,
@@ -137,7 +137,7 @@ class LiteLLMClient:
                 if yielded or attempt == _LLM_MAX_ATTEMPTS:
                     raise
                 logger.warning(
-                    "LLM-Stream fehlgeschlagen (Versuch %d/%d), erneuter Versuch folgt: %s",
+                    "LLM stream failed (attempt %d/%d), retrying: %s",
                     attempt,
                     _LLM_MAX_ATTEMPTS,
                     exc,

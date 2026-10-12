@@ -228,7 +228,7 @@ def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None
             pronunciation=context.pronunciation,
         )
     except Exception:
-        logger.exception("TTS fehlgeschlagen (project_id=%s)", context.project_id)
+        logger.exception("TTS failed (project_id=%s)", context.project_id)
         return None, None, (time.perf_counter() - synth_start) * 1000
     return base64.b64encode(audio_bytes).decode(), content_type, (time.perf_counter() - synth_start) * 1000
 
@@ -380,7 +380,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
         yield chunk_event(*futures.popleft())
 
     if llm_error is not None:
-        logger.error("LLM-Streaming fehlgeschlagen (project_id=%s): %s", context.project_id, llm_error)
+        logger.error("LLM streaming failed (project_id=%s): %s", context.project_id, llm_error)
         yield "error", {"detail": ErrorCode.CHAT_UNAVAILABLE}
         return
 
@@ -398,7 +398,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
             # The reply itself already reached the visitor via the chunk events above —
             # only the save failed, so log it instead of turning it into an error event
             # this late (that would incorrectly tell the client the whole reply failed).
-            logger.exception("Konversation konnte nicht gespeichert werden (project_id=%s)", context.project_id)
+            logger.exception("Saving the conversation failed (project_id=%s)", context.project_id)
 
     yield "done", {
         "reply": full_reply,
