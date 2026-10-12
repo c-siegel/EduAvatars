@@ -123,6 +123,10 @@ class Project(SQLModel, table=True):
     # "chat_only", where no avatar is shown. On by default; False keeps TalkingHead's own idle
     # motion only.
     motion_enabled: bool = True
+    # While the reply is being generated, the avatar plays random "thinking" gestures (see
+    # frontend/src/components/TalkingHeadAvatar). Needs motion_enabled, since it uses the same
+    # MotionEngine. Off by default: it is a matter of taste and of how fast replies arrive.
+    thinking_motions_enabled: bool = False
     # Optional teacher-set access gate for the public chat link (see
     # features/chat/unlock.py) — bcrypt hash, same scheme as User.password_hash. None means anyone with the
     # share link can chat, same as before this field existed.

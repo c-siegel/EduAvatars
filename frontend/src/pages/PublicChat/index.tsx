@@ -1332,6 +1332,7 @@ export function PublicChatPage() {
                   backgroundImageUrl={tutor.avatarBackgroundUrl ?? undefined}
                   speechEnabled={tutor.ttsEnabled}
                   motionEnabled={tutor.motionEnabled}
+                  thinkingMotionsEnabled={tutor.thinkingMotionsEnabled}
                   fallback={<Avatar name={tutor.title} size="lg" />}
                   onReady={handleAvatarReady}
                   // Stays behind the static fallback until the greeting has actually started, instead

@@ -143,6 +143,25 @@ def test_motion_setting_defaults_on_and_reaches_the_public_page(client, anon, te
     assert anon.get(f"/public/{slug}").json()["motionEnabled"] is True
 
 
+def test_thinking_motions_default_off_and_only_reach_the_public_page_together_with_motion(client, anon, teacher):
+    project = create_project(client)
+    pid = project["id"]
+    assert project["thinkingMotionsEnabled"] is False
+    slug = client.put(f"/projects/{pid}/publication").json()["shareSlug"]
+    assert anon.get(f"/public/{slug}").json()["thinkingMotionsEnabled"] is False
+
+    assert client.put(f"/projects/{pid}", json={"thinkingMotionsEnabled": True}).json()["thinkingMotionsEnabled"] is True
+    assert anon.get(f"/public/{slug}").json()["thinkingMotionsEnabled"] is True
+
+    # Without gestures there is nothing to play: the page must not be told to.
+    client.put(f"/projects/{pid}", json={"motionEnabled": False})
+    assert anon.get(f"/public/{slug}").json()["thinkingMotionsEnabled"] is False
+
+
+def test_exports_without_the_thinking_setting_import_with_it_off() -> None:
+    assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n").thinking_motions_enabled is False
+
+
 def test_exports_without_the_setting_import_with_motion_on() -> None:
     assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n").motion_enabled is True
     assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n  motion_enabled: false\n").motion_enabled is False

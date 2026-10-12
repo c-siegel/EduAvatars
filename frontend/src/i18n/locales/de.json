@@ -357,6 +357,8 @@
       "avatarOnlyNeedsVoice": "„Nur Avatar“ braucht Spracheingabe und Sprachausgabe (Schritt 2). Solange eins davon aus ist, zeigt die Chat-Seite Avatar und Chat.",
       "motionTitle": "Gesten und Körpersprache",
       "motionText": "Der Avatar unterstreicht seine Antworten mit Gesten wie Nicken, Winken oder Daumen hoch. Das KI-Modell wählt sie selbst aus; sie werden weder gesprochen noch im Chat angezeigt. Welche Geste wo verwendet wurde, ist in den gespeicherten Unterhaltungen sichtbar. Ohne Wirkung, wenn die Chat-Seite nur den Chat zeigt.",
+      "thinkingMotionsTitle": "Nachdenk-Gesten während der Antwort",
+      "thinkingMotionsText": "Während die Antwort erzeugt wird, macht der Avatar zufällig ausgewählte Nachdenk-Gesten, zum Beispiel ein nachdenkliches Gesicht, hochgezogene Augenbrauen oder ein Schulterzucken. Sobald die Antwort beginnt, hören sie auf. Setzt „Gesten und Körpersprache“ voraus und hat keine Wirkung, wenn die Chat-Seite nur den Chat zeigt.",
       "avatarActionError": "Das hat nicht funktioniert. Bitte erneut versuchen.",
       "backgroundActionError": "Das hat nicht funktioniert. Bitte erneut versuchen."
     },

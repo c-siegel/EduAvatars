@@ -17,6 +17,14 @@ type Status = "loading" | "ready" | "error" | "skipped";
 // usually takes longer, the avatar just reads as idle again for the remainder of the wait.
 const THINKING_LOOK_MS = 4000;
 
+// Gestures that read as "pondering" while a reply is being generated (see startThinking and the
+// thinkingMotionsEnabled prop). Names from vendor/motion-engine/motions.json; one is picked at
+// random each round, never the same twice in a row.
+const THINKING_MOTIONS = ["thinking_face", "raise_eyebrows"];
+// Random pause between two thinking gestures, so it doesn't look like a loop.
+const THINKING_PAUSE_MIN_MS = 800;
+const THINKING_PAUSE_MAX_MS = 2200;
+
 // TalkingHead throttles its own internal render loop to this rate (its "modelFPS" option,
 // currently at its own default) — passed explicitly here so a future change to that library
 // default can't silently desync the dropped-frame math in startFpsTracking/stopFpsTracking below.
@@ -101,11 +109,12 @@ export interface TalkingHeadAvatarHandle {
   /** Ends listening mode (e.g. when the recording is stopped). */
   stopListening: () => void;
   /** Short gaze cue for the wait between sending and the reply ("thinking") — not a native
-   * TalkingHead feature, synthesized from lookAt() (see THINKING_LOOK_MS). */
+   * TalkingHead feature, synthesized from lookAt() (see THINKING_LOOK_MS). With
+   * thinkingMotionsEnabled (and motionEnabled) it also plays random thinking gestures until
+   * stopThinking(). */
   startThinking: () => void;
-  /** No counterpart needed, since lookAt() resets itself after THINKING_LOOK_MS — kept as a named
-   * hook in the calling code anyway, in case this later needs a real reset (e.g. on an error
-   * shortly after sending). */
+  /** Ends the thinking gestures (the gaze cue resets itself after THINKING_LOOK_MS). A gesture
+   * that is not a thinking one — e.g. a closing thumbs up of the reply — is left alone. */
   stopThinking: () => void;
   /** Plays the gestures the LLM marked in a reply (backend features/chat/motion.py), one after
    * the other. A no-op without motionEnabled or before the avatar has loaded. */
@@ -158,6 +167,8 @@ interface TalkingHeadAvatarProps {
    * gesture — the project's motionEnabled setting. Left out (landing page): nothing to gesture to.
    */
   motionEnabled?: boolean;
+  /** Random thinking gestures while the reply is generated (see startThinking). Needs motionEnabled. */
+  thinkingMotionsEnabled?: boolean;
 }
 
 // 3D avatar rendering (met4citizen/TalkingHead). Purely idle on the landing page (no speech);
@@ -172,12 +183,21 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
       speechEnabled = false,
       backgroundImageUrl,
       motionEnabled = false,
+      thinkingMotionsEnabled = false,
     },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const headRef = useRef<TalkingHead | null>(null);
     const motionEngineRef = useRef<MotionEngine | null>(null);
+    // The imperative handle below is created once, so it reads the prop through a ref.
+    const thinkingMotionsEnabledRef = useRef(thinkingMotionsEnabled);
+    thinkingMotionsEnabledRef.current = thinkingMotionsEnabled;
+    // Identifies the running thinking-gesture loop; changing it ends that loop.
+    const thinkingRunRef = useRef(0);
+    // Whether a thinking gesture is playing right now — only then does stopThinking() cut the
+    // engine's action off.
+    const thinkingGestureActiveRef = useRef(false);
     const [status, setStatus] = useState<Status>("loading");
     // Plain ref, not React state — ticked at ~MODEL_FPS Hz from inside TalkingHead's own render
     // loop, so must never trigger a re-render.
@@ -282,9 +302,35 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           // coordinates — needs no viewport calculation and matches the library's already
           // stronger eye contact during isSpeaking/isListening.
           headRef.current?.lookAt(null, null, THINKING_LOOK_MS);
+          const engine = motionEngineRef.current;
+          if (!engine || !thinkingMotionsEnabledRef.current) return;
+          const run = ++thinkingRunRef.current;
+          void (async () => {
+            let last: string | null = null;
+            while (thinkingRunRef.current === run) {
+              const choices = THINKING_MOTIONS.filter((name) => name !== last);
+              last = choices[Math.floor(Math.random() * choices.length)];
+              thinkingGestureActiveRef.current = true;
+              try {
+                await engine.play(last);
+              } catch (error) {
+                // A gesture that fails to play must never break the reply it waits for.
+                console.error("Avatar thinking gesture could not be played.", error);
+                return;
+              } finally {
+                if (thinkingRunRef.current === run) thinkingGestureActiveRef.current = false;
+              }
+              const pause = THINKING_PAUSE_MIN_MS + Math.random() * (THINKING_PAUSE_MAX_MS - THINKING_PAUSE_MIN_MS);
+              await new Promise((resolve) => setTimeout(resolve, pause));
+            }
+          })();
         },
         stopThinking() {
-          // No call needed — see the comment on the interface above.
+          thinkingRunRef.current += 1;
+          if (thinkingGestureActiveRef.current) {
+            thinkingGestureActiveRef.current = false;
+            motionEngineRef.current?.stop();
+          }
         },
         playMotions(names: string[]) {
           if (names.length === 0) return;
@@ -294,6 +340,8 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
           });
         },
         stopMotion() {
+          thinkingRunRef.current += 1;
+          thinkingGestureActiveRef.current = false;
           motionEngineRef.current?.stop();
         },
         startFpsTracking() {

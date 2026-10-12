@@ -2351,6 +2351,10 @@
             "title": "Temperature",
             "type": "number"
           },
+          "thinkingMotionsEnabled": {
+            "title": "Thinkingmotionsenabled",
+            "type": "boolean"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2433,6 +2437,7 @@
           "streamingEnabled",
           "chatLayout",
           "motionEnabled",
+          "thinkingMotionsEnabled",
           "passwordProtected",
           "requireVisitorName",
           "startAudioUrl",
@@ -2791,6 +2796,17 @@
               }
             ],
             "title": "Temperature"
+          },
+          "thinkingMotionsEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thinkingmotionsenabled"
           },
           "title": {
             "anyOf": [
@@ -3436,6 +3452,11 @@
           "teacherName": {
             "title": "Teachername",
             "type": "string"
+          },
+          "thinkingMotionsEnabled": {
+            "default": false,
+            "title": "Thinkingmotionsenabled",
+            "type": "boolean"
           },
           "title": {
             "title": "Title",

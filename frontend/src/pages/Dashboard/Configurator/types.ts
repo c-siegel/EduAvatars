@@ -10,6 +10,7 @@ export interface ConfiguratorDraft {
   avatarBackgroundId: string | null;
   chatLayout: ChatLayout;
   motionEnabled: boolean;
+  thinkingMotionsEnabled: boolean;
   gradeLevel: string;
   preprompt: string;
   startPrompt: string;

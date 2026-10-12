@@ -21,6 +21,7 @@ interface Step4Props {
   ttsEnabled: boolean;
   // The saved setting, like everything else the preview runs on (see below).
   motionEnabled: boolean;
+  thinkingMotionsEnabled: boolean;
   hasUnsavedChanges: boolean;
 }
 
@@ -34,6 +35,7 @@ export function Step4Preview({
   avatarBackgroundUrl,
   ttsEnabled,
   motionEnabled,
+  thinkingMotionsEnabled,
   hasUnsavedChanges,
 }: Step4Props) {
   const { t } = useTranslation();
@@ -86,6 +88,7 @@ export function Step4Preview({
             backgroundImageUrl={avatarBackgroundUrl ?? undefined}
             speechEnabled
             motionEnabled={motionEnabled}
+            thinkingMotionsEnabled={thinkingMotionsEnabled}
             fallback={<Avatar name={title} size="lg" />}
           />
         </div>

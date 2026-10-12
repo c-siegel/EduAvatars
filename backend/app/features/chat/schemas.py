@@ -72,6 +72,9 @@ class PublicProjectOut(CamelModel):
     # Whether the page loads the MotionEngine for the gestures in replies (see
     # features/projects/models.py::Project.motion_enabled).
     motion_enabled: bool = False
+    # Random thinking gestures while the reply is generated (see
+    # features/projects/models.py::Project.thinking_motions_enabled).
+    thinking_motions_enabled: bool = False
     # Already combined server-side with the respective checkbox (see
     # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.

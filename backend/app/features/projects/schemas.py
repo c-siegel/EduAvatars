@@ -95,6 +95,7 @@ class ProjectOut(CamelModel):
     streaming_enabled: bool
     chat_layout: ChatLayout
     motion_enabled: bool
+    thinking_motions_enabled: bool
     password_protected: bool
     require_visitor_name: bool
     # URL of the once-generated start_prompt audio, or None if it hasn't been generated (yet) —
@@ -139,6 +140,7 @@ class ProjectUpdate(CamelModel):
     streaming_enabled: bool | None = None
     chat_layout: ChatLayout | None = None
     motion_enabled: bool | None = None
+    thinking_motions_enabled: bool | None = None
     require_visitor_name: bool | None = None
     # None = no change (field omitted); "" or explicit null clears/disables the password; a
     # non-empty string sets/changes it — handled separately in features/projects/service.py, never
@@ -233,6 +235,7 @@ class ProjectExportData(BaseModel):
     streaming_enabled: bool = True
     chat_layout: ChatLayout = "avatar_chat"
     motion_enabled: bool = True
+    thinking_motions_enabled: bool = False
     require_visitor_name: bool = False
     # The knowledge bases themselves stay in the teacher's library and aren't exported; an
     # imported project starts with knowledge_mode "off" (see export.py::import_project).

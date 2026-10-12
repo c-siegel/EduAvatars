@@ -269,12 +269,25 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
         <Callout variant="warning">{t("configurator.step1.avatarOnlyNeedsVoice")}</Callout>
       )}
 
-      <AdvancedSection changed={draft.motionEnabled ? [] : [t("configurator.step1.motionTitle")]}>
+      <AdvancedSection
+        changed={[
+          ...(draft.motionEnabled ? [] : [t("configurator.step1.motionTitle")]),
+          ...(draft.thinkingMotionsEnabled ? [t("configurator.step1.thinkingMotionsTitle")] : []),
+        ]}
+      >
         <ToggleWithInfo
           title={t("configurator.step1.motionTitle")}
           checked={draft.motionEnabled}
           onChange={(e) => onChange({ motionEnabled: e.target.checked })}
           info={t("configurator.step1.motionText")}
+        />
+        {/* Uses the same gesture engine, so it can't be switched on without the gestures above. */}
+        <ToggleWithInfo
+          title={t("configurator.step1.thinkingMotionsTitle")}
+          checked={draft.thinkingMotionsEnabled && draft.motionEnabled}
+          disabled={!draft.motionEnabled}
+          onChange={(e) => onChange({ thinkingMotionsEnabled: e.target.checked })}
+          info={t("configurator.step1.thinkingMotionsText")}
         />
       </AdvancedSection>
     </>

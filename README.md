@@ -446,6 +446,13 @@ that sentence starts. Saved conversations keep which gesture was used where: sho
 reply in the Analytics transcript and in a "Gesten" column of the CSV export (`name@position`).
 The setting has no effect with the "Chat only" layout.
 
+Optionally ("Thinking gestures while replying", under Appearance → Advanced settings, off by
+default), the avatar also plays randomly chosen thinking gestures (`thinking_face`,
+`raise_eyebrows`, `shrug_confused`) while the reply is being generated, and stops as soon as the
+reply begins. It needs the gestures setting and is done entirely in the browser (see
+`startThinking` in `frontend/src/components/TalkingHeadAvatar`); the backend only stores the
+`thinking_motions_enabled` flag.
+
 ## Data privacy note
 
 EduAvatars itself does not phone home or share data with its developers. User accounts,

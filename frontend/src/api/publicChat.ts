@@ -29,6 +29,8 @@ export interface PublicProject {
   chatLayout: ChatLayout;
   // See types/project.ts — whether the page loads the MotionEngine for the replies' gestures.
   motionEnabled: boolean;
+  // See types/project.ts — already combined with motionEnabled by the backend.
+  thinkingMotionsEnabled: boolean;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
   // Whether this chat requires a password, and whether this tab already unlocked it — see
