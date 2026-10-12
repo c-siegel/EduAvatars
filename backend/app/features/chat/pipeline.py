@@ -249,7 +249,12 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
     reply, motions = _split_motions(context, reply)
 
     if save and context.save_conversations:
-        _save(context, turn, reply, reply_ready_at, passages, motions)
+        try:
+            _save(context, turn, reply, reply_ready_at, passages, motions)
+        except Exception:
+            # Same as in stream_turn: the reply exists (and was paid for), so a failed save, e.g.
+            # "database is locked" under a class-sized burst, mustn't cost the visitor their answer.
+            logger.exception("Saving the conversation failed (project_id=%s)", context.project_id)
 
     tts_start = time.perf_counter()
     audio_base64, content_type, _ = _synthesize(context, reply)
