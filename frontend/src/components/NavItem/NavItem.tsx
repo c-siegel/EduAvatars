@@ -19,7 +19,7 @@ export function NavItem({ to, icon: Icon, active, onClick, children }: NavItemPr
       aria-current={active ? "page" : undefined}
     >
       <Icon size={18} strokeWidth={2} />
-      {children}
+      <span className={styles.label}>{children}</span>
     </Link>
   );
 }

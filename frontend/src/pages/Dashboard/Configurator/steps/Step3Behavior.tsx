@@ -7,10 +7,12 @@ import { Play, RotateCcw, Volume2 } from "lucide-react";
 import { Input, Textarea } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
+import { LabelWithInfo } from "@/components/InfoTip";
 import { projectsApi } from "@/api/projects";
 import { errorMessage } from "@/api/client";
 import type { Project } from "@/types/project";
 import type { StepProps } from "../types";
+import { KnowledgeSection } from "./KnowledgeSection";
 import styles from "./Step3Behavior.module.css";
 
 const START_PROMPT_MAX_LENGTH = 1000;
@@ -29,7 +31,8 @@ interface Step3Props extends StepProps {
   onSaveDraft: () => Promise<Project>;
 }
 
-// Step 3 — behaviour: target audience, preprompt (with a generic default text) and start message.
+// Step 3 — behaviour: target audience, preprompt (with a generic default text), start message and
+// the knowledge bases the avatar may draw on.
 export function Step3Behavior({
   draft,
   onChange,
@@ -94,6 +97,13 @@ export function Step3Behavior({
     onChange({ preprompt: defaultPreprompt });
   }
 
+  const prepromptInfo = (
+    <>
+      <p className={styles.infoParagraph}>{t("configurator.step3.prepromptMarkdownHint")}</p>
+      <p className={styles.infoParagraph}>{t("configurator.step3.resetHint")}</p>
+    </>
+  );
+
   return (
     <div>
       <Input
@@ -130,7 +140,7 @@ export function Step3Behavior({
       </div>
       {prepromptCompiled ? (
         <div className={styles.field}>
-          <span className={styles.label}>{t("configurator.step3.preprompt")}</span>
+          <LabelWithInfo label={t("configurator.step3.preprompt")} className={styles.label} info={prepromptInfo} />
           <div className={styles.markdownPreview}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {draft.preprompt || t("configurator.step3.prepromptCompiledEmpty")}
@@ -143,10 +153,9 @@ export function Step3Behavior({
           value={draft.preprompt}
           onChange={(e) => onChange({ preprompt: e.target.value })}
           rows={12}
+          info={prepromptInfo}
         />
       )}
-      <p className={styles.hint}>{t("configurator.step3.prepromptMarkdownHint")}</p>
-      <p className={styles.hint}>{t("configurator.step3.resetHint")}</p>
 
       <Textarea
         label={t("configurator.step3.startMessageOptional")}
@@ -154,8 +163,8 @@ export function Step3Behavior({
         value={draft.startPrompt}
         onChange={(e) => onChange({ startPrompt: e.target.value.slice(0, START_PROMPT_MAX_LENGTH) })}
         rows={4}
+        info={t("configurator.step3.startMessageHint")}
       />
-      <p className={styles.hint}>{t("configurator.step3.startMessageHint")}</p>
 
       <div className={styles.audioSection}>
         {audioUpToDate ? (
@@ -187,6 +196,8 @@ export function Step3Behavior({
           )}
         </div>
       </div>
+
+      <KnowledgeSection draft={draft} onChange={onChange} />
     </div>
   );
 }

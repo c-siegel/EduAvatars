@@ -25,6 +25,9 @@ mkdir -p "${AVATAR_UPLOAD_DIR:-uploads/avatars}" "${PROFILE_PICTURE_UPLOAD_DIR:-
 # (see docker-compose.yml). Created here so the chown below covers it: if Docker created it first,
 # while starting one of those services, it would belong to root and stt-model couldn't write to it.
 mkdir -p /data/models
+# Same for the optional knowledge (RAG) and evaluation services, which run without root and can't
+# fix ownership themselves (see docker/rag.Dockerfile). Harmless when they aren't used.
+mkdir -p /data/rag /data/rag-eval
 
 # Re-applied on every start, not just once at image build time — /data is a bind mount, so its
 # actual on-disk ownership is independent of whatever the image expects, and changes if PUID/PGID

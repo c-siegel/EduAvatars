@@ -28,79 +28,101 @@
   color: var(--text-secondary);
 }
 
-.statGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.activityStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.activityStrip strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.projects {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
-.sectionHeader {
+.tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border-default);
 }
 
-.sectionHeader h2 {
-  margin: 0;
-  font-size: 1.25rem;
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
 }
 
-.filters {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.875rem;
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tabActive {
+  color: var(--text-accent);
+  border-bottom-color: var(--border-accent);
+}
+
+.tabCount {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tableWrapper {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-tertiary);
 }
 
-.filterButton {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
+.empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
   color: var(--text-secondary);
-  cursor: pointer;
 }
 
-.filterActive {
-  color: var(--text-accent);
-  font-weight: 600;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.projectGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-5);
-  margin-top: var(--space-5);
-}
-
-.newProjectTile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 12rem;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: none;
-  color: var(--text-secondary);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.newProjectTile:hover {
-  border-color: var(--border-accent);
-  color: var(--text-accent);
-}
-
+/* Model and created columns give way on narrow screens; ProjectRow hides the matching cells. */
 @media (max-width: 860px) {
-  .statGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .projectGrid {
-    grid-template-columns: 1fr;
+  .table th:nth-child(2),
+  .table th:nth-child(4) {
+    display: none;
   }
 }

@@ -84,6 +84,16 @@ export function ChatBubble({
             autoFocus
           />
         </div>
+        {/* Visible buttons, not just Enter/Escape: touch keyboards have no Escape key, so without
+            them a student on a phone couldn't back out of an edit. */}
+        <div className={styles.editActions}>
+          <button type="button" onClick={() => setIsEditing(false)}>
+            {t("common.cancel")}
+          </button>
+          <button type="button" className={styles.editSave} onClick={submitEdit} disabled={!draft.trim()}>
+            {t("publicChat.send")}
+          </button>
+        </div>
       </div>
     );
   }
@@ -127,10 +137,12 @@ export function TypingBubble() {
   return (
     <div className={styles.row}>
       <div className={styles.bubble}>
-        <span className={styles.typing} aria-label={t("common.replyBeingWritten")}>
-          <span />
-          <span />
-          <span />
+        {/* aria-label is ignored on a plain span, so the label goes in as visually hidden text. */}
+        <span className={styles.typing} role="status">
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span className={styles.srOnly}>{t("common.replyBeingWritten")}</span>
         </span>
       </div>
     </div>

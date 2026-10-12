@@ -30,7 +30,8 @@
 }
 
 .sidebar {
-  width: 196px;
+  /* Fits "Profileinstellungen" and "Antwortqualität" on one line next to their icons. */
+  width: 228px;
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
@@ -51,7 +52,23 @@
 .nav {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-1);
+}
+
+.navGroupLabel {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
 }
 
 .sidebarFooter {
@@ -68,7 +85,28 @@
 }
 
 .languageSwitcherRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 var(--space-3);
+}
+
+.themeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.themeButton:hover {
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 
 .userInfo {
@@ -144,9 +182,15 @@
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh;
     width: 240px;
     transform: translateX(-100%);
-    transition: transform var(--duration-base) var(--ease-out);
+    /* Hidden, not just moved off-screen, so keyboard and screen-reader users can't land in a closed
+       drawer. The visibility switch waits for the slide-out to finish. */
+    visibility: hidden;
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      visibility 0s linear var(--duration-base);
     z-index: 50;
     box-shadow: var(--shadow-lg);
     /* Full-height drawer here, unlike the desktop sidebar's short content-sized panel — no
@@ -157,6 +201,8 @@
 
   .sidebarOpen {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform var(--duration-base) var(--ease-out);
   }
 
   .content {

@@ -5,7 +5,7 @@
   margin-bottom: var(--space-4);
   /* Only the fallback surface for "no background image chosen" now — TalkingHeadAvatar renders
      the image itself (.backdrop), see TalkingHeadAvatar.module.css/.tsx. */
-  background-color: var(--neutral-200);
+  background-color: var(--surface-sunken);
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-sm);
 }

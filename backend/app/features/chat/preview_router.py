@@ -51,7 +51,9 @@ def preview_message(
                 "message": scrub_key_from_text(str(exc.__cause__), context.llm_key.encrypted_api_key),
             },
         ) from exc
-    return PreviewMessageResponse(reply=reply.text, audio_base64=reply.audio_base64, content_type=reply.content_type)
+    return PreviewMessageResponse(
+        reply=reply.text, audio_base64=reply.audio_base64, content_type=reply.content_type, motions=reply.motions
+    )
 
 
 @router.post("/{project_id}/chat/transcriptions", response_model=TranscriptionOut)

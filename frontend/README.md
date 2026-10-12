@@ -31,7 +31,8 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `src/pages/` | One folder per route — see [Pages](#pages) below |
 | `src/styles/` | Global styles |
 | `src/types/` | Shared TypeScript types |
-| `src/workers/` | Code that runs off the main thread: on-device speech recognition (`parakeetWorker.ts`, used through `src/lib/parakeetStt.ts`) and the microphone capture AudioWorklet |
+| `src/vendor/` | Third-party code copied in rather than installed: `motion-engine/` (the avatar's gestures, see its `ATTRIBUTION.md`) |
+| `src/workers/` | Code that runs off the main thread: on-device speech recognition (`parakeetWorker.ts`, used through `src/lib/parakeetStt.ts`), in-browser Sopro speech output for the latency test (`soproWorker.ts`, used through `src/lib/soproTts.ts`) and the microphone capture AudioWorklet |
 
 ## Pages
 
@@ -42,7 +43,9 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `/dashboard` | `Dashboard/Overview` | A user's list of projects (avatars) |
 | `/dashboard/projects/:id` | `Dashboard/Configurator` | The 5-step wizard for building a project: appearance, technical (AI provider/language), behavior (personality prompt), preview chat, publish. Publishing always saves the current draft first, so there's no separate "save, then publish" step. |
 | `/dashboard/api` | `Dashboard/ApiDashboard` | Connect/manage a user's own LLM/TTS provider API keys ("bring your own key") |
+| `/dashboard/pronunciation` | `Dashboard/Pronunciation` | A user's TTS word list per language: add/edit terms, preset packs (physics), text/CSV import and export, and a test box that shows the spoken text live and plays it with a chosen TTS key/voice, voice clip or project's settings |
 | `/dashboard/analytics` | `Dashboard/Analytics` | Usage stats and per-conversation transcripts for a user's own projects |
+| `/dashboard/latency` | `Dashboard/LatencyLab` | Latency test: simulated student conversations (typed, recorded or replayed audio clips, scripted with repeats) against one of the teacher's projects, timing every module and the end-to-end wait per configuration (STT on device/server, LLM, streaming, TTS incl. Sopro in the browser, avatar on/off). Nothing is saved; results export as CSV/JSON. See [docs/latency-test.md](../docs/latency-test.md) |
 | `/dashboard/profile` | `Dashboard/Profile` | Account settings: picture, password, logout-everywhere, account deletion |
 | `/dashboard/change-password-required` | `Dashboard/ForcePasswordChange` | Forced password reset (e.g. after an admin-issued reset) |
 | `/dashboard/admin`, `/dashboard/admin/settings` | `Dashboard/Admin` | Admin-only: manage other users, site-wide settings (e.g. registration on/off) |
@@ -51,6 +54,10 @@ See the [root README](../README.md) for how this fits into the rest of the app, 
 | `/impressum`, `/datenschutz`, `/credits` | `Imprint`, `Privacy`, `Credits` | Legal/attribution pages (German URLs, matching German legal terminology) |
 
 ## Debugging
+
+For comparing devices and configurations, use the dashboard's latency test page
+(`/dashboard/latency`, see [docs/latency-test.md](../docs/latency-test.md)) — it shows the same
+timings per message, in a table. The console log below works on the real public chat.
 
 Open the public chat with `?latencyTest=1` appended to the URL (e.g.
 `http://localhost:5173/c/<slug>?latencyTest=1`) to log latency timings to the browser console. The
@@ -83,3 +90,13 @@ Other scripts:
 npm run build     # type-checks and builds a production bundle into dist/
 npm run preview   # serves the production build locally
 ```
+
+## Version and documentation link
+
+The footer of the public pages (`components/SiteFooter`) shows the build version
+(`package.json` version plus the short commit, e.g. `0.1.0 (a1b2c3d)`) and a documentation link.
+
+- `APP_COMMIT` (build-time env / Docker build arg): the commit shown in the footer. The release
+  workflow passes `github.sha`; local builds fall back to `git rev-parse`.
+- `VITE_DOCS_URL` (build-time env / Docker build arg): URL of the documentation. While it is unset
+  the footer shows "Documentation (coming soon)" instead of a link.
