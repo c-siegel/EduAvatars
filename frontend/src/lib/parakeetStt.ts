@@ -48,6 +48,7 @@ export class StreamingSession {
     private readonly source: MediaStreamAudioSourceNode,
     private readonly finalText: Promise<{ text: string; finalizeMs: number }>,
     private readonly sendStop: () => void,
+    private readonly closeContext: boolean,
   ) {}
 
   /** Stops capturing and resolves with the final transcript once the last audio is decoded.
@@ -68,7 +69,7 @@ export class StreamingSession {
       });
       this.source.disconnect();
       this.captureNode.disconnect();
-      void this.audioContext.close();
+      if (this.closeContext) void this.audioContext.close();
       this.sendStop();
     }
     return this.finalText;
@@ -169,11 +170,14 @@ export class ParakeetSttEngine {
 
   /** Starts a recording on an already-open microphone stream. `audioContext` should be created
    * inside the click handler (before awaiting getUserMedia), or Safari starts it suspended.
-   * `onPartial` receives the whole transcript so far each time it changes. */
+   * `onPartial` receives the whole transcript so far each time it changes. The session closes
+   * `audioContext` when it stops, unless `closeContext` is false (the latency test page keeps one
+   * context for a whole scripted run, since iPadOS only starts audio from a click). */
   async startStreaming(
     stream: MediaStream,
     audioContext: AudioContext,
     onPartial: (text: string) => void,
+    closeContext = true,
   ): Promise<StreamingSession> {
     if (this.status !== "ready") throw new Error(`On-device speech recognition is not ready (${this.status}).`);
     await audioContext.resume();
@@ -199,7 +203,14 @@ export class ParakeetSttEngine {
     // rejection" warning if the model fails before stop() is called.
     finalText.catch(() => undefined);
     this.send({ type: "start" });
-    return new StreamingSession(audioContext, captureNode, source, finalText, () => this.send({ type: "stop" }));
+    return new StreamingSession(
+      audioContext,
+      captureNode,
+      source,
+      finalText,
+      () => this.send({ type: "stop" }),
+      closeContext,
+    );
   }
 
   /** Releases the worker — call on page unmount, not between recordings. */

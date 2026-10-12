@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
+import { Input, PasswordInput } from "@/components/Input";
 import { authApi } from "@/api/auth";
 import { errorMessage } from "@/api/client";
 import { AuthShell } from "@/pages/AuthShell";
@@ -60,9 +60,8 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <Input
+        <PasswordInput
           label={t("auth.passwordLabel")}
-          type="password"
           name="password"
           autoComplete="current-password"
           required

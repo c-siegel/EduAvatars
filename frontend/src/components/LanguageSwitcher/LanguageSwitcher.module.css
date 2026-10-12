@@ -28,3 +28,28 @@
 .optionActive:hover {
   color: var(--text-inverse);
 }
+
+/* Inherits its colour from the surrounding bar (white on the chat header's gradient). The button
+   is the same 44px target as the icon buttons next to it; the outlined pill inside is the visual. */
+.compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.compactLabel {
+  padding: 0.125rem var(--space-2);
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}

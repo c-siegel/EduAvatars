@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Callout } from "@/components/Callout";
 import { Input } from "@/components/Input";
+import { AdvancedSection } from "@/components/AdvancedSection";
+import { LabelWithInfo, ToggleWithInfo } from "@/components/InfoTip";
 import { apiKeysApi } from "@/api/apiKeys";
 import { voiceClipsApi } from "@/api/voiceClips";
 import {
@@ -34,6 +36,11 @@ const STT_SERVER_ENGINES: SttServerEngine[] = ["whisper", "parakeet"];
 // the API can't get around the slider.
 const MAX_TEMPERATURE = 2;
 const MAX_TOP_P = 1;
+
+// The backend's defaults (backend/app/features/projects/models.py) — the advanced section names
+// any setting that differs from them, so a changed value isn't hidden behind the collapsed header.
+const DEFAULT_TEMPERATURE = 0.5;
+const DEFAULT_TOP_P = 1;
 
 // Step 2 — technical: model, sampling (temperature/top P), language, TTS and STT.
 export function Step2Technical({ draft, onChange }: StepProps) {
@@ -97,80 +104,58 @@ export function Step2Technical({ draft, onChange }: StepProps) {
   const hasNoModels = keysLoaded && llmKeys.length === 0;
   const hasNoTtsKeys = keysLoaded && ttsKeys.length === 0;
 
+  const showTtsKeyChoice = !(hasNoTtsKeys && !localTtsAvailable);
+  const showVoiceName = draft.ttsEnabled && showTtsKeyChoice && !usesLocalTts;
+  const advancedChanged = [
+    draft.temperature !== DEFAULT_TEMPERATURE && t("configurator.step2.temperature"),
+    draft.topP !== DEFAULT_TOP_P && t("configurator.step2.topP"),
+    draft.ttsEnabled && !draft.streamingEnabled && t("configurator.step2.streamingTitle"),
+    showVoiceName && draft.ttsVoice.trim() !== "" && t("configurator.step2.voiceOptional"),
+    draft.sttEnabled && sttSelectValue !== NO_MODEL_SELECTED && t("configurator.step2.sttKey"),
+    draft.sttEnabled && browserSttAvailable && !draft.sttBrowserEnabled && t("configurator.step2.sttBrowserTitle"),
+  ].filter((label): label is string => Boolean(label));
+
+  // Everyday choices stay visible; sampling, streaming and the speech engine details sit in the
+  // collapsed advanced section. Explanations are behind (i); warnings stay visible.
   return (
     <>
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="llm-model">
-          {t("apiDashboard.table.model")}
-        </label>
+        <LabelWithInfo
+          label={t("apiDashboard.table.model")}
+          htmlFor="llm-model"
+          className={styles.label}
+          info={hasNoModels ? undefined : t("configurator.step2.modelHint")}
+        />
         {hasNoModels ? (
           <Callout variant="warning">
             {t("configurator.step2.noLlmPrefix")} <Link to="/dashboard/api">{t("apiDashboard.title")}</Link>
             {t("configurator.step2.noLlmSuffix")}
           </Callout>
         ) : (
-          <>
-            <select
-              id="llm-model"
-              className={styles.select}
-              value={draft.llmApiKeyId ?? NO_MODEL_SELECTED}
-              onChange={(e) => onChange({ llmApiKeyId: e.target.value || null })}
-              disabled={!keysLoaded}
-            >
-              <option value={NO_MODEL_SELECTED}>{t("apiKeyForm.pleaseChoose")}</option>
-              {llmKeys.map((key) => (
-                <option key={key.id} value={key.id}>
-                  {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
-                </option>
-              ))}
-            </select>
-            <p className={styles.hint}>{t("configurator.step2.modelHint")}</p>
-          </>
+          <select
+            id="llm-model"
+            className={styles.select}
+            value={draft.llmApiKeyId ?? NO_MODEL_SELECTED}
+            onChange={(e) => onChange({ llmApiKeyId: e.target.value || null })}
+            disabled={!keysLoaded}
+          >
+            <option value={NO_MODEL_SELECTED}>{t("apiKeyForm.pleaseChoose")}</option>
+            {llmKeys.map((key) => (
+              <option key={key.id} value={key.id}>
+                {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
+              </option>
+            ))}
+          </select>
         )}
       </div>
 
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="temperature">
-          {t("configurator.step2.temperature")}
-        </label>
-        <div className={styles.sliderRow}>
-          <input
-            id="temperature"
-            type="range"
-            min={0}
-            max={MAX_TEMPERATURE}
-            step={0.1}
-            value={draft.temperature}
-            onChange={(e) => onChange({ temperature: Number(e.target.value) })}
-          />
-          <span className={styles.sliderValue}>{draft.temperature.toFixed(1)}</span>
-        </div>
-        <p className={styles.hint}>{t("configurator.step2.temperatureHint")}</p>
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="top-p">
-          {t("configurator.step2.topP")}
-        </label>
-        <div className={styles.sliderRow}>
-          <input
-            id="top-p"
-            type="range"
-            min={0}
-            max={MAX_TOP_P}
-            step={0.05}
-            value={draft.topP}
-            onChange={(e) => onChange({ topP: Number(e.target.value) })}
-          />
-          <span className={styles.sliderValue}>{draft.topP.toFixed(2)}</span>
-        </div>
-        <p className={styles.hint}>{t("configurator.step2.topPHint")}</p>
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="spoken-language">
-          {t("configurator.step2.language")}
-        </label>
+        <LabelWithInfo
+          label={t("configurator.step2.language")}
+          htmlFor="spoken-language"
+          className={styles.label}
+          info={t("configurator.step2.languageHint")}
+        />
         <select
           id="spoken-language"
           className={styles.select}
@@ -183,27 +168,26 @@ export function Step2Technical({ draft, onChange }: StepProps) {
             </option>
           ))}
         </select>
-        <p className={styles.hint}>{t("configurator.step2.languageHint")}</p>
       </div>
 
-      <label className={styles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.ttsEnabled}
-          onChange={(e) => onChange({ ttsEnabled: e.target.checked })}
-        />
-        <span className={styles.toggleCopy}>
-          <strong>{t("configurator.step2.ttsTitle")}</strong>
-          <span>{t("configurator.step2.ttsText")}</span>
-        </span>
-      </label>
+      <ToggleWithInfo
+        title={t("configurator.step2.ttsTitle")}
+        checked={draft.ttsEnabled}
+        onChange={(e) => onChange({ ttsEnabled: e.target.checked })}
+        info={t("configurator.step2.ttsText")}
+      />
 
       {draft.ttsEnabled && (
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="tts-key">
-            {t("configurator.step2.ttsKey")}
-          </label>
-          {hasNoTtsKeys && !localTtsAvailable ? (
+          <LabelWithInfo
+            label={t("configurator.step2.ttsKey")}
+            htmlFor="tts-key"
+            className={styles.label}
+            // Whenever leaving this project's key unset falls back to local TTS — not just when the
+            // account has no TTS keys at all (it may have keys for OTHER projects).
+            info={showTtsKeyChoice && localTtsAvailable ? t("configurator.step2.ttsKeyHint") : undefined}
+          />
+          {!showTtsKeyChoice ? (
             <Callout variant="warning">
               {t("configurator.step2.noTtsPrefix")} <Link to="/dashboard/api">{t("apiDashboard.title")}</Link>
               {t("configurator.step2.noTtsSuffix")}
@@ -226,15 +210,19 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                   </option>
                 ))}
               </select>
-              {/* Shown whenever leaving this project's key unset falls back to local TTS — not just
-                  when the account has no TTS keys at all (this account may have keys for OTHER
-                  projects and still leave this one on the local fallback). */}
-              {localTtsAvailable && <p className={styles.hint}>{t("configurator.step2.ttsKeyHint")}</p>}
-              {usesLocalTts ? (
+              {usesLocalTts && (
                 <>
-                  <label className={styles.label} htmlFor="tts-voice-clip">
-                    {t("configurator.step2.voiceClip")}
-                  </label>
+                  <LabelWithInfo
+                    label={t("configurator.step2.voiceClip")}
+                    htmlFor="tts-voice-clip"
+                    className={styles.label}
+                    info={
+                      <>
+                        {t("configurator.step2.voiceClipHint")}{" "}
+                        <Link to="/dashboard/voices">{t("nav.voices")}</Link>
+                      </>
+                    }
+                  />
                   <select
                     id="tts-voice-clip"
                     className={styles.select}
@@ -248,105 +236,134 @@ export function Step2Technical({ draft, onChange }: StepProps) {
                       </option>
                     ))}
                   </select>
-                  <p className={styles.hint}>
-                    {t("configurator.step2.voiceClipHint")}{" "}
-                    <Link to="/dashboard/voices">{t("nav.voices")}</Link>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Input
-                    label={t("configurator.step2.voiceOptional")}
-                    placeholder={t("configurator.step2.voicePlaceholder")}
-                    value={draft.ttsVoice}
-                    onChange={(e) => onChange({ ttsVoice: e.target.value })}
-                  />
-                  <p className={styles.hint}>{t("configurator.step2.voiceHint")}</p>
                 </>
               )}
             </>
           )}
-
-          <label className={styles.toggleRow}>
-            <input
-              type="checkbox"
-              checked={draft.streamingEnabled}
-              onChange={(e) => onChange({ streamingEnabled: e.target.checked })}
-            />
-            <span className={styles.toggleCopy}>
-              <strong>{t("configurator.step2.streamingTitle")}</strong>
-              <span>{t("configurator.step2.streamingText")}</span>
-            </span>
-          </label>
         </div>
       )}
 
-      <label className={styles.toggleRow}>
-        <input
-          type="checkbox"
-          checked={draft.sttEnabled}
-          onChange={(e) => onChange({ sttEnabled: e.target.checked })}
-        />
-        <span className={styles.toggleCopy}>
-          <strong>{t("configurator.step2.sttTitle")}</strong>
-          <span>{t("configurator.step2.sttText")}</span>
-        </span>
-      </label>
+      <ToggleWithInfo
+        title={t("configurator.step2.sttTitle")}
+        checked={draft.sttEnabled}
+        onChange={(e) => onChange({ sttEnabled: e.target.checked })}
+        info={t("configurator.step2.sttText")}
+      />
 
-      {draft.sttEnabled && (
+      <AdvancedSection changed={advancedChanged}>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="stt-key">
-            {t("configurator.step2.sttKey")}
-          </label>
-          <select
-            id="stt-key"
-            className={styles.select}
-            value={sttSelectValue}
-            onChange={(e) => handleSttChoice(e.target.value)}
-            disabled={!keysLoaded}
-          >
-            <option value={NO_MODEL_SELECTED}>
-              {t("configurator.step2.sttKeyDefault", {
-                engine: t(`configurator.step2.sttServerEngines.${defaultSttEngine}`),
-              })}
-            </option>
-            {STT_SERVER_ENGINES.map((engine) => (
-              <option
-                key={engine}
-                value={STT_ENGINE_PREFIX + engine}
-                // Parakeet only runs once its model files are on the server — still listed (greyed
-                // out) so the option is discoverable, and kept selectable if already chosen.
-                disabled={engine === "parakeet" && !parakeetAvailable && draft.sttServerEngine !== "parakeet"}
-              >
-                {t("configurator.step2.sttServerEngineOption", {
-                  engine: t(`configurator.step2.sttServerEngines.${engine}`),
-                })}
-                {engine === "parakeet" && !parakeetAvailable ? ` ${t("configurator.step2.sttParakeetMissing")}` : ""}
-              </option>
-            ))}
-            {sttKeys.map((key) => (
-              <option key={key.id} value={key.id}>
-                {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
-              </option>
-            ))}
-          </select>
-          <p className={styles.hint}>{t("configurator.step2.sttKeyHint")}</p>
-
-          {browserSttAvailable && (
-            <label className={styles.toggleRow}>
-              <input
-                type="checkbox"
-                checked={draft.sttBrowserEnabled}
-                onChange={(e) => onChange({ sttBrowserEnabled: e.target.checked })}
-              />
-              <span className={styles.toggleCopy}>
-                <strong>{t("configurator.step2.sttBrowserTitle")}</strong>
-                <span>{t("configurator.step2.sttBrowserText")}</span>
-              </span>
-            </label>
-          )}
+          <LabelWithInfo
+            label={t("configurator.step2.temperature")}
+            htmlFor="temperature"
+            className={styles.label}
+            info={t("configurator.step2.temperatureHint")}
+          />
+          <div className={styles.sliderRow}>
+            <input
+              id="temperature"
+              type="range"
+              min={0}
+              max={MAX_TEMPERATURE}
+              step={0.1}
+              value={draft.temperature}
+              onChange={(e) => onChange({ temperature: Number(e.target.value) })}
+            />
+            <span className={styles.sliderValue}>{draft.temperature.toFixed(1)}</span>
+          </div>
         </div>
-      )}
+
+        <div className={styles.field}>
+          <LabelWithInfo
+            label={t("configurator.step2.topP")}
+            htmlFor="top-p"
+            className={styles.label}
+            info={t("configurator.step2.topPHint")}
+          />
+          <div className={styles.sliderRow}>
+            <input
+              id="top-p"
+              type="range"
+              min={0}
+              max={MAX_TOP_P}
+              step={0.05}
+              value={draft.topP}
+              onChange={(e) => onChange({ topP: Number(e.target.value) })}
+            />
+            <span className={styles.sliderValue}>{draft.topP.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {draft.ttsEnabled && (
+          <ToggleWithInfo
+            title={t("configurator.step2.streamingTitle")}
+            checked={draft.streamingEnabled}
+            onChange={(e) => onChange({ streamingEnabled: e.target.checked })}
+            info={t("configurator.step2.streamingText")}
+          />
+        )}
+
+        {showVoiceName && (
+          <Input
+            label={t("configurator.step2.voiceOptional")}
+            placeholder={t("configurator.step2.voicePlaceholder")}
+            value={draft.ttsVoice}
+            onChange={(e) => onChange({ ttsVoice: e.target.value })}
+            info={t("configurator.step2.voiceHint")}
+          />
+        )}
+
+        {draft.sttEnabled && (
+          <div className={styles.field}>
+            <LabelWithInfo
+              label={t("configurator.step2.sttKey")}
+              htmlFor="stt-key"
+              className={styles.label}
+              info={t("configurator.step2.sttKeyHint")}
+            />
+            <select
+              id="stt-key"
+              className={styles.select}
+              value={sttSelectValue}
+              onChange={(e) => handleSttChoice(e.target.value)}
+              disabled={!keysLoaded}
+            >
+              <option value={NO_MODEL_SELECTED}>
+                {t("configurator.step2.sttKeyDefault", {
+                  engine: t(`configurator.step2.sttServerEngines.${defaultSttEngine}`),
+                })}
+              </option>
+              {STT_SERVER_ENGINES.map((engine) => (
+                <option
+                  key={engine}
+                  value={STT_ENGINE_PREFIX + engine}
+                  // Parakeet only runs once its model files are on the server — still listed (greyed
+                  // out) so the option is discoverable, and kept selectable if already chosen.
+                  disabled={engine === "parakeet" && !parakeetAvailable && draft.sttServerEngine !== "parakeet"}
+                >
+                  {t("configurator.step2.sttServerEngineOption", {
+                    engine: t(`configurator.step2.sttServerEngines.${engine}`),
+                  })}
+                  {engine === "parakeet" && !parakeetAvailable ? ` ${t("configurator.step2.sttParakeetMissing")}` : ""}
+                </option>
+              ))}
+              {sttKeys.map((key) => (
+                <option key={key.id} value={key.id}>
+                  {keyDisplayName(key, specs)} · {modelLabel(key, specs)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {draft.sttEnabled && browserSttAvailable && (
+          <ToggleWithInfo
+            title={t("configurator.step2.sttBrowserTitle")}
+            checked={draft.sttBrowserEnabled}
+            onChange={(e) => onChange({ sttBrowserEnabled: e.target.checked })}
+            info={t("configurator.step2.sttBrowserText")}
+          />
+        )}
+      </AdvancedSection>
     </>
   );
 }

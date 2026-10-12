@@ -1,14 +1,26 @@
 .wrapper {
-  min-height: 100vh;
+  /* Fills the space above the footer (PublicLayout is a flex column); the soft accent glow lifts
+     the card off the page without leaving the app's colour scheme. */
+  flex: 1;
   display: flex;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, var(--surface-accent-soft), transparent 70%),
+    var(--surface-page);
   align-items: center;
   justify-content: center;
-  padding: var(--space-6);
+  padding: var(--space-12) var(--space-5) var(--space-8);
+}
+
+@media (max-width: 480px) {
+  .wrapper {
+    align-items: flex-start;
+    padding-top: var(--space-16);
+  }
 }
 
 .card {
   width: 100%;
-  max-width: 340px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);

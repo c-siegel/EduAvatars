@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiKeysApi } from "@/api/apiKeys";
 import i18n from "@/i18n";
-import type { ApiKey, ProviderSpec } from "@/types/apiKey";
+import { evaluationApi } from "@/api/evaluation";
+import { knowledgeApi } from "@/api/knowledge";
+import type { ApiKey, ApiKeyType, ProviderModel, ProviderSpec } from "@/types/apiKey";
 
 // Providers, endpoint defaults and curated models come from the backend registry
 // (backend/app/core/providers.py) instead of a second list here — otherwise the frontend could
@@ -45,6 +47,24 @@ export function useServerSttStatus() {
   });
 }
 
+/** Whether this deployment runs the knowledge service, plus its upload limits — gates the
+ * Knowledge page, its nav item and the Configurator's knowledge section. */
+export function useKnowledgeStatus() {
+  return useQuery({
+    queryKey: ["rag-status"],
+    queryFn: knowledgeApi.status,
+    // Includes the teacher's usage, so not Infinity like the other deployment facts above.
+    staleTime: 60_000,
+  });
+}
+
+/** A provider's curated models for one key type: embedding models for embedding keys, its
+ * chat models otherwise. */
+export function curatedModels(spec: ProviderSpec | undefined, keyType: ApiKeyType): ProviderModel[] {
+  if (!spec) return [];
+  return keyType === "embedding" ? spec.embeddingModels ?? [] : spec.models;
+}
+
 export function findProvider(specs: ProviderSpec[], value: string): ProviderSpec | undefined {
   return specs.find((spec) => spec.value === value);
 }
@@ -67,5 +87,22 @@ export function modelLabel(key: ApiKey, specs: ProviderSpec[]): string | null {
     const modelFixed = (key.keyType === "tts" && spec?.ttsModelFixed) || (key.keyType === "stt" && spec?.sttModelFixed);
     return modelFixed ? i18n.t("apiKeyForm.defaultModel") : null;
   }
-  return spec?.models.find((model) => model.value === key.modelId)?.label ?? key.modelId;
+  return curatedModels(spec, key.keyType).find((model) => model.value === key.modelId)?.label ?? key.modelId;
+}
+
+/** Whether this deployment runs the evaluation (Ragas) service — gates the Evaluation page, its
+ * nav item and the test sets on the Knowledge page. */
+export function useEvaluationStatus(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["evaluation-status"],
+    queryFn: evaluationApi.status,
+    staleTime: 60_000,
+    enabled: options.enabled ?? true,
+  });
+}
+
+/** Keys that can judge answers: LLM keys with a model, except Arcana (it adds its own retrieval
+ * to every call, see backend/app/features/evaluation/service.py::judge_for). */
+export function isJudgeKey(key: ApiKey): boolean {
+  return key.keyType === "llm" && Boolean(key.modelId) && key.provider !== "gwdg_arcana";
 }

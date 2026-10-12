@@ -96,6 +96,7 @@ def load_tutor(
         browser_stt_model_url=browser_stt_model_url_for(project),
         streaming_enabled=project.streaming_enabled,
         chat_layout=project.chat_layout,
+        motion_enabled=project.motion_enabled,
         # The checkbox and URL are combined here, before anything goes out to the anonymous page —
         # both "not enabled" and "enabled but URL empty" end up as None.
         survey_before_url=project.survey_before_url if project.survey_before_enabled and project.survey_before_url else None,
@@ -181,6 +182,7 @@ def send_message(
         content_type=reply.content_type,
         llm_ms=reply.llm_ms,
         tts_ms=reply.tts_ms,
+        motions=reply.motions,
     )
 
 

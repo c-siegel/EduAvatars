@@ -1,12 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   AudioLines,
+  BookOpen,
+  Gauge,
   LayoutDashboard,
+  Timer,
   BarChart3,
   KeyRound,
+  Languages,
   Settings2,
   ShieldCheck,
   Menu,
@@ -25,6 +29,7 @@ import { authApi } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useDashboardTheme } from "@/hooks/useDashboardTheme";
+import { useEvaluationStatus, useKnowledgeStatus } from "@/lib/providers";
 import styles from "./DashboardShell.module.css";
 
 const FORCE_PASSWORD_CHANGE_PATH = "/dashboard/change-password-required";
@@ -56,11 +61,37 @@ const NAV_ITEMS = {
     icon: AudioLines,
     isActive: (p) => p.startsWith("/dashboard/voices"),
   },
+  pronunciation: {
+    labelKey: "nav.pronunciation",
+    href: "/dashboard/pronunciation",
+    icon: Languages,
+    isActive: (p) => p.startsWith("/dashboard/pronunciation"),
+  },
+  latencyLab: {
+    labelKey: "nav.latencyLab",
+    href: "/dashboard/latency",
+    icon: Timer,
+    isActive: (p) => p.startsWith("/dashboard/latency"),
+  },
   profile: {
     labelKey: "nav.profile",
     href: "/dashboard/profile",
     icon: Settings2,
     isActive: (p) => p.startsWith("/dashboard/profile"),
+  },
+  // Only shown where the deployment runs the knowledge service (see useKnowledgeStatus).
+  knowledge: {
+    labelKey: "nav.knowledge",
+    href: "/dashboard/knowledge",
+    icon: BookOpen,
+    isActive: (p) => p.startsWith("/dashboard/knowledge"),
+  },
+  // Only shown where the deployment also runs the evaluation service (see useEvaluationStatus).
+  evaluation: {
+    labelKey: "nav.evaluation",
+    href: "/dashboard/evaluation",
+    icon: Gauge,
+    isActive: (p) => p.startsWith("/dashboard/evaluation"),
   },
   admin: {
     labelKey: "nav.admin",
@@ -74,16 +105,7 @@ interface NavGroup {
   id: string;
   labelKey: string;
   items: NavConfigItem[];
-  adminOnly?: boolean;
 }
-
-// Sidebar sections: what teachers build, what they learn from it, and the one-time setup around it.
-const NAV_GROUPS: NavGroup[] = [
-  { id: "create", labelKey: "nav.groups.create", items: [NAV_ITEMS.overview, NAV_ITEMS.voices] },
-  { id: "insights", labelKey: "nav.groups.insights", items: [NAV_ITEMS.analytics] },
-  { id: "setup", labelKey: "nav.groups.setup", items: [NAV_ITEMS.apiDashboard, NAV_ITEMS.profile] },
-  { id: "admin", labelKey: "nav.groups.admin", items: [NAV_ITEMS.admin], adminOnly: true },
-];
 
 // Layout for 1c–1h — sidebar (desktop) or hamburger + overlay drawer (<1024px) + content area
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -92,6 +114,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const { data: user, error } = useCurrentUser();
   const { theme, toggleTheme } = useDashboardTheme();
 
@@ -117,7 +141,52 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  const navGroups = NAV_GROUPS.filter((group) => !group.adminOnly || user?.isAdmin);
+  // Dismissing the drawer (Escape, scrim) hands focus back to the menu button that opened it, so
+  // keyboard users don't drop to the top of the page.
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+    menuButtonRef.current?.focus();
+  }
+
+  // Opening moves focus into the drawer, so the next Tab lands on a nav link instead of the page
+  // behind the scrim.
+  useEffect(() => {
+    if (mobileNavOpen) sidebarRef.current?.querySelector("a")?.focus();
+  }, [mobileNavOpen]);
+
+  // Escape closes the open drawer, as with any overlay.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeMobileNav();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileNavOpen]);
+
+  const knowledgeAvailable = useKnowledgeStatus().data?.available ?? false;
+  const evaluationAvailable = useEvaluationStatus({ enabled: knowledgeAvailable }).data?.available ?? false;
+  // Sidebar sections: what teachers build (including their libraries), what they learn from it,
+  // and the one-time setup around it. Empty sections are dropped.
+  const navGroups: NavGroup[] = [
+    {
+      id: "create",
+      labelKey: "nav.groups.create",
+      items: [
+        NAV_ITEMS.overview,
+        NAV_ITEMS.voices,
+        ...(knowledgeAvailable ? [NAV_ITEMS.knowledge] : []),
+        NAV_ITEMS.pronunciation,
+      ],
+    },
+    {
+      id: "insights",
+      labelKey: "nav.groups.insights",
+      items: [NAV_ITEMS.analytics, ...(knowledgeAvailable && evaluationAvailable ? [NAV_ITEMS.evaluation] : []), NAV_ITEMS.latencyLab],
+    },
+    { id: "setup", labelKey: "nav.groups.setup", items: [NAV_ITEMS.apiDashboard, NAV_ITEMS.profile] },
+    ...(user?.isAdmin ? [{ id: "admin", labelKey: "nav.groups.admin", items: [NAV_ITEMS.admin] }] : []),
+  ];
   const activeItem = navGroups.flatMap((group) => group.items).find((item) => item.isActive(location.pathname));
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("nav.dashboardFallback");
 
@@ -128,7 +197,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const sidebar = (
-    <aside className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
+    <aside ref={sidebarRef} className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ""}`}>
       <div className={styles.sidebarHeader}>
         <Wordmark />
       </div>
@@ -177,6 +246,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     <div className={styles.shell}>
       <header className={styles.mobileTopbar}>
         <button
+          ref={menuButtonRef}
           className={styles.menuButton}
           aria-label={mobileNavOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={mobileNavOpen}
@@ -188,7 +258,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <Avatar name={user?.name ?? ""} size="sm" />
       </header>
 
-      {mobileNavOpen && <Scrim onClick={() => setMobileNavOpen(false)} />}
+      {mobileNavOpen && <Scrim onClick={closeMobileNav} />}
 
       {sidebar}
 

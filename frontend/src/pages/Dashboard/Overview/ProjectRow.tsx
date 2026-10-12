@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Pencil, Link2, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
+import { avatarLibraryApi } from "@/api/avatarLibrary";
 import { projectsApi } from "@/api/projects";
 import type { Project } from "@/types/project";
+import { projectAvatarThumbnailUrl } from "@/lib/builtinAvatars";
 import { formatRelativeDate } from "@/lib/time";
 import styles from "./ProjectRow.module.css";
 
@@ -16,6 +18,9 @@ export function ProjectRow({ project }: { project: Project }) {
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Same query key as the configurator's avatar grid, so all rows share one cached request.
+  const avatarsQuery = useQuery({ queryKey: ["avatar-models"], queryFn: avatarLibraryApi.list });
+  const avatarThumbnailUrl = projectAvatarThumbnailUrl(project, avatarsQuery.data);
 
   const deleteMutation = useMutation({
     mutationFn: () => projectsApi.remove(project.id),
@@ -65,7 +70,7 @@ export function ProjectRow({ project }: { project: Project }) {
     <tr className={styles.row}>
       <td className={styles.projectCell}>
         <Link className={styles.projectLink} to={`/dashboard/projects/${project.id}`}>
-          <Avatar name={project.title} size="sm" />
+          <Avatar name={project.title} src={avatarThumbnailUrl} size="sm" />
           <span className={styles.title}>{project.title}</span>
         </Link>
       </td>
