@@ -9,7 +9,7 @@ import litellm
 from app.core.error_codes import ErrorCode
 from app.core.providers import OPENAI_COMPATIBLE_PROVIDER, build_model_string, get_provider
 from app.features.ai.tts.base import VoiceRequiredError
-from app.features.api_keys.crypto import reveal_api_key
+from app.features.api_keys.crypto import reveal_api_key_for_litellm
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import effective_api_base
 
@@ -34,7 +34,7 @@ class LiteLLMSpeechClient:
         else:
             raise ValueError(ErrorCode.TTS_PROVIDER_UNSUPPORTED)
 
-        api_key = reveal_api_key(self._key.encrypted_api_key)
+        api_key = reveal_api_key_for_litellm(self._key.encrypted_api_key)
         # Only a deliberately different address is passed to litellm (see
         # features/api_keys/resolve.py::effective_api_base) — previously it wasn't called for TTS
         # at all, so a custom endpoint (e.g. openai_compatible) never had any effect.
@@ -45,7 +45,7 @@ class LiteLLMSpeechClient:
             response = litellm.speech(
                 model=model,
                 input=text,
-                api_key=api_key or None,
+                api_key=api_key,
                 response_format="mp3",
                 **({"voice": voice} if voice else {}),
                 **({"api_base": api_base} if api_base else {}),

@@ -162,6 +162,16 @@ def test_api_embeddings_use_the_given_key(client, fake_litellm):
     assert fake_litellm[0]["model"] == "openai/text-embedding-3-small"
 
 
+def test_keyless_api_embeddings_never_fall_back_to_the_servers_key(client, fake_litellm, monkeypatch):
+    # Without an explicit key litellm would read OPENAI_API_KEY from this service's environment and
+    # send it to the teacher's endpoint.
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-operator-own-secret")
+    config = {"mode": "api", "model": "openai/embed", "api_base": "https://llm.school.example/v1"}
+    response = client.post("/embedding-test", headers=AUTH, json={"embedding": config})
+    assert response.status_code == 200, response.text
+    assert fake_litellm and all(call["api_key"] == "no-key" for call in fake_litellm)
+
+
 def test_embedding_test_route(client, fake_litellm):
     config = {"mode": "api", "model": "openai/text-embedding-3-small", "api_key": "sk-test"}
     response = client.post("/embedding-test", headers=AUTH, json={"embedding": config})
