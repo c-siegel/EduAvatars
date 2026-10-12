@@ -269,7 +269,7 @@ export function CreditsPage() {
           <h2>{t("credits.privacy.title")}</h2>
           <div className={styles.content}>
             <div className={styles.creditItem}>
-              <h3>Self-Hosting</h3>
+              <h3>{t("credits.privacy.selfHosting.title")}</h3>
               <p className={styles.description}>{t("credits.privacy.selfHosting.description")}</p>
             </div>
           </div>

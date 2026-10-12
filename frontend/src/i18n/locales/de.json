@@ -589,7 +589,6 @@
       "published": "Publiziert",
       "draft": "Entwurf",
       "noModel": "Kein Modell gewählt",
-      "lastActive": "Zuletzt: {{relative}}",
       "edit": "Bearbeiten",
       "copyLink": "Link kopieren",
       "export": "Als .yml exportieren",
@@ -630,7 +629,6 @@
       }
     },
     "footer": {
-      "legalAriaLabel": "Rechtliches",
       "privacy": "Datenschutz",
       "imprint": "Impressum",
       "credits": "Credits"
@@ -969,6 +967,7 @@
     "privacy": {
       "title": "Datenschutz & Hosting",
       "selfHosting": {
+        "title": "Self-Hosting",
         "description": "Alle externen Ressourcen (Schriften, Avatare, Audio-Module) werden selbst gehostet, um die Privatsphäre der Nutzer zu schützen und keine Daten an externe CDNs zu senden."
       }
     },
