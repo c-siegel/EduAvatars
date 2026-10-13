@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
         store.close()
 
 
-app = FastAPI(title="EduAvatars Knowledge (RAG) Service", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(title="LOLA Knowledge (RAG) Service", lifespan=lifespan, docs_url=None, redoc_url=None)
 
 
 @app.exception_handler(RagError)

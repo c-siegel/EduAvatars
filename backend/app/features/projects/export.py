@@ -31,7 +31,7 @@ from app.features.projects.schemas import ProjectExportData
 FORMAT_VERSION = 2
 
 _YAML_HEADER = (
-    "# eduavatars project export\n"
+    "# LOLA project export\n"
     "# Re-import this file (Overview page) to recreate this project's configuration.\n"
     "# API keys, the publish state, and the chat password are never included here — set those\n"
     "# up again after importing.\n"

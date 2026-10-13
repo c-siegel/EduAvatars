@@ -1,5 +1,5 @@
 """
-Configuration Settings for EduAvatars Backend
+Configuration Settings for the LOLA Backend
 
 This module defines all configuration settings for the backend. Settings are loaded from
 the shared root .env file (or real environment variables), validated automatically by

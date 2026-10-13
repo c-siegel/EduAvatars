@@ -52,7 +52,7 @@ export const analyticsApi = {
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error("Export fehlgeschlagen");
-    const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"), "eduavatars-gespraeche.zip");
+    const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"), "lola-gespraeche.zip");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

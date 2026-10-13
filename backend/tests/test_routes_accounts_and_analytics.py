@@ -176,7 +176,7 @@ def test_analytics_and_conversations(client, anon, engine, chat_project):
 
     bundle = client.post("/conversations/export", json={"conversationIds": ids})
     assert bundle.headers["content-type"] == "application/zip"
-    assert bundle.headers["content-disposition"] == 'attachment; filename="eduavatars-gespraeche.zip"'
+    assert bundle.headers["content-disposition"] == 'attachment; filename="lola-gespraeche.zip"'
     assert len(zipfile.ZipFile(io.BytesIO(bundle.content)).namelist()) == 2
 
     assert client.post("/conversations/export", json={"conversationIds": ["missing"]}).json() == {"detail": "CONVERSATION_NOT_FOUND"}
