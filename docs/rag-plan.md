@@ -1,7 +1,7 @@
 # Knowledge (RAG) module: implementation plan
 
 Status: **Part A (knowledge base) and Part B (Ragas evaluation) implemented.** See
-§14 for where the implementation differs from this plan. This document describes how EduAvatars gets a built-in,
+§14 for where the implementation differs from this plan. This document describes how LOLA gets a built-in,
 provider-independent knowledge base: teachers upload their own material, and the avatar's answers
 are grounded in it, whatever LLM provider the project uses.
 
@@ -757,7 +757,7 @@ Licences checked on PyPI on 2026-10-08; Docling's model licences confirmed by th
 already uses through httpx) is a file-level copyleft. It only requires sharing changes to the MPL
 files themselves, and we use them unmodified. CDLA-Permissive-2.0 is a permissive licence for data
 and model weights; it only asks that the licence text be passed on. Both are open licences that
-don't affect EduAvatars' MIT licence. The images ship a `THIRD_PARTY_LICENSES` file to satisfy the
+don't affect LOLA's MIT licence. The images ship a `THIRD_PARTY_LICENSES` file to satisfy the
 attribution requirements of Apache-2.0, CDLA and MPL.
 
 **Deliberately avoided**
