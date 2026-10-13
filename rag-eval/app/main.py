@@ -30,7 +30,7 @@ from app.testset import generate_cases
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="EduAvatars Evaluation Service", docs_url=None, redoc_url=None)
+app = FastAPI(title="LOLA Evaluation Service", docs_url=None, redoc_url=None)
 
 
 @app.exception_handler(RequestValidationError)

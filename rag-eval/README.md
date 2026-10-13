@@ -1,4 +1,4 @@
-# EduAvatars evaluation service (optional)
+# LOLA evaluation service (optional)
 
 Measures how well an avatar answers from its knowledge base, with
 [Ragas](https://github.com/explodinggradients/ragas) (Apache-2.0). Teachers keep a set of test

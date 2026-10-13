@@ -1,9 +1,13 @@
-# EduAvatars
+# LOLA
+
+*Leipzig's Open Learning Avatar — formerly EduAvatars.* Technical names (Docker images
+`chsiegel/eduavatars`, the `eduavatars.service` unit, storage keys) keep the old name, so existing
+deployments keep working after the rename.
 
 **Create a talking 3D avatar, give it a personality, and share it as a link — no coding
 required to use it, once someone has set it up for you.**
 
-EduAvatars is a web app for building custom AI characters that students, visitors, or
+LOLA is a web app for building custom AI characters that students, visitors, or
 colleagues can talk to in a browser, by typing or by speaking out loud. A teacher (or anyone
 with an account) creates a "project": a persona described in plain language, backed by an AI
 language model, with a 3D face and a voice. Publishing a project turns it into a public link —
@@ -17,11 +21,11 @@ visitors need no account and no technical knowledge to use it.
 
 - **Teachers and instructors** — build a subject-matter tutor, an exam-prep quiz partner, a
   historical figure students can interview, or an always-available FAQ desk for your course.
-  See [Using EduAvatars as a teacher](#using-eduavatars-as-a-teacher) below — no installation
+  See [Using LOLA as a teacher](#using-lola-as-a-teacher) below — no installation
   needed if your institution already runs an instance.
 - **Researchers and institutions** — self-host to keep full control over student data, export
   anonymized conversation logs for study, and compare answer quality/latency/cost across
-  several AI providers side by side. See [Using EduAvatars as a researcher](#using-eduavatars-as-a-researcher).
+  several AI providers side by side. See [Using LOLA as a researcher](#using-lola-as-a-researcher).
 - **Developers and IT admins** — a small, self-contained FastAPI + React stack you can run
   locally in minutes or deploy with Docker. See [Deployment](#deployment).
 
@@ -64,9 +68,9 @@ visitors need no account and no technical knowledge to use it.
   <img src="docs/screenshots/configurator.svg" alt="Screenshot placeholder: the project configurator wizard" width="720">
 </p>
 
-## Using EduAvatars as a teacher
+## Using LOLA as a teacher
 
-If someone else (your IT department, your institution) already runs an EduAvatars instance for
+If someone else (your IT department, your institution) already runs a LOLA instance for
 you, none of the setup below applies — just:
 
 1. **Log in** (or register, if open registration is enabled) at your instance's web address.
@@ -83,7 +87,7 @@ you, none of the setup below applies — just:
 7. **Check back later** under Analytics to see how many people talked to it and read through
    individual conversations.
 
-## Using EduAvatars as a researcher
+## Using LOLA as a researcher
 
 - **Self-host for data control.** Running your own instance (see [Deployment](#deployment))
   means conversation data never leaves infrastructure you control — relevant if you're working
@@ -115,7 +119,7 @@ you, none of the setup below applies — just:
 
 ## Project status
 
-EduAvatars is under active development. The core flow — create a project, publish it, chat by
+LOLA is under active development. The core flow — create a project, publish it, chat by
 text or voice, view analytics — works end to end and is what this repo's default configuration
 is built around. Automated test coverage is still thin (see
 [backend/README.md](backend/README.md#tests)), and some rougher edges (error messages, mobile
@@ -149,7 +153,7 @@ project has knowledge bases attached. In production, Caddy (in
 
 ## Deployment
 
-There are two ways to run EduAvatars: locally for development (Deploy A), or with Docker for a
+There are two ways to run LOLA: locally for development (Deploy A), or with Docker for a
 real deployment (Deploy B). Both read the same `.env` file at the repo root, so it only needs to
 be set up once.
 
@@ -456,7 +460,7 @@ reply begins. It needs the gestures setting and is done entirely in the browser 
 
 ## Data privacy note
 
-EduAvatars itself does not phone home or share data with its developers. User accounts,
+LOLA itself does not phone home or share data with its developers. User accounts,
 project settings, and conversation records stay on whichever server you (or your institution)
 deploy the app to — see [Deploy B](#deploy-b-docker-production) for running your own instance.
 
@@ -465,7 +469,7 @@ third-party AI provider that project is configured to use (voice input is transc
 visitor's device by default, so the audio itself only leaves it on the server fallback, or with
 a project-configured cloud STT key) — see [Supported AI providers](#supported-ai-providers) — since that's what generates the
 avatar's replies. That provider's own data-handling terms apply to that traffic, independent of
-where you host EduAvatars itself. Password-reset emails (only if you configure SMTP) are the
+where you host LOLA itself. Password-reset emails (only if you configure SMTP) are the
 only other outbound traffic the backend generates on its own.
 
 Knowledge bases (if enabled) stay on your server with the default local embedding model. A

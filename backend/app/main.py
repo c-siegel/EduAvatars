@@ -74,7 +74,7 @@ def health():
 
 def create_app() -> FastAPI:
     """Build the FastAPI application: middleware, error handling, and every route."""
-    app = FastAPI(title="EduAvatars API", lifespan=lifespan)
+    app = FastAPI(title="LOLA API", lifespan=lifespan)
 
     # Configure CORS (Cross-Origin Resource Sharing) middleware
     # CORS allows the frontend (running on a different domain/port) to make requests to this backend

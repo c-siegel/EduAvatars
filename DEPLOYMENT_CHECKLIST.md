@@ -1,6 +1,6 @@
 # Deployment checklist
 
-Things still needed before EduAvatars runs publicly. Tick them off as they are done.
+Things still needed before LOLA runs publicly. Tick them off as they are done.
 
 ## Browser and brand assets
 - [ ] Favicon: `favicon.svg` plus a 32×32 `favicon.ico` fallback in `frontend/public/`, linked from `frontend/index.html`.

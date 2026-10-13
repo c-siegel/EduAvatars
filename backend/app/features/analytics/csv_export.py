@@ -139,4 +139,4 @@ def build_export(
             else:
                 used_names[name] = 0
             archive.writestr(name, build_conversation_csv(conversation, project, document_names))
-    return buffer.getvalue(), "application/zip", "eduavatars-gespraeche.zip"
+    return buffer.getvalue(), "application/zip", "lola-gespraeche.zip"

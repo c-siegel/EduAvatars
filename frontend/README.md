@@ -1,6 +1,6 @@
-# EduAvatars frontend
+# LOLA frontend
 
-React + TypeScript single-page app (SPA) for EduAvatars: the dashboard where a user manages
+React + TypeScript single-page app (SPA) for LOLA: the dashboard where a user manages
 projects/avatars, and the public chat page visitors use to talk to an avatar.
 
 See the [root README](../README.md) for how this fits into the rest of the app, and

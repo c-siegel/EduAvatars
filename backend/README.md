@@ -1,6 +1,6 @@
-# EduAvatars backend
+# LOLA backend
 
-EduAvatars' backend uses FastAPI as framework for building APIs with Python: user auth, avatar/project management, and calls out to LLM, text-to-speech (TTS), and speech-to-text (STT) providers.
+LOLA's backend uses FastAPI as framework for building APIs with Python: user auth, avatar/project management, and calls out to LLM, text-to-speech (TTS), and speech-to-text (STT) providers.
 
 See the [root README](../README.md) for what the app does and how to run it end to end — this
 file only covers backend-specific details.
