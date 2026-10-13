@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
+import { ChecklistCard } from "@/components/ChecklistCard";
 import { Input } from "@/components/Input";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SurveyEmbed } from "@/components/SurveyEmbed";
@@ -22,6 +23,7 @@ import { ParakeetSttEngine, type LoadProgress, type StreamingSession } from "@/l
 import { FALLBACK_SILENCE_RMS_THRESHOLD, calibrateSilenceThreshold, rms } from "@/lib/audioLevel";
 import { ApiError, errorMessage } from "@/api/client";
 import { setUnlockToken } from "@/lib/chatUnlockStorage";
+import { doneStepIds } from "@/lib/checklist";
 import { getVisitorName, setVisitorName } from "@/lib/visitorNameStorage";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import type { ChatMessage } from "@/types/chat";
@@ -310,6 +312,9 @@ export function PublicChatPage() {
   }
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Replayed from the messages rather than kept separately, so an edited or regenerated message
+  // takes its ticks with it — the same replay the backend does (see lib/checklist.ts).
+  const doneIds = useMemo(() => doneStepIds(messages), [messages]);
   const [input, setInput] = useState("");
   const [rateLimited, setRateLimited] = useState(false);
   // Translation key for the last getUserMedia failure (permission denied, no device, ...), or
@@ -472,16 +477,19 @@ export function PublicChatPage() {
 
   function revealStreamedChunk(chunk: StreamChunkEvent) {
     avatarRef.current?.playMotions(chunk.motions);
+    // Plan ticks land on the message as its sentence is spoken, so the step is crossed off then.
+    const checks = chunk.checks ?? [];
     setMessages((prev) => {
-      if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text }];
-      // A chunk that held nothing but a gesture (see backend features/chat/motion.py).
-      if (!chunk.text) return prev;
+      if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text, checks }];
+      // A chunk that held nothing but a marker (see backend features/chat/motion.py).
+      if (!chunk.text && !checks.length) return prev;
       const next = [...prev];
       const last = next[next.length - 1];
       // Chunks come pre-trimmed (see features/chat/streaming.py), so the original spacing/newlines
       // between them is already lost — a single space is a reasonable stand-in for the few
       // hundred ms until the "done" event replaces this with the exact original text below.
-      next[next.length - 1] = { ...last, content: last.content ? `${last.content} ${chunk.text}` : chunk.text };
+      const content = !chunk.text ? last.content : last.content ? `${last.content} ${chunk.text}` : chunk.text;
+      next[next.length - 1] = { ...last, content, checks: [...(last.checks ?? []), ...checks] };
       return next;
     });
   }
@@ -548,7 +556,8 @@ export function PublicChatPage() {
       if (abortControllerRef.current?.signal.aborted) return;
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { ...next[next.length - 1], content: doneData.reply };
+        // The complete list of ticks replaces the per-chunk ones (identical unless a chunk was lost).
+        next[next.length - 1] = { ...next[next.length - 1], content: doneData.reply, checks: doneData.checks };
         return next;
       });
       // Ends exactly when speaking does — every playStreamedChunk() call for this message has, by
@@ -644,7 +653,7 @@ export function PublicChatPage() {
           totalMs: round(replyReceivedAt - variables.sendStartAt),
         });
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, checks: res.checks }]);
       // The whole reply arrives at once here, so its gestures play from the start rather than
       // at their sentence like in the streamed path.
       if (!abortControllerRef.current?.signal.aborted) avatarRef.current?.playMotions(res.motions);
@@ -1372,7 +1381,19 @@ export function PublicChatPage() {
                         {stageNotice}
                       </p>
                     )}
+                    {/* In the same column as the notices, so it can't cover them. */}
+                    {tutor.checklist && (
+                      <ChecklistCard
+                        items={tutor.checklist.items}
+                        ordered={tutor.checklist.ordered}
+                        doneIds={doneIds}
+                        className={styles.stageChecklist}
+                      />
+                    )}
                   </div>
+                )}
+                {hasChat && tutor.checklist && (
+                  <ChecklistCard items={tutor.checklist.items} ordered={tutor.checklist.ordered} doneIds={doneIds} />
                 )}
                 {/* No composer on an avatar-only page — what's being recognized shows here instead. */}
                 {!hasChat && (isRecording || isFinalizingRecording) && input && (
@@ -1437,6 +1458,17 @@ export function PublicChatPage() {
                 {/* Same sentence as the desktop subtitle above — only one of the two is ever visible
                     (see the media query in PublicChat.module.css), so students get it either way. */}
                 <p className={`${styles.privacyNote} ${styles.privacyNoteMobile}`}>{privacyNotice}</p>
+
+                {/* Chat only: no stage to float over, so the plan sits above the thread. */}
+                {!showAvatar && tutor.checklist && (
+                  <ChecklistCard
+                    items={tutor.checklist.items}
+                    ordered={tutor.checklist.ordered}
+                    doneIds={doneIds}
+                    variant="inline"
+                    className={styles.chatChecklist}
+                  />
+                )}
 
                 <div className={styles.thread} ref={threadRef}>
                   <ChatBubble

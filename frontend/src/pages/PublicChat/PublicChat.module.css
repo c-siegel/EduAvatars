@@ -289,6 +289,19 @@
   font-size: 0.8125rem;
 }
 
+/* Avatar only: the plan joins the notices' column (which ignores clicks) instead of floating. */
+.stageChecklist {
+  position: static;
+  align-self: flex-start;
+  pointer-events: auto;
+}
+
+/* Chat only: the plan above the thread, aligned with the privacy note. */
+.chatChecklist {
+  flex-shrink: 0;
+  margin: var(--space-3) var(--space-4) 0;
+}
+
 .liveCaption {
   position: absolute;
   left: var(--space-4);

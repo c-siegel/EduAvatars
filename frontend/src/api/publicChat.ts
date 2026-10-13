@@ -1,7 +1,7 @@
 import { API_BASE_URL, apiClient, ApiError } from "./client";
 import { getUnlockToken } from "@/lib/chatUnlockStorage";
 import { getVisitorName } from "@/lib/visitorNameStorage";
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, ChecklistCheck } from "@/types/chat";
 import type { ChatLayout, SpokenLanguage } from "@/types/project";
 
 export interface PublicProject {
@@ -31,6 +31,9 @@ export interface PublicProject {
   motionEnabled: boolean;
   // See types/project.ts — already combined with motionEnabled by the backend.
   thinkingMotionsEnabled: boolean;
+  // The conversation plan's steps for students, or null when the plan is off or hidden from them
+  // (the avatar may still tick steps off then — see ChatMessage.checks). Never includes the notes.
+  checklist: PublicChecklist | null;
   surveyBeforeUrl: string | null;
   surveyAfterUrl: string | null;
   // Whether this chat requires a password, and whether this tab already unlocked it — see
@@ -45,6 +48,11 @@ export interface PublicProject {
   // conversation is recorded, and which AI model replies. Not used for any logic.
   saveConversations: boolean;
   llmModel: string | null;
+}
+
+export interface PublicChecklist {
+  ordered: boolean;
+  items: { id: string; title: string }[];
 }
 
 // Attaches the stored unlock token (if any) so an already-unlocked tab stays unlocked across
@@ -81,10 +89,14 @@ export interface StreamChunkEvent {
   // playMotions). The chunk's text has them removed already, and may be empty when a chunk held
   // nothing but a gesture.
   motions: string[];
+  // Plan steps ticked in this chunk, applied when its audio starts like the gestures.
+  checks: ChecklistCheck[];
 }
 
 export interface StreamDoneEvent {
   reply: string;
+  // All of the reply's plan ticks — what gets stored on the message (see ChatMessage.checks).
+  checks: ChecklistCheck[];
   llmMs: number | null;
   firstChunkMs: number | null;
   // Time until the first chunk was handed to TTS — distinct from firstChunkMs, which is until
@@ -192,6 +204,7 @@ export const publicChatApi = {
       llmMs: number | null;
       ttsMs: number | null;
       motions: string[];
+      checks: ChecklistCheck[];
     }>(`/public/${slug}/messages`, { message, history }, requestHeaders(slug), signal),
   sendMessageStream,
   // initialPrompt: text already transcribed earlier in the same recording (see the pause-triggered

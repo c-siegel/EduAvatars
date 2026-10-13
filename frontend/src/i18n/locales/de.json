@@ -98,6 +98,15 @@
     "loading": "Umfrage wird geladen …",
     "skip": "Überspringen"
   },
+  "checklist": {
+    "title": "Plan",
+    "progress": "{{done}} von {{total}}",
+    "allDone": "Alles erledigt",
+    "done": "(erledigt)",
+    "open": "(offen)",
+    "stepDone": "Schritt erledigt: {{title}}.",
+    "stepUndone": "Schritt wieder offen: {{title}}."
+  },
   "publicChat": {
     "unavailable": "Dieser Chat ist nicht verfügbar.",
     "endChat": "Chat beenden",

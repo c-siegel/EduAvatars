@@ -263,6 +263,11 @@ export function ConfiguratorPage() {
             ttsEnabled={project.ttsEnabled}
             motionEnabled={project.motionEnabled}
             thinkingMotionsEnabled={project.thinkingMotionsEnabled}
+            checklist={
+              project.checklistEnabled && project.checklistItems.length
+                ? { ordered: project.checklistOrdered, items: project.checklistItems }
+                : null
+            }
             hasUnsavedChanges={isDirty(draft, project)}
           />
         )}

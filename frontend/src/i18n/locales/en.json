@@ -98,6 +98,15 @@
     "loading": "Loading survey …",
     "skip": "Skip"
   },
+  "checklist": {
+    "title": "Plan",
+    "progress": "{{done}} of {{total}}",
+    "allDone": "All done",
+    "done": "(done)",
+    "open": "(open)",
+    "stepDone": "Step done: {{title}}.",
+    "stepUndone": "Step reopened: {{title}}."
+  },
   "publicChat": {
     "unavailable": "This chat isn't available.",
     "endChat": "End chat",
