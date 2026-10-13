@@ -49,7 +49,7 @@ visitors need no account and no technical knowledge to use it.
   up, …) that the AI picks from a short curated list. On by default; switch it off per project
   under Appearance → Advanced settings. See [Gestures](#gestures).
 - **Give the conversation a plan.** List the steps the avatar should work through (Behavior →
-  Conversation plan), in a fixed or any order, with optional notes only the avatar sees. The
+  Conversation plan), in a fixed or any order, with optional notes for the avatar. The
   avatar ticks steps off as they are achieved, and can take a tick back, and students can follow
   along in a small progress card. See [Conversation plan](#conversation-plan).
 - **Share one link, nothing to install.** A published project gets a public chat URL. Visitors
@@ -465,8 +465,8 @@ reply begins. It needs the gestures setting and is done entirely in the browser 
 ### Conversation plan
 
 A project can give its conversations a structure (Behavior → Conversation plan, off by default):
-a list of steps, each with a title and an optional note that only the model sees (e.g. the
-expected answer), worked through either in a fixed order or in any order. The model ticks a step
+a list of steps, each with a title and an optional note for the model (e.g. what counts as
+achieved), worked through either in a fixed order or in any order. The model ticks a step
 off by writing `::done_N::` into its reply (N = the step's number) and takes it back with
 `::undone_N::`. `backend/app/features/chat/checklist.py` and `motion.py` cut these markers out in
 the same pass as the gestures, so they are never spoken, shown or saved.
@@ -482,7 +482,9 @@ running chats keep pointing at the right one.
 
 With "Show the plan to students" on, the public chat shows a collapsible progress card: on the
 avatar stage, or above the thread in the "Chat only" layout. Notes are never sent to the public
-page. Unlike the gestures, the plan also works in the "Chat only" layout. Saved conversations keep
+page. They are in the system prompt, though, so a determined student could talk the model into
+revealing one: the prompt tells it not to, but notes are no place for answers that must stay
+secret. Unlike the gestures, the plan also works in the "Chat only" layout. Saved conversations keep
 the ticks: they appear under the reply in the Analytics transcript and in a "Plan" column of the
 CSV export.
 

@@ -91,7 +91,8 @@ _MARKER_RULES = (
     "When a step is fully achieved, write ::done_N:: (N = its number) once in your reply, right "
     "where it is achieved. If a step marked ✓ turns out not to be achieved after all, write "
     "::undone_N::. These markers are neither spoken nor shown, so never mention them, the "
-    "numbering or the plan's status."
+    "numbering or the plan's status. Notes are for you only: use them to judge the student's "
+    "answers, never reveal or quote them."
 )
 
 
