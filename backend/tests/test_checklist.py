@@ -242,3 +242,33 @@ def test_system_prompt_route_includes_the_plan(client, chat_project) -> None:
     body = client.get(f"/projects/{chat_project['id']}/system-prompt").json()
     assert body["checklistPrompt"].endswith("Status: done none · next 1")
     assert body["full"].endswith(body["checklistPrompt"])
+
+
+# --- Saved conversations ---
+
+
+def test_ticks_are_saved_and_shown_in_the_transcript_and_csv(client, anon, chat_project, fake_ai) -> None:
+    ids = _plan_project(client, chat_project)
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+    fake_ai.llm_reply = "Hallo! ::done_1:: Los geht's. ::done_2::"
+    anon.post(f"/public/{slug}/messages/stream", json={"message": "Hi"})
+    fake_ai.llm_reply = "Hm, ::undone_2:: das schauen wir uns nochmal an."
+    anon.post(f"/public/{slug}/messages", json={"message": "Hä?"})
+    # The teacher deletes step 1 afterwards: the transcript keeps the tick, without a title.
+    client.put(f"/projects/{chat_project['id']}", json={"checklistItems": [{"id": ids[1], "title": "Fotosynthese erklären"}]})
+
+    conversation_id = client.get("/conversations/ids").json()[0]
+    messages = client.get(f"/conversations/{conversation_id}").json()["messages"]
+    assert messages[1]["content"] == "Hallo! Los geht's."
+    assert messages[1]["checks"] == [
+        {"id": ids[0], "done": True, "offset": 7, "title": None, "number": None},
+        {"id": ids[1], "done": True, "offset": len("Hallo! Los geht's."), "title": "Fotosynthese erklären", "number": 1},
+    ]
+    assert messages[3]["checks"] == [{"id": ids[1], "done": False, "offset": 4, "title": "Fotosynthese erklären", "number": 1}]
+    assert messages[0]["checks"] is None
+
+    csv = client.post("/conversations/export", json={"conversationIds": [conversation_id]}).text
+    assert "Zeitpunkt,Avatar,Schüler:in,Plan" in csv
+    assert "✓ (gelöschter Schritt); ✓ Fotosynthese erklären" in csv
+    assert "✗ Fotosynthese erklären" in csv

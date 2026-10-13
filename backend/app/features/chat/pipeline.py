@@ -198,6 +198,7 @@ def _save(
     reply_ready_at: datetime,
     passages: list[Passage],
     motions: list[MotionMark] | None = None,
+    checks: list[Check] | None = None,
 ) -> None:
     save_turn(
         context.project_id,
@@ -210,6 +211,8 @@ def _save(
         sources=sources_for_transcript(passages) if context.knowledge else None,
         # Kept so a teacher can see which gestures the LLM chose and where (see analytics).
         motions=[m.to_json() for m in motions] if motions else None,
+        # Kept so a teacher can see how far each student got through the plan (see analytics).
+        checks=[c.to_json() for c in checks] if checks else None,
     )
 
 
@@ -266,7 +269,7 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
 
     if save and context.save_conversations:
         try:
-            _save(context, turn, reply, reply_ready_at, passages, motions)
+            _save(context, turn, reply, reply_ready_at, passages, motions, checks)
         except Exception:
             # Same as in stream_turn: the reply exists (and was paid for), so a failed save, e.g.
             # "database is locked" under a class-sized burst, mustn't cost the visitor their answer.
@@ -414,7 +417,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
 
     if context.save_conversations:
         try:
-            _save(context, turn, full_reply, reply_ready_at, passages, motion_marks)
+            _save(context, turn, full_reply, reply_ready_at, passages, motion_marks, checks)
         except Exception:
             # The reply itself already reached the visitor via the chunk events above —
             # only the save failed, so log it instead of turning it into an error event

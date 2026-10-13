@@ -67,6 +67,14 @@ def _motions_cell(motions: list[dict]) -> str:
     return "; ".join(f"{motion['name']}@{motion['offset']}" for motion in motions)
 
 
+def _checks_cell(checks: list[dict], step_titles: dict[str, str]) -> str:
+    """ "✓ Begrüßung; ✗ Quiz" — the conversation-plan steps a reply ticked off (✓) or took back
+    (✗), see features/chat/checklist.py."""
+    return "; ".join(
+        f"{'✓' if check['done'] else '✗'} {step_titles.get(check['id'], '(gelöschter Schritt)')}" for check in checks
+    )
+
+
 def build_conversation_csv(
     conversation: Conversation, project: Project, document_names: dict[str, str] | None = None
 ) -> str:
@@ -80,7 +88,9 @@ def build_conversation_csv(
 
     A conversation with a knowledge base gets a fourth "Quellen" column (the documents each reply
     was given, see features/knowledge/), and one in which the avatar used gestures a "Gesten"
-    column (see features/chat/motion.py); every other export keeps its three columns unchanged.
+    column (see features/chat/motion.py), and one in which it ticked conversation-plan steps a
+    "Plan" column (see features/chat/checklist.py); every other export keeps its three columns
+    unchanged.
     """
     messages = json.loads(conversation.messages_json)
 
@@ -93,8 +103,13 @@ def build_conversation_csv(
     writer.writerow([])
     with_sources = any("sources" in message for message in messages)
     with_motions = any("motions" in message for message in messages)
+    with_checks = any("checks" in message for message in messages)
+    step_titles = {item["id"]: item["title"] for item in project.checklist_items}
     writer.writerow(
-        ["Zeitpunkt", "Avatar", "Schüler:in"] + (["Quellen"] if with_sources else []) + (["Gesten"] if with_motions else [])
+        ["Zeitpunkt", "Avatar", "Schüler:in"]
+        + (["Quellen"] if with_sources else [])
+        + (["Gesten"] if with_motions else [])
+        + (["Plan"] if with_checks else [])
     )
     for message in messages:
         timestamp = message.get("timestamp") or ""
@@ -105,8 +120,10 @@ def build_conversation_csv(
                 row.append(_csv_safe(_sources_cell(message.get("sources") or [], document_names or {})))
             if with_motions:
                 row.append(_motions_cell(message.get("motions") or []))
+            if with_checks:
+                row.append(_csv_safe(_checks_cell(message.get("checks") or [], step_titles)))
         else:
-            row = [timestamp, "", content] + ([""] if with_sources else []) + ([""] if with_motions else [])
+            row = [timestamp, "", content] + [""] * (with_sources + with_motions + with_checks)
         writer.writerow(row)
     return buffer.getvalue()
 

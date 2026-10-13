@@ -5452,16 +5452,68 @@
         "title": "TimeseriesPointOut",
         "type": "object"
       },
+      "TranscriptCheckOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "done",
+          "offset",
+          "title",
+          "number"
+        ],
+        "title": "TranscriptCheckOut",
+        "type": "object"
+      },
       "TranscriptMessageOut": {
         "properties": {
           "checks": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/ChecklistCheck"
-            },
-            "maxItems": 20,
-            "title": "Checks",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptCheckOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checks"
           },
           "content": {
             "title": "Content",

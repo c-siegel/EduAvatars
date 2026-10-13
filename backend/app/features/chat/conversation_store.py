@@ -24,6 +24,7 @@ def save_turn(
     visitor_name: str | None = None,
     sources: list[dict] | None = None,
     motions: list[dict] | None = None,
+    checks: list[dict] | None = None,
 ) -> None:
     """Append one exchange to the visitor's saved conversation for this project, creating it on
     the first message.
@@ -43,6 +44,9 @@ def save_turn(
 
     `motions` are the avatar gestures the LLM marked in the reply, as {"name", "offset"} with the
     offset into `reply` (see features/chat/motion.py); None when it used none.
+
+    `checks` are the conversation-plan steps the reply ticked off or took back, as {"id", "done",
+    "offset"} (see features/chat/checklist.py); None when it ticked none.
     """
     with Session(engine) as session:
         existing = session.exec(
@@ -55,6 +59,8 @@ def save_turn(
             assistant_entry["sources"] = sources
         if motions:
             assistant_entry["motions"] = motions
+        if checks:
+            assistant_entry["checks"] = checks
 
         if existing:
             messages = json.loads(existing.messages_json)
