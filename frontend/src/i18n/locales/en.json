@@ -12,6 +12,9 @@
     "advancedSettings": "Advanced settings",
     "advancedChanged": "changed: {{fields}}"
   },
+  "brand": {
+    "tagline": "Leipzig's Open Learning Avatar"
+  },
   "languageSwitcher": {
     "switchTo": "Switch to English"
   },

@@ -12,6 +12,9 @@
     "advancedSettings": "Erweiterte Einstellungen",
     "advancedChanged": "geändert: {{fields}}"
   },
+  "brand": {
+    "tagline": "Leipzigs offener Lern-Avatar"
+  },
   "languageSwitcher": {
     "switchTo": "Auf Deutsch wechseln"
   },

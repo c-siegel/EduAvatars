@@ -1,14 +1,40 @@
+/* Below ~120px wide the tagline gets too small to read. */
 .wordmark {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  display: block;
+  width: 10.5rem;
+  height: auto;
+  overflow: visible;
 }
 
-.accent {
-  background: var(--gradient-brand);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.letters {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 64px;
+  fill: var(--logo-letters);
+}
+
+.bubble {
+  fill: var(--logo-bubble);
+}
+
+.face {
+  fill: var(--logo-face);
+}
+
+.smile {
+  fill: none;
+  stroke: var(--logo-face);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+}
+
+.spark {
+  fill: var(--logo-spark);
+}
+
+.tagline {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 9px;
+  fill: var(--logo-tagline);
 }
