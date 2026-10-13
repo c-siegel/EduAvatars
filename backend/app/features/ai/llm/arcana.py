@@ -221,11 +221,11 @@ class ArcanaClient:
                 # Server Error" with no clue what actually went wrong on GWDG's side.
                 is_transient = exc.response.status_code >= 500
                 logger.warning(
-                    "GWDG Arcana antwortete mit %s (Versuch %d/%d)%s: %s",
+                    "GWDG Arcana answered %s (attempt %d/%d)%s: %s",
                     exc.response.status_code,
                     attempt,
                     _GWDG_ARCANA_MAX_ATTEMPTS,
-                    ", erneuter Versuch folgt" if is_transient and attempt < _GWDG_ARCANA_MAX_ATTEMPTS else "",
+                    ", retrying" if is_transient and attempt < _GWDG_ARCANA_MAX_ATTEMPTS else "",
                     exc.response.text[:500],
                 )
                 if not is_transient or attempt == _GWDG_ARCANA_MAX_ATTEMPTS:
@@ -233,7 +233,7 @@ class ArcanaClient:
             except httpx.TransportError as exc:
                 # Connection drop/timeout — also typically transient.
                 logger.warning(
-                    "GWDG Arcana nicht erreichbar (Versuch %d/%d): %s", attempt, _GWDG_ARCANA_MAX_ATTEMPTS, exc
+                    "GWDG Arcana unreachable (attempt %d/%d): %s", attempt, _GWDG_ARCANA_MAX_ATTEMPTS, exc
                 )
                 if attempt == _GWDG_ARCANA_MAX_ATTEMPTS:
                     raise
@@ -265,11 +265,11 @@ class ArcanaClient:
                         response.read()  # buffers the body so .text is readable below
                         is_transient = exc.response.status_code >= 500
                         logger.warning(
-                            "GWDG Arcana antwortete mit %s (Versuch %d/%d)%s: %s",
+                            "GWDG Arcana answered %s (attempt %d/%d)%s: %s",
                             exc.response.status_code,
                             attempt,
                             _GWDG_ARCANA_MAX_ATTEMPTS,
-                            ", erneuter Versuch folgt" if is_transient and attempt < _GWDG_ARCANA_MAX_ATTEMPTS else "",
+                            ", retrying" if is_transient and attempt < _GWDG_ARCANA_MAX_ATTEMPTS else "",
                             exc.response.text[:500],
                         )
                         if not is_transient or attempt == _GWDG_ARCANA_MAX_ATTEMPTS:
@@ -304,7 +304,7 @@ class ArcanaClient:
                     raise
                 # Connection drop/timeout before any content arrived — also typically transient.
                 logger.warning(
-                    "GWDG Arcana nicht erreichbar (Versuch %d/%d): %s", attempt, _GWDG_ARCANA_MAX_ATTEMPTS, exc
+                    "GWDG Arcana unreachable (attempt %d/%d): %s", attempt, _GWDG_ARCANA_MAX_ATTEMPTS, exc
                 )
                 if attempt == _GWDG_ARCANA_MAX_ATTEMPTS:
                     raise

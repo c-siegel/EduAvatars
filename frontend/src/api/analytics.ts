@@ -51,8 +51,8 @@ export const analyticsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error("Export fehlgeschlagen");
-    const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"), "lola-gespraeche.zip");
+    if (!res.ok) throw new Error("Export failed"");
+    const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"), "lola-transcripts.zip");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

@@ -17,7 +17,7 @@ from app.core.error_codes import ErrorCode
 from app.core.providers import build_model_string, get_provider
 from app.features.ai.llm.base import ChatRequest
 from app.features.ai.llm.history import build_messages, sampling_params
-from app.features.api_keys.crypto import reveal_api_key
+from app.features.api_keys.crypto import reveal_api_key_for_litellm
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import effective_api_base
 
@@ -70,7 +70,7 @@ def _retry_transient(call):
             if attempt == _LLM_MAX_ATTEMPTS:
                 raise
             logger.warning(
-                "LLM-Anfrage fehlgeschlagen (Versuch %d/%d), erneuter Versuch folgt: %s",
+                "LLM request failed (attempt %d/%d), retrying: %s",
                 attempt,
                 _LLM_MAX_ATTEMPTS,
                 exc,
@@ -86,15 +86,12 @@ class LiteLLMClient:
 
     def complete(self, request: ChatRequest) -> str:
         """Send the request and return the reply text."""
-        api_key = reveal_api_key(self._key.encrypted_api_key)
+        api_key = reveal_api_key_for_litellm(self._key.encrypted_api_key)
         model, extra = _resolve_call(self._key, self._key.model_id or "")
         response = _retry_transient(
             lambda: litellm.completion(
                 model=model,
-                # Ollama servers usually don't require authentication — an empty stored key is
-                # passed as None instead of an empty string, otherwise litellm would set an empty
-                # Bearer header.
-                api_key=api_key or None,
+                api_key=api_key,
                 messages=build_messages(request),
                 **sampling_params(request),
                 **extra,
@@ -115,7 +112,7 @@ class LiteLLMClient:
         endpoint), and starting over would make the avatar say the beginning of the reply a
         second time. This mirrors the `past_handshake` rule in ArcanaClient.stream.
         """
-        api_key = reveal_api_key(self._key.encrypted_api_key)
+        api_key = reveal_api_key_for_litellm(self._key.encrypted_api_key)
         model, extra = _resolve_call(self._key, self._key.model_id or "")
 
         for attempt in range(1, _LLM_MAX_ATTEMPTS + 1):
@@ -123,7 +120,7 @@ class LiteLLMClient:
             try:
                 response = litellm.completion(
                     model=model,
-                    api_key=api_key or None,
+                    api_key=api_key,
                     messages=build_messages(request),
                     stream=True,
                     **sampling_params(request),
@@ -140,7 +137,7 @@ class LiteLLMClient:
                 if yielded or attempt == _LLM_MAX_ATTEMPTS:
                     raise
                 logger.warning(
-                    "LLM-Stream fehlgeschlagen (Versuch %d/%d), erneuter Versuch folgt: %s",
+                    "LLM stream failed (attempt %d/%d), retrying: %s",
                     attempt,
                     _LLM_MAX_ATTEMPTS,
                     exc,
@@ -149,7 +146,7 @@ class LiteLLMClient:
 
     def test(self) -> None:
         """Try the key with a minimal real call; raises on an invalid key or provider error."""
-        plaintext = reveal_api_key(self._key.encrypted_api_key)
+        plaintext = reveal_api_key_for_litellm(self._key.encrypted_api_key)
         spec = get_provider(self._key.provider)
 
         # Prefers testing the model actually configured — that checks the key, endpoint, and model
@@ -164,7 +161,7 @@ class LiteLLMClient:
 
         litellm.completion(
             model=model,
-            api_key=plaintext or None,
+            api_key=plaintext,
             messages=[{"role": "user", "content": "ping"}],
             max_tokens=1,
             **extra,

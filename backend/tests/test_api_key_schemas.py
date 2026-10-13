@@ -3,10 +3,13 @@ against using this field for SSRF (server-side request forgery) against cloud-me
 endpoints, while still allowing the arbitrary self-hosted/LAN addresses that Ollama and
 "OpenAI-compatible" keys legitimately need (see app/core/providers.py)."""
 
+from pathlib import Path
+
 import pytest
+import yaml
 from pydantic import ValidationError
 
-from app.features.api_keys.schemas import ApiKeyCreate
+from app.features.api_keys.schemas import _BLOCKED_API_BASE_HOSTNAMES, ApiKeyCreate
 
 
 def _openai_compatible(api_base: str | None) -> ApiKeyCreate:
@@ -51,3 +54,20 @@ def test_rejects_ssrf_targets(api_base: str) -> None:
 def test_none_api_base_passes_through_for_providers_that_dont_need_one() -> None:
     key = ApiKeyCreate(provider="anthropic", key_type="llm", api_key="secret", model_id="claude-sonnet-4-5")
     assert key.api_base is None
+
+
+COMPOSE_FILE = Path(__file__).resolve().parents[2] / "docker" / "docker-compose.yml"
+COMPOSE_SERVICES = sorted(yaml.safe_load(COMPOSE_FILE.read_text())["services"])
+
+
+@pytest.mark.parametrize("service", COMPOSE_SERVICES)
+def test_rejects_the_deployments_own_services(service: str) -> None:
+    # Reachable by name from the backend container, but never a teacher's LLM/TTS server.
+    for api_base in (f"http://{service}:8080/v1", f"http://{service.upper()}./v1"):
+        with pytest.raises(ValidationError):
+            _openai_compatible(api_base)
+
+
+def test_every_compose_service_is_blocked() -> None:
+    # A service added to docker-compose.yml must be added to the block list too.
+    assert set(COMPOSE_SERVICES) <= _BLOCKED_API_BASE_HOSTNAMES

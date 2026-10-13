@@ -32,6 +32,17 @@ def reveal_api_key(ciphertext: str) -> str:
     return decrypt_api_key(ciphertext)
 
 
+# Sent in place of an empty key. Passing None instead would let litellm fill the key from the
+# server's own environment (e.g. OPENAI_API_KEY for the "openai/" route) and send the operator's
+# secret to whatever endpoint the teacher entered. Servers without authentication ignore it.
+KEYLESS_API_KEY = "no-key"
+
+
+def reveal_api_key_for_litellm(ciphertext: str) -> str:
+    """The stored key's plaintext for a litellm call — KEYLESS_API_KEY if none was stored."""
+    return reveal_api_key(ciphertext) or KEYLESS_API_KEY
+
+
 def scrub_key_from_text(text: str, encrypted_api_key: str) -> str:
     """Redact a stored key's own plaintext value out of arbitrary text before it's shown or logged.
 

@@ -55,7 +55,7 @@ export function Step1Appearance({ draft, onChange }: StepProps) {
         await avatarLibraryApi.uploadThumbnail(avatar.id, thumbnail);
         queryClient.invalidateQueries({ queryKey: ["avatar-models"] });
       } catch (error) {
-        console.error("Avatar-Vorschaubild konnte nicht erzeugt werden.", error);
+        console.error("Avatar thumbnail could not be created.", error);
       }
     },
   });

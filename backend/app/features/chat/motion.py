@@ -7,9 +7,10 @@ saved; the names travel to the browser separately, where the vendored MotionEngi
 (frontend/src/vendor/motion-engine) plays them on the avatar. Markers in the text instead of tool
 calls keep the gesture at its place in the sentence and cost the model only a few tokens.
 
-Only the curated gestures in MOTIONS are recognized. Anything else that merely looks like a marker
-stays in the text: C++ code such as "std::vector::size" must survive, and a gesture the model
-invented then shows up in the saved transcript, which is where a teacher testing this looks.
+Only the curated gestures in MOTIONS are played. Every other "::text::" — a gesture the model
+invented, or one a teacher's own instructions named — is cut out too, without a gesture, so
+students never see or hear a marker; that applies even with motion off. Code such as
+"std::vector::size" survives because an unknown marker must not directly follow a word.
 
 How to use:
     system_prompt = f"{preprompt}\\n\\n{MOTION_PROMPT}"
@@ -59,7 +60,14 @@ def compose_system_prompt(preprompt: str, motion_prompt: str | None, motion_enab
 
 
 # Whitespace inside the colons is tolerated because models sometimes write ":: nod_yes ::".
-_MARKER_RE = re.compile(r"::\s*(" + "|".join(map(re.escape, MOTIONS)) + r")\s*::", re.IGNORECASE)
+# The second alternative catches every other "::text::" — an invented gesture or one named in a
+# teacher's own instructions — so no marker ever reaches students; it only plays nothing. Unlike a
+# known name it must not directly follow a word or colon, so code like "std::vector::size" stays.
+_MARKER_RE = re.compile(
+    r"::\s*(" + "|".join(map(re.escape, MOTIONS)) + r")\s*::"
+    r"|(?<![\w:])::[ \t]*[A-Za-z][\w -]{0,38}?[ \t]*::",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -75,7 +83,7 @@ class MotionMark:
 
 
 def extract_motions(text: str) -> tuple[str, list[MotionMark]]:
-    """Cut every known marker out of `text`; return the cleaned text and the marks in order.
+    """Cut every marker out of `text`; return the cleaned text and the known gestures in order.
 
     The space next to a removed marker is dropped once, so "Yes ::nod_yes:: exactly" reads
     "Yes exactly" instead of carrying a double space into TTS and the transcript.
@@ -89,7 +97,8 @@ def extract_motions(text: str) -> tuple[str, list[MotionMark]]:
         if not clean or clean[-1].isspace():
             while pos < len(text) and text[pos] in " \t":
                 pos += 1
-        marks.append(MotionMark(match.group(1).lower(), len(clean)))
+        if match.group(1):
+            marks.append(MotionMark(match.group(1).lower(), len(clean)))
     clean += text[pos:]
 
     stripped = clean.strip()
