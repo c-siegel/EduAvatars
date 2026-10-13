@@ -406,7 +406,7 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             try {
               await attachHeadAudio(head);
             } catch (error) {
-              console.error("HeadAudio-Lipsync nicht verfügbar — Avatar läuft ohne Lippenbewegung.", error);
+              console.error("HeadAudio lipsync unavailable — the avatar runs without lip movement.", error);
             }
             // Composes over (never replaces) the lip-sync update attachHeadAudio just installed —
             // lip-sync must keep running every tick regardless of our own FPS bookkeeping. Uses
@@ -458,7 +458,7 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             }
           }
         } catch (error) {
-          console.error("TalkingHead-Avatar konnte nicht geladen werden.", error);
+          console.error("TalkingHead avatar could not be loaded.", error);
           if (!cancelled) {
             setStatus("error");
           }

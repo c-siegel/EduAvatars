@@ -1,7 +1,11 @@
 """Shared fixtures for the route-level tests (test_routes_*.py).
 
 Settings validate JWT_SECRET/API_KEY_ENCRYPTION_SECRET at import time, so throwaway values are
-set here before anything imports app.core.config — real values from the environment win.
+set here before anything imports app.core.config — real values from the environment win. The
+repo root .env is not read, so a developer's local settings, e.g. a LOCAL_TTS_URL, can't make
+tests pass or fail depending on whose machine runs them. It has two ways in: the settings' own
+env_file (EDUAVATARS_ENV_FILE="") and litellm, which in its default "DEV" mode copies the nearest
+.env into os.environ when imported (LITELLM_MODE=PRODUCTION).
 
 The AI providers are faked at their lowest stable seams (litellm.completion/litellm.speech for
 LLM/TTS, the local Whisper model loader for STT), so the route tests exercise the whole stack
@@ -13,6 +17,8 @@ import secrets
 
 from cryptography.fernet import Fernet
 
+os.environ["EDUAVATARS_ENV_FILE"] = ""
+os.environ["LITELLM_MODE"] = "PRODUCTION"
 os.environ.setdefault("JWT_SECRET", secrets.token_urlsafe(48))
 os.environ.setdefault("API_KEY_ENCRYPTION_SECRET", Fernet.generate_key().decode())
 

@@ -39,11 +39,18 @@ def test_extract_motions_tolerates_spaces_and_case() -> None:
     assert extract_motions("Gut :: Nod_Yes :: gemacht") == ("Gut gemacht", [MotionMark("nod_yes", 4)])
 
 
-def test_unknown_markers_and_code_stay_in_the_text() -> None:
-    # An invented gesture stays visible (that's how a teacher spots it), and C++ scope operators
-    # are not gestures at all.
-    for text in ("Lass uns ::dance:: tanzen", "Nutze std::vector::size() dafür."):
-        assert extract_motions(text) == (text, [])
+def test_unknown_markers_are_removed_without_a_gesture() -> None:
+    # Students never see or hear a marker, also one the model invented or a teacher's own
+    # instructions named — only known names play a gesture.
+    assert extract_motions("Lass uns ::dance:: tanzen") == ("Lass uns tanzen", [])
+    assert extract_motions("::big smile:: Hallo! ::Look-Around::") == ("Hallo!", [])
+    assert extract_motions("Ja ::dance:: ::nod_yes:: genau") == ("Ja genau", [MotionMark("nod_yes", 3)])
+
+
+def test_code_and_known_markers_glued_to_words() -> None:
+    # C++ scope operators are no markers; a known gesture is recognised even without a space.
+    assert extract_motions("Nutze std::vector::size() dafür.") == ("Nutze std::vector::size() dafür.", [])
+    assert extract_motions("Richtig::nod_yes::") == ("Richtig", [MotionMark("nod_yes", 7)])
 
 
 def test_text_without_markers_is_unchanged() -> None:
@@ -118,7 +125,7 @@ def test_plain_reply_returns_motions_and_speaks_clean_text(anon, chat_project, f
     assert fake_ai.speech_calls[-1]["input"] == "Richtig, das Ergebnis ist vier."
 
 
-def test_motion_off_or_chat_only_sends_no_instructions_and_keeps_text(client, anon, chat_project, fake_ai):
+def test_motion_off_or_chat_only_sends_no_instructions_but_still_hides_markers(client, anon, chat_project, fake_ai):
     fake_ai.llm_reply = "::nod_yes:: Richtig."
     slug = chat_project["shareSlug"]
     anon.get(f"/public/{slug}")
@@ -129,7 +136,8 @@ def test_motion_off_or_chat_only_sends_no_instructions_and_keeps_text(client, an
 
         assert MOTION_PROMPT not in fake_ai.completion_calls[-1]["messages"][0]["content"]
         assert body["motions"] == []
-        assert body["reply"] == "::nod_yes:: Richtig."
+        # The model may still write one (e.g. prompted by the teacher's own instructions).
+        assert body["reply"] == "Richtig."
 
 
 def test_motion_setting_defaults_on_and_reaches_the_public_page(client, anon, teacher):

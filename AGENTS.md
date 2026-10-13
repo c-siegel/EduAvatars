@@ -50,8 +50,8 @@ npm run dev                               # http://localhost:5173, proxies /api 
 ```
 
 There is no linter/formatter config and no CI on pull requests — CI only runs on tagged releases
-(`.github/workflows/docker-publish.yml`: backend `pytest` + frontend `npm run build`). So run both
-yourself before you push.
+(`.github/workflows/docker-publish.yml`: `pytest` and the licence gate for backend, `rag/` and
+`rag-eval/`, plus frontend `npm run build`). So run the ones you touched yourself before you push.
 
 ## Where things live
 

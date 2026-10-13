@@ -193,7 +193,7 @@ function logLatency(
   speaking: SpeakingStats,
 ) {
   const wps = speaking.speakingDurationMs > 0 ? wordCount(res.reply) / (speaking.speakingDurationMs / 1000) : null;
-  console.log("[Latenz-Test] Sprechende → Audio hörbar", {
+  console.log("[Latency-Test] End of speech -> audio audible", {
     totalMs: round(audioReadyAt - latency.micStopAt),
     sttRoundTripMs: round(latency.sendStartAt - latency.micStopAt),
     sttBackendMs: latency.sttMs != null ? round(latency.sttMs) : null,
@@ -501,7 +501,7 @@ export function PublicChatPage() {
     try {
       audioBuffer = (await avatarRef.current?.decodeAudio(chunk.audioBase64)) ?? null;
     } catch (error) {
-      console.error("Audio-Chunk konnte nicht dekodiert werden.", error);
+      console.error("Audio chunk could not be decoded.", error);
     }
     // Revealed right as the audio is about to start (or right after we know it won't) — not
     // earlier — so the bubble text stays in step with what's actually audible.
@@ -514,7 +514,7 @@ export function PublicChatPage() {
       // mutationFn's `await playChainRef.current` below throw well after real audio has already
       // played — landing in the catch block that assumes nothing was spoken yet and falls back to
       // the plain endpoint, duplicating the spoken reply. Log and move on instead.
-      console.error("Audio-Chunk konnte nicht abgespielt werden.", error);
+      console.error("Audio chunk could not be played.", error);
       return;
     }
     // Tracked only once playback actually started — not necessarily chunk 0, since that chunk's
@@ -596,7 +596,7 @@ export function PublicChatPage() {
         } catch (error) {
           // Nothing was shown/spoken yet at this point (see sendMessageStream's contract) — safe
           // to retry via the always-available plain endpoint below instead of failing outright.
-          console.error("Streaming-Chat fehlgeschlagen, falle auf normale Anfrage zurück.", error);
+          console.error("Streaming chat failed, falling back to a plain request.", error);
         }
       }
       const res = await publicChatApi.sendMessage(slug, message, history, signal);
@@ -619,7 +619,7 @@ export function PublicChatPage() {
           const speaking = speakingStatsRef.current;
           const wps =
             speaking.speakingDurationMs > 0 ? wordCount(doneData.reply) / (speaking.speakingDurationMs / 1000) : null;
-          console.log("[Latenz-Test] Sprechende → Audio hörbar (gestreamt)", {
+          console.log("[Latency-Test] End of speech -> audio audible (streamed)", {
             sttRoundTripMs: round(variables.latency.sendStartAt - variables.latency.micStopAt),
             sttBackendMs: variables.latency.sttMs != null ? round(variables.latency.sttMs) : null,
             firstChunkTextReadyMs: doneData.firstChunkTextReadyMs != null ? round(doneData.firstChunkTextReadyMs) : null,
@@ -675,7 +675,7 @@ export function PublicChatPage() {
             avatarRef.current?.stopSpeaking();
           }
         } catch (error) {
-          console.error("Audio konnte nicht abgespielt werden.", error);
+          console.error("Audio could not be played.", error);
         }
       }
       if (latencyTestEnabled && variables.latency) {
@@ -725,7 +725,7 @@ export function PublicChatPage() {
         // final one). Recorded on recordingHadFailureRef instead — this segment's words are
         // missing from what gets sent, surfaced as a system-message notice once the recording ends
         // (see the isFinal block below).
-        console.error("Segment-Transkription fehlgeschlagen.", error);
+        console.error("Segment transcription failed.", error);
         recordingHadFailureRef.current = true;
       }
     }
@@ -909,7 +909,7 @@ export function PublicChatPage() {
       });
       setIsRecording(true);
     } catch (error) {
-      console.error("Mikrofonzugriff fehlgeschlagen.", error);
+      console.error("Microphone access failed.", error);
       // NotAllowedError: permission denied (or blocked by browser/site policy). Anything else
       // (NotFoundError, NotReadableError, SecurityError on an insecure origin, ...) means voice
       // input just isn't usable right now for a reason the student can't fix by granting access.
@@ -1148,7 +1148,7 @@ export function PublicChatPage() {
         setPlayButtonDismissed(true);
       })
       .catch((error) => {
-        console.error("Begrüßung konnte nicht abgespielt werden.", error);
+        console.error("Greeting could not be played.", error);
         // The button's own onClick already dismissed itself synchronously (clicking IS the
         // gesture that unblocks playback) — bring it back so a failed attempt (stale audio URL,
         // transient network blip) doesn't remove the student's only way to hear the greeting at

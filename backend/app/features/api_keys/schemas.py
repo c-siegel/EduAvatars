@@ -23,7 +23,20 @@ from app.core.schema import CamelModel
 # Hostnames/IPs no legitimate LLM/TTS server would ever be reachable at, so blocking them can't
 # break a real deployment — unlike private IP ranges in general, which providers like Ollama and
 # "OpenAI-compatible" (see core/providers.py) legitimately point at (a school's own LAN/GPU box).
-_BLOCKED_API_BASE_HOSTNAMES = {"metadata.google.internal", "metadata"}
+_BLOCKED_API_BASE_HOSTNAMES = {
+    "metadata.google.internal",
+    "metadata",
+    # The deployment's own services (docker/docker-compose.yml, kept in sync by
+    # tests/test_api_key_schemas.py): reachable by name from the backend, never a teacher's
+    # provider. Loopback stays allowed — Deploy A runs a teacher's Ollama on localhost.
+    "backend",
+    "web",
+    "rag",
+    "rag-eval",
+    "tts-local",
+    "docling",
+    "stt-model",
+}
 # AWS IMDSv2's IPv6 alias lives in fd00::/8 (unique-local), which ipaddress's `is_link_local`
 # doesn't cover, so it's blocked by exact match alongside the well-known v4 metadata IP.
 _BLOCKED_API_BASE_LITERAL_HOSTS = {"169.254.169.254", "fd00:ec2::254"}
@@ -31,9 +44,9 @@ _BLOCKED_API_BASE_LITERAL_HOSTS = {"169.254.169.254", "fd00:ec2::254"}
 
 def _validate_api_base(v: str | None) -> str | None:
     """Reject api_base values that would turn this field into an SSRF (server-side request
-    forgery) vector against cloud-metadata endpoints — the request is made by the backend
-    itself (see features/ai/llm, features/ai/tts), whenever a project using this key
-    is used or "tested". Domain names aren't resolved here (that happens at request time, and
+    forgery) vector against cloud-metadata endpoints and this deployment's own services — the
+    request is made by the backend itself (see features/ai/llm, features/ai/tts), whenever a
+    project using this key is used or "tested". Domain names aren't resolved here (that happens at request time, and
     DNS can change), so this only catches literal IPs/hostnames, not rebinding.
     """
     if not v:
@@ -41,7 +54,7 @@ def _validate_api_base(v: str | None) -> str | None:
     parsed = urlsplit(v)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise ValueError(ErrorCode.PROVIDER_BASE_URL_NOT_ALLOWED)
-    host = parsed.hostname.lower()
+    host = parsed.hostname.lower().rstrip(".")
     if host in _BLOCKED_API_BASE_HOSTNAMES or host in _BLOCKED_API_BASE_LITERAL_HOSTS:
         raise ValueError(ErrorCode.PROVIDER_BASE_URL_NOT_ALLOWED)
     try:

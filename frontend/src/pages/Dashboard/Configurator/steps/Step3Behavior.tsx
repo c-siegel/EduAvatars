@@ -60,7 +60,7 @@ export function Step3Behavior({
     previewAudioRef.current?.pause();
     const audio = new Audio(url);
     previewAudioRef.current = audio;
-    audio.play().catch((error) => console.error("Audio-Vorschau konnte nicht abgespielt werden.", error));
+    audio.play().catch((error) => console.error("Audio preview could not be played.", error));
   }
 
   const generateAudioMutation = useMutation({

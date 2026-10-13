@@ -236,6 +236,17 @@ def test_start_audio_lifecycle(client, anon, teacher, fake_ai):
     assert client.get(f"/projects/{pid}/start-audio").status_code == 404
 
 
+def test_changing_the_spoken_language_invalidates_the_start_audio(client, teacher, fake_ai):
+    # The language decides how numbers are read, which pronunciation list applies and the local
+    # TTS voice, so German greeting audio must not survive a switch to English.
+    tts_key = create_key(client, key_type="tts")
+    pid = create_project(client, startPrompt="Willkommen", ttsEnabled=True, ttsApiKeyId=tts_key["id"])["id"]
+    assert client.post(f"/projects/{pid}/start-audio").json()["startAudioUrl"] is not None
+
+    assert client.put(f"/projects/{pid}", json={"spokenLanguage": "de"}).json()["startAudioUrl"] is not None
+    assert client.put(f"/projects/{pid}", json={"spokenLanguage": "en"}).json()["startAudioUrl"] is None
+
+
 def test_avatar_references(client, teacher):
     project = create_project(client, builtinAvatar="julia")
     assert project["builtinAvatar"] == "julia"

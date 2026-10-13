@@ -6,6 +6,7 @@ import base64
 from conftest import LLM_REPLY, TTS_BYTES, create_project, parse_sse, publish
 
 from app.core.config import settings
+from app.features.chat import pipeline
 from app.features.chat.motion import MOTION_PROMPT
 
 
@@ -127,6 +128,19 @@ def test_tts_failure_still_returns_text(anon, chat_project, fake_ai):
     assert response.status_code == 200
     assert response.json()["reply"] == LLM_REPLY
     assert response.json()["audioBase64"] is None
+
+
+def test_save_failure_still_returns_the_reply(anon, chat_project, fake_ai, monkeypatch):
+    # E.g. "database is locked" when a whole class writes at once: the reply already exists and
+    # was paid for, so the visitor still gets it — like the streamed path (see pipeline.py).
+    def locked(*args, **kwargs):
+        raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(pipeline, "save_turn", locked)
+    response = anon.post(f"/public/{chat_project['shareSlug']}/messages", json={"message": "Hi"})
+    assert response.status_code == 200
+    assert response.json()["reply"] == LLM_REPLY
+    assert response.json()["audioBase64"] is not None
 
 
 def test_send_message_without_llm_key_is_503(client, anon, teacher):

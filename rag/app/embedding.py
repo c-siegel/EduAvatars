@@ -92,6 +92,10 @@ def _field(item, name: str):
     return item[name] if isinstance(item, dict) else getattr(item, name)
 
 
+# Sent instead of a missing key, see ApiEmbedder._call. Same value as the backend sends.
+KEYLESS_API_KEY = "no-key"
+
+
 class ApiEmbedder:
     def __init__(self, config: EmbeddingConfig) -> None:
         if config.api_key is None and not config.api_base:
@@ -102,9 +106,10 @@ class ApiEmbedder:
     def _call(self, texts: list[str]) -> list[list[float]]:
         import litellm
 
-        kwargs = {"model": self._config.model, "input": texts}
-        if self._config.api_key is not None:
-            kwargs["api_key"] = self._config.api_key.get_secret_value()
+        # Never None: litellm would then read the key from this service's environment (e.g.
+        # OPENAI_API_KEY) and send it to the teacher's endpoint. Keyless servers ignore the placeholder.
+        api_key = self._config.api_key.get_secret_value() if self._config.api_key is not None else KEYLESS_API_KEY
+        kwargs = {"model": self._config.model, "input": texts, "api_key": api_key}
         if self._config.api_base:
             kwargs["api_base"] = self._config.api_base
         try:

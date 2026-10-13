@@ -181,7 +181,8 @@ services:
       # --- Production, behind Caddy/HTTPS ---
       COOKIE_SECURE: "true"
       ENVIRONMENT: production
-      REGISTRATION_ENABLED: "true"
+      # Only seeds the admin "self-registration" toggle on first start; overridable from .env.
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
 
       # Which senders may set X-Forwarded-For, i.e. which hops in front of this container are
       # trusted to report the real visitor address (see --proxy-headers in docker/backend.Dockerfile).

@@ -260,6 +260,7 @@ duplicating that data. Keys are encrypted at rest.
 | `GET /providers` | `providers_router.py` | Login required | List all supported providers and their config. |
 | `GET /providers/local-tts-status` | `providers_router.py` | Login required | Whether this deployment's local-TTS sidecar is enabled. |
 | `GET /providers/browser-stt-status` | `providers_router.py` | Login required | Whether on-device (WebGPU) transcription is enabled for this deployment. |
+| `GET /providers/server-stt-status` | `providers_router.py` | Login required | The deployment's default server STT engine and whether a project may pick Parakeet instead (its model files are present). |
 | `GET /api-keys` | `router.py` | Login required | List the current user's stored keys, with how many projects use each one. |
 | `POST /api-keys` | `router.py` | Login required | Store a new API key. |
 | `PUT /api-keys/{key_id}` | `router.py` | Login required, own resource | Update a stored key; re-syncs any projects using it as their LLM source. |
@@ -325,7 +326,9 @@ project or the account.
 
 Account management and instance-wide settings for the admin dashboard. There's deliberately no
 admin-initiated delete endpoint — disabling (`User.enabled`) is how an admin removes access; the
-only way an account is actually deleted is the self-service `DELETE /me` above.
+only way an account is actually deleted is the self-service `DELETE /me` above. A disabled
+account's published chats go offline with it (404, including their avatar, background and greeting
+audio) and come back unchanged when it's re-enabled.
 
 | Method & path | Auth | Description |
 |---|---|---|
@@ -412,8 +415,8 @@ A few backend behaviors worth knowing about if you're deploying or extending thi
   including the conversation history a client echoes back on every request — otherwise nothing
   stopped an anonymous visitor from sending arbitrarily large text against the project owner's own
   LLM API key.
-- **A stored key's endpoint (`api_base`) is validated** against cloud-metadata addresses
-  (`app/features/api_keys/schemas.py`) — see the [root README](../README.md#supported-ai-providers)
+- **A stored key's endpoint (`api_base`) is validated** against cloud-metadata addresses and the
+  deployment's own Docker service names (`app/features/api_keys/schemas.py`) — see the [root README](../README.md#supported-ai-providers)
   for what this does and doesn't restrict.
 - **Data retention** (`app/tasks/retention.py`) is enforced both at startup and
   periodically (every 6 hours, see `app/main.py`) for as long as the process runs, not just once
@@ -454,20 +457,22 @@ message and compares configurations; the `chunk` and `done` fields are the same 
 
 ## Tests
 
-`tests/` covers the pure-function/schema-validation pieces of the codebase — text-stream parsers
-(`SentenceChunker`/`chunk_text`, `ArcanaReferenceGuard`), request-schema validators (password/
-message length limits, the `api_base` SSRF guard), rate limiting, the retention loop, and a few
-service-level checks (project deletion cleanup, duplicate-email handling, admin bootstrap). Run
-them with:
+`tests/` covers the pure functions and schema validators (text-stream parsers, the `api_base`
+SSRF guard, rate limiting, the retention loop) and, through the `test_routes_*.py` files, the HTTP
+routes end to end: accounts and admin, projects and their export, the public chat (plain and
+streamed), media and voice clips, API keys, pronunciation, analytics, knowledge bases and the
+evaluation. AI providers are faked at the litellm / model-loader seam (see `tests/conftest.py`), so
+no test calls a real provider or downloads a model. Run them with:
 
 ```bash
 cd backend && pytest
 ```
 
-Tests need a `JWT_SECRET`/`API_KEY_ENCRYPTION_SECRET` in the environment (the repo root `.env` from
-[Deploy A](../README.md#deploy-a-local-development) already has both, so local runs need no extra
-setup) — see `app/core/config.py`'s startup validation above.
+Tests need no setup: `tests/conftest.py` sets throwaway `JWT_SECRET`/`API_KEY_ENCRYPTION_SECRET`
+values and keeps the repo root `.env` out (`EDUAVATARS_ENV_FILE=""` for the settings,
+`LITELLM_MODE=PRODUCTION` so litellm doesn't load it either), so your local settings can't change
+the results. Outside tests, `EDUAVATARS_ENV_FILE` (a real environment variable — it can't be set
+from inside a `.env`) points the backend at a different `.env` file.
 
-Most of the app (routes, DB access, provider calls) still has no test coverage — this is a start,
-not full coverage. CI (`.github/workflows/docker-publish.yml`) runs this suite, plus the frontend
-build, before a tagged release's Docker images are published.
+CI (`.github/workflows/docker-publish.yml`) runs this suite, plus the frontend build, before a
+tagged release's Docker images are published.
