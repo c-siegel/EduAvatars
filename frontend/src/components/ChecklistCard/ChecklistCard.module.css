@@ -7,6 +7,8 @@
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-md);
   font-size: 0.875rem;
+  /* The avatar stage centres its text; the list reads better left-aligned. */
+  text-align: left;
 }
 
 /* Over the avatar stage, top left — the face sits in the middle, and the mic/stop controls at
