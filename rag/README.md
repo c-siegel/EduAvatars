@@ -1,4 +1,4 @@
-# EduAvatars knowledge service (optional)
+# LOLA knowledge service (optional)
 
 Parses the documents teachers upload, indexes them and finds the passages that best match a
 student's message, so the avatar's answers can be grounded in the teacher's own material — with

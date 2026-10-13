@@ -1,6 +1,6 @@
-# Deploying EduAvatars
+# Deploying LOLA
 
-Everything needed to run EduAvatars in production with Docker: images, a Compose file, the
+Everything needed to run LOLA in production with Docker: images, a Compose file, the
 reverse-proxy config, and a systemd unit. Works on any Docker host — the backend container's app
 user adapts to whatever UID/GID owns your data directory via `PUID`/`PGID` (see
 [Deploying](#deploying) below). The defaults for both happen to match **TrueNAS SCALE**'s built-in

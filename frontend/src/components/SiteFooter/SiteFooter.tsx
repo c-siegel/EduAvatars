@@ -13,7 +13,7 @@ export function SiteFooter() {
   const { t } = useTranslation();
   return (
     <footer className={styles.footer}>
-      <span>© EduAvatars</span>
+      <span>© LOLA</span>
       {/* Link, not <a href>, for the in-app routes: a plain anchor would reload the whole SPA. */}
       <nav className={styles.links} aria-label={t("siteFooter.navAriaLabel")}>
         <Link to="/datenschutz">{t("landing.footer.privacy")}</Link>

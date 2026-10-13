@@ -1,4 +1,4 @@
-# EduAvatars local TTS (optional)
+# LOLA local TTS (optional)
 
 A self-hosted text-to-speech (TTS) engine that runs next to the cloud TTS providers (OpenAI,
 Google Gemini, Cartesia, Google Cloud TTS) — for projects that leave the TTS key unset, so

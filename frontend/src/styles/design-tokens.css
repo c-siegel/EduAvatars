@@ -62,6 +62,20 @@
   --color-accent-strong: var(--teal-600);
   --color-accent-contrast: var(--neutral-0);
 
+  /* Leipzig's city colours. Only the logo uses them; the UI accent stays emerald. Yellow is never
+     text on a light background (1.8:1 on white) — it marks shapes only. */
+  --leipzig-blue-300: #7aa5ef;
+  --leipzig-blue-700: #1f4e9c;
+  --leipzig-yellow-400: #f5c33b;
+  --leipzig-yellow-500: #f2b705;
+
+  /* LOLA logo (components/Wordmark): emerald speech-bubble face, Leipzig-blue tagline, yellow spark. */
+  --logo-letters: var(--text-primary);
+  --logo-bubble: var(--emerald-600);
+  --logo-face: var(--neutral-0);
+  --logo-tagline: var(--leipzig-blue-700);
+  --logo-spark: var(--leipzig-yellow-500);
+
   /* Surfaces */
   --surface-page: var(--neutral-50);
   --surface-card: var(--neutral-0);
@@ -149,6 +163,13 @@
   color-scheme: dark;
 
   --gradient-brand-soft: linear-gradient(135deg, #0e2a21, #0d2a28);
+
+  /* The face is cut out of the bubble, so it takes the page colour; blue and yellow lighten so they
+     keep their contrast on the dark background. */
+  --logo-bubble: var(--emerald-400);
+  --logo-face: #0f1110;
+  --logo-tagline: var(--leipzig-blue-300);
+  --logo-spark: var(--leipzig-yellow-400);
 
   --surface-page: #0f1110;
   --surface-card: #1a1c1b;

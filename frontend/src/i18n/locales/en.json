@@ -12,6 +12,9 @@
     "advancedSettings": "Advanced settings",
     "advancedChanged": "changed: {{fields}}"
   },
+  "brand": {
+    "tagline": "Leipzig's Open Learning Avatar"
+  },
   "languageSwitcher": {
     "switchTo": "Switch to English"
   },
@@ -56,7 +59,7 @@
       "terms": "I agree to the Terms of Service and Privacy Policy.",
       "submit": "Create account",
       "errorGeneric": "Registration failed. Please check your details.",
-      "disabledNotice": "Registration is currently disabled. This EduAvatars instance is currently only available for internal use. Please contact your institution if you need an account."
+      "disabledNotice": "Registration is currently disabled. This LOLA instance is currently only available for internal use. Please contact your institution if you need an account."
     },
     "forgotPassword": {
       "subtitle": "Forgot password",
@@ -180,7 +183,7 @@
     "subtitle": "What data this service processes, and why.",
     "controller": {
       "title": "Who is responsible",
-      "text": "The operator of this EduAvatars instance is responsible for the data processed here:"
+      "text": "The operator of this LOLA instance is responsible for the data processed here:"
     },
     "teachers": {
       "title": "Teacher accounts",
@@ -576,7 +579,7 @@
     "newProject": "+ New project",
     "createError": "Couldn't create the project. Please try again.",
     "importProject": "Import project",
-    "importError": "Couldn't import this file. Make sure it's a project export from eduavatars (.yml).",
+    "importError": "Couldn't import this file. Make sure it's a LOLA project export (.yml).",
     "myProjects": "My projects",
     "stats": {
       "sessions7d": "Sessions (7d)",
@@ -924,7 +927,7 @@
   },
   "credits": {
     "title": "Credits & Licenses",
-    "subtitle": "Thanks to all the projects and libraries that make EduAvatars possible",
+    "subtitle": "Thanks to all the projects and libraries that make LOLA possible",
     "licenseLabel": "License:",
     "noteLabel": "Note:",
     "byAuthor": "by {{name}}",
@@ -1393,7 +1396,7 @@
     "PROJECT_NOT_FOUND": "Project not found.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Project not found or not published.",
     "INVALID_BUILTIN_AVATAR": "Unknown default avatar.",
-    "PROJECT_IMPORT_INVALID": "This file isn't a valid eduavatars project export.",
+    "PROJECT_IMPORT_INVALID": "This file isn't a valid LOLA project export.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "File is too large (256 KB maximum).",
     "CONVERSATION_NOT_FOUND": "Conversation not found.",
     "REGISTRATION_DISABLED": "Registration is currently disabled.",

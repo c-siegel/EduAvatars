@@ -29,7 +29,7 @@ from app.synthesis import (
     synthesize,
 )
 
-app = FastAPI(title="EduAvatars Local TTS")
+app = FastAPI(title="LOLA Local TTS")
 
 
 class SynthesizeRequest(BaseModel):
