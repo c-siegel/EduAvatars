@@ -48,6 +48,10 @@ visitors need no account and no technical knowledge to use it.
 - **Body language.** The avatar underlines its replies with gestures (nodding, waving, a thumbs
   up, …) that the AI picks from a short curated list. On by default; switch it off per project
   under Appearance → Advanced settings. See [Gestures](#gestures).
+- **Give the conversation a plan.** List the steps the avatar should work through (Behavior →
+  Conversation plan), in a fixed or any order, with optional notes only the avatar sees. The
+  avatar ticks steps off as they are achieved, and can take a tick back, and students can follow
+  along in a small progress card. See [Conversation plan](#conversation-plan).
 - **Share one link, nothing to install.** A published project gets a public chat URL. Visitors
   need no account, no API key, and no software.
 - **Protect access if needed.** Optionally require a password before the chat starts, or ask
@@ -457,6 +461,30 @@ default), the avatar also plays randomly chosen thinking gestures (`thinking_fac
 reply begins. It needs the gestures setting and is done entirely in the browser (see
 `startThinking` in `frontend/src/components/TalkingHeadAvatar`); the backend only stores the
 `thinking_motions_enabled` flag.
+
+### Conversation plan
+
+A project can give its conversations a structure (Behavior → Conversation plan, off by default):
+a list of steps, each with a title and an optional note that only the model sees (e.g. the
+expected answer), worked through either in a fixed order or in any order. The model ticks a step
+off by writing `::done_N::` into its reply (N = the step's number) and takes it back with
+`::undone_N::`. `backend/app/features/chat/checklist.py` and `motion.py` cut these markers out in
+the same pass as the gestures, so they are never spoken, shown or saved.
+
+The server keeps no conversation state. Every reply returns its ticks by step ID (per streamed
+sentence, so a step is crossed off while it is being spoken), the browser keeps them on the message
+and sends them back with the history, and each turn replays them. Editing or regenerating a
+message therefore rolls the progress back on its own. Because the model only sees the last 20
+messages, and those have no markers, the plan goes into the system prompt on every turn with a
+one-line status (`Status: done 1 · next 2`). Finished steps drop their note, so a long plan gets
+cheaper as the conversation goes on. Step IDs stay the same when the teacher reorders steps, so
+running chats keep pointing at the right one.
+
+With "Show the plan to students" on, the public chat shows a collapsible progress card: on the
+avatar stage, or above the thread in the "Chat only" layout. Notes are never sent to the public
+page. Unlike the gestures, the plan also works in the "Chat only" layout. Saved conversations keep
+the ticks: they appear under the reply in the Analytics transcript and in a "Plan" column of the
+CSV export.
 
 ## Data privacy note
 
