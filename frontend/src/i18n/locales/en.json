@@ -287,6 +287,28 @@
     }
   },
   "configurator": {
+    "checklist": {
+      "title": "Conversation plan",
+      "intro": "Give the conversation a structure: list the steps the avatar should work through with the student. The avatar ticks a step off as soon as it is achieved, and can take a tick back if it turns out the student hasn't got it yet. The current progress is sent to the language model with every message, so it keeps track even in long conversations.",
+      "enabled": "Use a conversation plan",
+      "orderLabel": "Order of the steps",
+      "ordered": "In this order",
+      "orderedHint": "The avatar works through the steps one after the other.",
+      "anyOrder": "In any order",
+      "anyOrderHint": "The avatar ticks steps off whenever they come up.",
+      "visible": "Show the plan to students",
+      "visibleHint": "Students see the step titles and which ones are done. Notes stay hidden — only the avatar sees them.",
+      "stepPlaceholder": "e.g. Explain photosynthesis",
+      "stepTitle": "Step {{number}}",
+      "noteToggle": "Note for the avatar on step {{number}}",
+      "noteLabel": "Note for the avatar on step {{number}}",
+      "notePlaceholder": "Only the avatar sees this, e.g. what counts as achieved or the expected answer",
+      "moveUp": "Move step {{number}} up",
+      "moveDown": "Move step {{number}} down",
+      "remove": "Remove step {{number}}",
+      "empty": "No steps yet. Add the first one.",
+      "add": "Add step"
+    },
     "knowledge": {
       "title": "Knowledge",
       "intro": "Let the avatar answer from your own documents. Before each reply, the passages that best match the student's question are looked up and handed to the language model.",

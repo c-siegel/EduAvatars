@@ -85,7 +85,21 @@ export interface Project {
   knowledgeMode: KnowledgeMode;
   knowledgeTopK: number;
   knowledgeBaseIds: string[];
+  // Conversation plan: steps the avatar ticks off during the chat (see backend
+  // features/chat/checklist.py) — optionally shown to students, in a fixed or any order.
+  checklistEnabled: boolean;
+  checklistVisible: boolean;
+  checklistOrdered: boolean;
+  checklistItems: ChecklistItem[];
   createdAt: string;
+}
+
+// One step of the conversation plan. The id stays the same when steps are reordered, so ticks
+// in a running chat keep pointing at the right step; the note is only ever shown to the model.
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  note: string | null;
 }
 
 // What projectsApi.update accepts: every writable field, plus the write-only chat password. The
@@ -101,6 +115,8 @@ export interface SystemPrompt {
   defaultMotionPrompt: string;
   motionCustomized: boolean;
   motionActive: boolean;
+  // The plan as sent on a chat's first turn; null when the plan is off or empty.
+  checklistPrompt: string | null;
   full: string;
 }
 

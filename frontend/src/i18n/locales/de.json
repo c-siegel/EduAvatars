@@ -287,6 +287,28 @@
     }
   },
   "configurator": {
+    "checklist": {
+      "title": "Gesprächsplan",
+      "intro": "Gib dem Gespräch eine Struktur: Liste die Schritte auf, die der Avatar mit den Schüler:innen durchgehen soll. Der Avatar hakt einen Schritt ab, sobald er erreicht ist, und kann den Haken wieder entfernen, wenn sich zeigt, dass es doch noch nicht sitzt. Der aktuelle Stand wird bei jeder Nachricht an das Sprachmodell geschickt, damit es auch in langen Gesprächen den Überblick behält.",
+      "enabled": "Gesprächsplan verwenden",
+      "orderLabel": "Reihenfolge der Schritte",
+      "ordered": "In dieser Reihenfolge",
+      "orderedHint": "Der Avatar geht die Schritte nacheinander durch.",
+      "anyOrder": "In beliebiger Reihenfolge",
+      "anyOrderHint": "Der Avatar hakt Schritte ab, sobald sie sich ergeben.",
+      "visible": "Plan den Schüler:innen zeigen",
+      "visibleHint": "Schüler:innen sehen die Titel der Schritte und welche erledigt sind. Notizen bleiben verborgen – nur der Avatar sieht sie.",
+      "stepPlaceholder": "z. B. Fotosynthese erklären",
+      "stepTitle": "Schritt {{number}}",
+      "noteToggle": "Notiz für den Avatar zu Schritt {{number}}",
+      "noteLabel": "Notiz für den Avatar zu Schritt {{number}}",
+      "notePlaceholder": "Sieht nur der Avatar, z. B. wann der Schritt erreicht ist oder die erwartete Antwort",
+      "moveUp": "Schritt {{number}} nach oben",
+      "moveDown": "Schritt {{number}} nach unten",
+      "remove": "Schritt {{number}} entfernen",
+      "empty": "Noch keine Schritte. Füge den ersten hinzu.",
+      "add": "Schritt hinzufügen"
+    },
     "knowledge": {
       "title": "Wissen",
       "intro": "Lass den Avatar aus deinen eigenen Dokumenten antworten. Vor jeder Antwort werden die Abschnitte gesucht, die am besten zur Frage passen, und dem Sprachmodell mitgegeben.",
