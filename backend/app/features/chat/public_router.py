@@ -29,12 +29,15 @@ from app.core.rate_limit import (
 from app.features.ai.stt import transcribe_audio
 from app.features.api_keys.resolve import browser_stt_model_url_for, resolve_stt_key
 from app.features.chat.audio_upload import read_audio_upload
+from app.features.chat.checklist import checklist_for, replay
 from app.features.chat.pipeline import ChatTurn, LLMFailed, prepare_chat, reply_turn, stream_turn
 from app.features.chat.schemas import (
     ChatMessageIn,
     ChatMessageOut,
     ChatUnlockOut,
     ChatUnlockRequest,
+    PublicChecklistItemOut,
+    PublicChecklistOut,
     PublicProjectOut,
     TranscriptionOut,
 )
@@ -99,6 +102,7 @@ def load_tutor(
         motion_enabled=project.motion_enabled,
         # Combined here like the other flags: without gestures there is nothing to play.
         thinking_motions_enabled=project.thinking_motions_enabled and project.motion_enabled,
+        checklist=_public_checklist(project),
         # The checkbox and URL are combined here, before anything goes out to the anonymous page —
         # both "not enabled" and "enabled but URL empty" end up as None.
         survey_before_url=project.survey_before_url if project.survey_before_enabled and project.survey_before_url else None,
@@ -108,6 +112,18 @@ def load_tutor(
         require_visitor_name=project.require_visitor_name,
         save_conversations=project.save_conversations,
         llm_model=project.llm_model,
+    )
+
+
+def _public_checklist(project: Project) -> PublicChecklistOut | None:
+    """The plan for the public page: only when students may see it, and without the notes,
+    which may hold the answers the avatar is checking for."""
+    checklist = checklist_for(project)
+    if checklist is None or not project.checklist_visible:
+        return None
+    return PublicChecklistOut(
+        ordered=checklist.ordered,
+        items=[PublicChecklistItemOut(id=item.id, title=item.title) for item in checklist.items],
     )
 
 
@@ -148,7 +164,8 @@ def _start_turn(
     assert_visitor_name_provided(project, visitor_name)
     enforce_public_chat_rate_limit(request, visitor_id)
     history = [{"role": h.role, "content": h.content} for h in data.history]
-    return ChatTurn(data.message, history, visitor_id, visitor_name, received_at)
+    done = frozenset(replay(h.checks for h in data.history))
+    return ChatTurn(data.message, history, visitor_id, visitor_name, received_at, done)
 
 
 @router.post("/{slug}/messages", response_model=ChatMessageOut)
@@ -185,6 +202,7 @@ def send_message(
         llm_ms=reply.llm_ms,
         tts_ms=reply.tts_ms,
         motions=reply.motions,
+        checks=[c.to_client() for c in reply.checks],
     )
 
 

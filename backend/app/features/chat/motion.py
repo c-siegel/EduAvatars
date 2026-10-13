@@ -12,9 +12,12 @@ invented, or one a teacher's own instructions named — is cut out too, without 
 students never see or hear a marker; that applies even with motion off. Code such as
 "std::vector::size" survives because an unknown marker must not directly follow a word.
 
+The conversation plan's "::done_N::" / "::undone_N::" markers (see checklist.py) are cut out in
+the same pass, so both kinds of position refer to the same cleaned text.
+
 How to use:
     system_prompt = f"{preprompt}\\n\\n{MOTION_PROMPT}"
-    clean, marks = extract_motions(reply)   # clean text + where each gesture was
+    clean, marks, checks = extract_markers(reply)   # clean text + where each gesture/tick was
 """
 
 import re
@@ -51,20 +54,24 @@ def effective_motion_prompt(custom: str | None) -> str:
     return custom.strip() if custom and custom.strip() else MOTION_PROMPT
 
 
-def compose_system_prompt(preprompt: str, motion_prompt: str | None, motion_enabled: bool) -> str:
-    """The preprompt with the gesture instructions appended (when gestures are on)."""
-    if not motion_enabled:
-        return preprompt
-    motion = effective_motion_prompt(motion_prompt)
-    return f"{preprompt}\n\n{motion}" if preprompt else motion
+def compose_system_prompt(
+    preprompt: str, motion_prompt: str | None, motion_enabled: bool, checklist_prompt: str | None = None
+) -> str:
+    """The preprompt with the gesture instructions (when gestures are on) and the conversation
+    plan (see checklist.py) appended."""
+    parts = [preprompt, effective_motion_prompt(motion_prompt) if motion_enabled else "", checklist_prompt or ""]
+    return "\n\n".join(part for part in parts if part)
 
 
 # Whitespace inside the colons is tolerated because models sometimes write ":: nod_yes ::".
 # The second alternative catches every other "::text::" — an invented gesture or one named in a
 # teacher's own instructions — so no marker ever reaches students; it only plays nothing. Unlike a
 # known name it must not directly follow a word or colon, so code like "std::vector::size" stays.
+# The first alternative is a conversation-plan tick (see checklist.py); models sometimes write
+# "::done 2::" or "::done-2::", so the separator is lenient too.
 _MARKER_RE = re.compile(
-    r"::\s*(" + "|".join(map(re.escape, MOTIONS)) + r")\s*::"
+    r"::\s*(done|undone)[_ -]?(\d{1,2})\s*::"
+    r"|::\s*(" + "|".join(map(re.escape, MOTIONS)) + r")\s*::"
     r"|(?<![\w:])::[ \t]*[A-Za-z][\w -]{0,38}?[ \t]*::",
     re.IGNORECASE,
 )
@@ -82,14 +89,26 @@ class MotionMark:
         return {"name": self.name, "offset": self.offset}
 
 
-def extract_motions(text: str) -> tuple[str, list[MotionMark]]:
-    """Cut every marker out of `text`; return the cleaned text and the known gestures in order.
+@dataclass(frozen=True)
+class ChecklistMark:
+    """A conversation-plan tick: step `number` (1-based, as the model counts) done or taken back,
+    at a character position of the cleaned text like MotionMark."""
+
+    number: int
+    done: bool
+    offset: int
+
+
+def extract_markers(text: str) -> tuple[str, list[MotionMark], list[ChecklistMark]]:
+    """Cut every marker out of `text`; return the cleaned text, the known gestures and the plan
+    ticks, each in order.
 
     The space next to a removed marker is dropped once, so "Yes ::nod_yes:: exactly" reads
     "Yes exactly" instead of carrying a double space into TTS and the transcript.
     """
     clean = ""
     marks: list[MotionMark] = []
+    checks: list[ChecklistMark] = []
     pos = 0
     for match in _MARKER_RE.finditer(text):
         clean += text[pos : match.start()]
@@ -98,9 +117,19 @@ def extract_motions(text: str) -> tuple[str, list[MotionMark]]:
             while pos < len(text) and text[pos] in " \t":
                 pos += 1
         if match.group(1):
-            marks.append(MotionMark(match.group(1).lower(), len(clean)))
+            checks.append(ChecklistMark(int(match.group(2)), match.group(1).lower() == "done", len(clean)))
+        elif match.group(3):
+            marks.append(MotionMark(match.group(3).lower(), len(clean)))
     clean += text[pos:]
 
     stripped = clean.strip()
     shift = len(clean) - len(clean.lstrip())
-    return stripped, [MotionMark(m.name, min(max(m.offset - shift, 0), len(stripped))) for m in marks]
+
+    def moved(offset: int) -> int:
+        return min(max(offset - shift, 0), len(stripped))
+
+    return (
+        stripped,
+        [MotionMark(m.name, moved(m.offset)) for m in marks],
+        [ChecklistMark(c.number, c.done, moved(c.offset)) for c in checks],
+    )

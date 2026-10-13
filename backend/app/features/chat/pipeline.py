@@ -32,7 +32,8 @@ from app.features.ai.tts.pronunciation import PronunciationMatcher
 from app.features.api_keys.models import UserApiKey
 from app.features.api_keys.resolve import resolve_llm_key, resolve_tts_key
 from app.features.chat.conversation_store import save_turn
-from app.features.chat.motion import MotionMark, compose_system_prompt, extract_motions
+from app.features.chat.checklist import Check, Checklist, checklist_for, checklist_prompt
+from app.features.chat.motion import MotionMark, compose_system_prompt, extract_markers
 from app.features.chat.streaming import SentenceChunker
 from app.features.knowledge.prompt import reference_block
 from app.features.knowledge.retrieval import KnowledgeContext, Passage, prepare_knowledge, retrieve, sources_for_transcript
@@ -87,6 +88,9 @@ class ChatContext:
     motion_enabled: bool = False
     # The project's own gesture instructions, None = built-in default (see chat/motion.py).
     motion_prompt: str | None = None
+    # The conversation plan (see features/chat/checklist.py), None when off. Unlike gestures it
+    # also applies to the chat-only layout: it structures the conversation, not the avatar.
+    checklist: Checklist | None = None
 
 
 @dataclass
@@ -100,6 +104,8 @@ class ChatTurn:
     # Captured before any LLM/TTS work — the closest we get to "when the visitor actually sent
     # this", used for the saved message's per-message timestamp.
     received_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    # The plan steps done so far, replayed from the visitor's history (see checklist.py::replay).
+    checklist_done: frozenset[str] = frozenset()
 
 
 @dataclass
@@ -115,6 +121,8 @@ class ChatReply:
     retrieval_ms: float | None = None
     # Gestures for the avatar, in reply order (see features/chat/motion.py).
     motions: list[str] = field(default_factory=list)
+    # Plan steps ticked off or taken back in this reply (see features/chat/checklist.py).
+    checks: list[Check] = field(default_factory=list)
 
 
 class LLMFailed(Exception):
@@ -153,6 +161,7 @@ def prepare_chat(session: Session, project: Project, llm_key: UserApiKey | None 
         pronunciation=matcher_for(session, project.user_id, project.spoken_language) if project.tts_enabled else None,
         motion_enabled=project.motion_enabled and project.chat_layout != "chat_only",
         motion_prompt=project.motion_prompt,
+        checklist=checklist_for(project),
     )
 
 
@@ -166,11 +175,11 @@ def _retrieve(context: ChatContext, turn: ChatTurn) -> tuple[list[Passage], floa
     return passages, (time.perf_counter() - start) * 1000
 
 
-def _chat_request(
-    context: ChatContext, turn: ChatTurn, passages: list[Passage], *, with_motion: bool = True
-) -> llm.ChatRequest:
+def _chat_request(context: ChatContext, turn: ChatTurn, passages: list[Passage], *, plain: bool = False) -> llm.ChatRequest:
+    """The LLM request for `turn`; `plain` leaves out the gesture instructions and the plan."""
     reference = reference_block(context.knowledge.mode, passages) if context.knowledge else None
-    preprompt = compose_system_prompt(context.preprompt, context.motion_prompt, with_motion and context.motion_enabled)
+    plan = None if plain or context.checklist is None else checklist_prompt(context.checklist, set(turn.checklist_done))
+    preprompt = compose_system_prompt(context.preprompt, context.motion_prompt, not plain and context.motion_enabled, plan)
     return llm.ChatRequest(
         preprompt,
         turn.message,
@@ -204,11 +213,18 @@ def _save(
     )
 
 
-def _split_motions(context: ChatContext, text: str) -> tuple[str, list[MotionMark]]:
-    """`text` without gesture markers, and the gestures — none for projects without motion, whose
-    replies are still cleaned: the model may write a marker anyway, and students never see one."""
-    clean, marks = extract_motions(text)
-    return clean, marks if context.motion_enabled else []
+def _split_markers(context: ChatContext, text: str) -> tuple[str, list[MotionMark], list[Check]]:
+    """`text` without markers, the gestures and the plan ticks — none of a kind the project has
+    off, whose markers are still cut out: the model may write one anyway, and students never see
+    one. Ticks of a step number the plan doesn't have are dropped."""
+    clean, marks, ticks = extract_markers(text)
+    checks = []
+    if context.checklist is not None:
+        for tick in ticks:
+            item_id = context.checklist.id_for(tick.number)
+            if item_id is not None:
+                checks.append(Check(item_id, tick.done, tick.offset))
+    return clean, marks if context.motion_enabled else [], checks
 
 
 def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None, float]:
@@ -246,7 +262,7 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
         raise LLMFailed() from exc
     llm_ms = (time.perf_counter() - llm_start) * 1000
     reply_ready_at = datetime.now(timezone.utc)
-    reply, motions = _split_motions(context, reply)
+    reply, motions, checks = _split_markers(context, reply)
 
     if save and context.save_conversations:
         try:
@@ -259,7 +275,7 @@ def reply_turn(context: ChatContext, turn: ChatTurn, *, save: bool = True) -> Ch
     tts_start = time.perf_counter()
     audio_base64, content_type, _ = _synthesize(context, reply)
     tts_ms = (time.perf_counter() - tts_start) * 1000 if audio_base64 is not None else None
-    return ChatReply(reply, audio_base64, content_type, llm_ms, tts_ms, retrieval_ms, [m.name for m in motions])
+    return ChatReply(reply, audio_base64, content_type, llm_ms, tts_ms, retrieval_ms, [m.name for m in motions], checks)
 
 
 @dataclass
@@ -279,7 +295,7 @@ def answer_for_evaluation(context: ChatContext, question: str) -> EvaluationAnsw
     try:
         # Without the gesture instructions: the evaluation judges the answer's content, and stray
         # markers would only add noise to it.
-        text = llm.complete(context.llm_key, _chat_request(context, turn, passages, with_motion=False))
+        text = llm.complete(context.llm_key, _chat_request(context, turn, passages, plain=True))
     except Exception as exc:
         raise LLMFailed() from exc
     return EvaluationAnswer(text, passages, retrieval_ms, (time.perf_counter() - llm_start) * 1000)
@@ -312,7 +328,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     # pool's worker threads finish chunk N+1 before chunk N, synthesis for chunk N still
     # overlaps with the LLM producing chunk N+1 rather than a fully sequential "wait for
     # TTS, then ask for more".
-    futures: deque[tuple[int, "Future[tuple[str | None, str | None, float]]", str, list[str], float]] = deque()
+    futures: deque[tuple[int, "Future[tuple[str | None, str | None, float]]", str, list[str], list[dict], float]] = deque()
     next_index = 0
 
     def submit(text: str) -> None:
@@ -322,12 +338,15 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
             first_chunk_ready_ms = ready_ms
         # The chunker keeps a marker in one piece (see streaming.py), so each chunk's markers can
         # be cut out on their own; the browser plays them when that chunk's audio starts.
-        text, marks = _split_motions(context, text)
+        text, marks, checks = _split_markers(context, text)
         motions = [m.name for m in marks]
-        futures.append((next_index, _tts_executor.submit(_synthesize, context, text), text, motions, ready_ms))
+        ticks = [c.to_client() for c in checks]
+        futures.append((next_index, _tts_executor.submit(_synthesize, context, text), text, motions, ticks, ready_ms))
         next_index += 1
 
-    def chunk_event(idx: int, future: Future, text: str, motions: list[str], ready_ms: float) -> tuple[str, dict]:
+    def chunk_event(
+        idx: int, future: Future, text: str, motions: list[str], checks: list[dict], ready_ms: float
+    ) -> tuple[str, dict]:
         nonlocal first_chunk_ms, total_tts_ms
         audio_b64, content_type, synth_ms = future.result()
         if total_tts_ms is not None:
@@ -343,6 +362,8 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
             "audioBase64": audio_b64,
             "contentType": content_type,
             "motions": motions,
+            # Plan ticks in this chunk, so the browser ticks the step while it is being spoken.
+            "checks": checks,
             "textReadyMs": ready_ms,
             "ttsMs": synth_ms if context.tts_enabled else None,
             "sentMs": sent_ms,
@@ -389,7 +410,7 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
     full_reply = llm.strip_arcana_references("".join(full_text_parts).strip())
     # Taken from the whole reply rather than collected per chunk, so the saved offsets refer to
     # exactly the text that is saved.
-    full_reply, motion_marks = _split_motions(context, full_reply)
+    full_reply, motion_marks, checks = _split_markers(context, full_reply)
 
     if context.save_conversations:
         try:
@@ -402,6 +423,8 @@ def stream_turn(context: ChatContext, turn: ChatTurn) -> Iterator[tuple[str, dic
 
     yield "done", {
         "reply": full_reply,
+        # All of the reply's plan ticks — what the browser stores on the message, see checklist.py.
+        "checks": [c.to_client() for c in checks],
         "llmMs": llm_ms,
         "llmFirstTokenMs": first_token_ms,
         "firstChunkMs": first_chunk_ms,

@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
 from app.features.auth.schemas import MAX_PASSWORD_BYTES
-from app.features.chat.schemas import CHECKLIST_ID_PATTERN, ChatHistoryEntry
+from app.features.chat.schemas import CHECKLIST_ID_PATTERN, ChatHistoryEntry, ChecklistCheck
 
 # A shared classroom PIN, not an account password — short and memorable is fine, unlike the
 # stricter 10-char+digit rule enforced on User passwords (features/auth/schemas.py).
@@ -257,8 +257,11 @@ class SystemPromptOut(CamelModel):
     motion_customized: bool
     # False when the project's layout or settings switch gestures off — motion_prompt isn't sent then.
     motion_active: bool
-    # preprompt + motion prompt exactly as joined for the model (without knowledge-base excerpts,
-    # which are added per message).
+    # The conversation plan as sent on a chat's first turn (no step done yet; the status line
+    # changes as the chat goes on), None when the plan is off or empty.
+    checklist_prompt: str | None = None
+    # preprompt + motion prompt + plan exactly as joined for the model (without knowledge-base
+    # excerpts, which are added per message).
     full: str
 
 
@@ -280,6 +283,8 @@ class PreviewMessageResponse(CamelModel):
     content_type: str | None = None
     # Avatar gestures, see features/chat/schemas.py::ChatMessageOut.motions.
     motions: list[str] = []
+    # Plan ticks, see features/chat/schemas.py::ChatMessageOut.checks.
+    checks: list[ChecklistCheck] = []
 
 
 class ProjectExportData(BaseModel):

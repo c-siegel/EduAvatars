@@ -15,6 +15,7 @@ from app.features.ai.stt import transcribe_audio
 from app.features.api_keys.crypto import scrub_key_from_text
 from app.features.api_keys.resolve import resolve_stt_key
 from app.features.chat.audio_upload import read_audio_upload
+from app.features.chat.checklist import replay
 from app.features.chat.pipeline import ChatTurn, LLMFailed, prepare_chat, reply_turn
 from app.features.chat.schemas import TranscriptionOut
 from app.features.projects.models import Project
@@ -35,8 +36,9 @@ def preview_message(
     if context is None:
         raise HTTPException(status_code=400, detail=ErrorCode.NO_LLM_MODEL_SELECTED)
     history = [{"role": h.role, "content": h.content} for h in data.history]
+    turn = ChatTurn(data.message, history, checklist_done=frozenset(replay(h.checks for h in data.history)))
     try:
-        reply = reply_turn(context, ChatTurn(data.message, history), save=False)
+        reply = reply_turn(context, turn, save=False)
     except LLMFailed as exc:
         # This is the user's own context (the configurator) — the concrete error message helps
         # with debugging (wrong/expired key, wrong model, ...), unlike in the public chat. `code`
@@ -52,7 +54,11 @@ def preview_message(
             },
         ) from exc
     return PreviewMessageResponse(
-        reply=reply.text, audio_base64=reply.audio_base64, content_type=reply.content_type, motions=reply.motions
+        reply=reply.text,
+        audio_base64=reply.audio_base64,
+        content_type=reply.content_type,
+        motions=reply.motions,
+        checks=[c.to_client() for c in reply.checks],
     )
 
 
