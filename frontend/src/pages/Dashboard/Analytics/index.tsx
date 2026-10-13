@@ -407,6 +407,20 @@ export function AnalyticsPage() {
                       {message.motions.map((motion) => describeMotion(motion, message.content, t)).join(" · ")}
                     </p>
                   )}
+                  {message.checks && message.checks.length > 0 && (
+                    <p className={styles.transcriptSources}>
+                      {t("analytics.transcript.checks")}{" "}
+                      {message.checks
+                        .map((check) =>
+                          t(check.done ? "analytics.transcript.checkDone" : "analytics.transcript.checkUndone", {
+                            step: check.title
+                              ? `${check.number}. ${check.title}`
+                              : t("analytics.transcript.deletedStep"),
+                          }),
+                        )
+                        .join(" · ")}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

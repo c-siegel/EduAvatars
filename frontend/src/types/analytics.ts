@@ -54,9 +54,21 @@ export interface TranscriptMotion {
   offset: number;
 }
 
-export type TranscriptMessage = ChatMessage & {
+// A conversation-plan step the LLM ticked off (done) or took back in a reply (see backend
+// features/chat/checklist.py), resolved to the step's current number and title — both null once
+// the step has been deleted from the plan.
+export interface TranscriptCheck {
+  id: string;
+  done: boolean;
+  offset: number;
+  number: number | null;
+  title: string | null;
+}
+
+export type TranscriptMessage = Omit<ChatMessage, "checks"> & {
   sources?: TranscriptSource[] | null;
   motions?: TranscriptMotion[] | null;
+  checks?: TranscriptCheck[] | null;
 };
 
 export type Granularity = "day" | "week" | "month";

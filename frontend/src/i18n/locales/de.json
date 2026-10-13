@@ -597,7 +597,11 @@
       "motions": "Gesten:",
       "motionAtStart": "am Anfang",
       "motionAtEnd": "am Ende",
-      "motionBefore": "vor „{{text}}“"
+      "motionBefore": "vor „{{text}}“",
+      "checks": "Plan:",
+      "checkDone": "✓ {{step}}",
+      "checkUndone": "↺ {{step}} wieder offen",
+      "deletedStep": "gelöschter Schritt"
     },
     "pagination": {
       "zero": "0 von 0",
