@@ -489,7 +489,11 @@ export function PublicChatPage() {
       // between them is already lost — a single space is a reasonable stand-in for the few
       // hundred ms until the "done" event replaces this with the exact original text below.
       const content = !chunk.text ? last.content : last.content ? `${last.content} ${chunk.text}` : chunk.text;
-      next[next.length - 1] = { ...last, content, checks: [...(last.checks ?? []), ...checks] };
+      // A step ticked again replaces its earlier tick, like the backend does within one reply —
+      // so the list stays within what the history accepts back, even for an interrupted reply.
+      const newIds = new Set(checks.map((check) => check.id));
+      const kept = (last.checks ?? []).filter((check) => !newIds.has(check.id));
+      next[next.length - 1] = { ...last, content, checks: [...kept, ...checks] };
       return next;
     });
   }

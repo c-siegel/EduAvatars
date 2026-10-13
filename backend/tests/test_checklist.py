@@ -272,3 +272,19 @@ def test_ticks_are_saved_and_shown_in_the_transcript_and_csv(client, anon, chat_
     assert "Zeitpunkt,Avatar,Schüler:in,Plan" in csv
     assert "✓ (gelöschter Schritt); ✓ Fotosynthese erklären" in csv
     assert "✗ Fotosynthese erklären" in csv
+
+
+def test_a_reply_never_returns_more_ticks_than_a_history_entry_accepts(client, anon, chat_project, fake_ai) -> None:
+    # A model stuck in a loop can tick the same step over and over; echoed back unchanged, a list
+    # longer than ChatHistoryEntry allows would make every later request of that chat fail (422).
+    ids = _plan_project(client, chat_project)
+    fake_ai.llm_reply = " ".join(["Ja. ::done_1:: ::undone_1::"] * 15) + " ::done_2:: Gut."
+    slug = chat_project["shareSlug"]
+    anon.get(f"/public/{slug}")
+
+    body = anon.post(f"/public/{slug}/messages", json={"message": "Hi"}).json()
+
+    # Only the last tick per step counts, so the list is at most one entry per step.
+    assert body["checks"] == [{"id": ids[0], "done": False}, {"id": ids[1], "done": True}]
+    history = [{"role": "assistant", "content": body["reply"], "checks": body["checks"]}]
+    assert anon.post(f"/public/{slug}/messages", json={"message": "Weiter", "history": history}).status_code == 200

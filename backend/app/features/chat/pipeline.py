@@ -221,13 +221,17 @@ def _split_markers(context: ChatContext, text: str) -> tuple[str, list[MotionMar
     off, whose markers are still cut out: the model may write one anyway, and students never see
     one. Ticks of a step number the plan doesn't have are dropped."""
     clean, marks, ticks = extract_markers(text)
-    checks = []
+    # Only a step's last tick in the reply counts — it decides the step's state. That also keeps
+    # the list at one entry per step, within what ChatHistoryEntry.checks accepts back: a model
+    # stuck in a loop would otherwise return more ticks than the next request may carry.
+    last: dict[str, Check] = {}
     if context.checklist is not None:
         for tick in ticks:
             item_id = context.checklist.id_for(tick.number)
             if item_id is not None:
-                checks.append(Check(item_id, tick.done, tick.offset))
-    return clean, marks if context.motion_enabled else [], checks
+                last.pop(item_id, None)
+                last[item_id] = Check(item_id, tick.done, tick.offset)
+    return clean, marks if context.motion_enabled else [], list(last.values())
 
 
 def _synthesize(context: ChatContext, text: str) -> tuple[str | None, str | None, float]:
