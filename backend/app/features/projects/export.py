@@ -15,6 +15,7 @@ How to use:
     new_project = import_project(session, current_user.id, parse_project_yaml(yaml_text))
 """
 
+import json
 import re
 
 import yaml
@@ -124,7 +125,8 @@ def import_project(session: Session, user_id: str, data: ProjectExportData) -> P
     # Knowledge bases aren't part of an export, so an imported project has none attached — it
     # must not claim to answer from material it doesn't have.
     fields["knowledge_mode"] = "off"
-    project = Project(user_id=user_id, **fields)
+    checklist_items = fields.pop("checklist_items")
+    project = Project(user_id=user_id, checklist_json=json.dumps(checklist_items), **fields)
     session.add(project)
     session.commit()
     session.refresh(project)

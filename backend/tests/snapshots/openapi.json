@@ -937,6 +937,44 @@
         "title": "ChatUnlockRequest",
         "type": "object"
       },
+      "ChecklistItem": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9]{6,12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "title": {
+            "maxLength": 120,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ChecklistItem",
+        "type": "object"
+      },
       "ConversationDetailOut": {
         "properties": {
           "id": {
@@ -2134,6 +2172,25 @@
             "title": "Chatlayout",
             "type": "string"
           },
+          "checklistEnabled": {
+            "title": "Checklistenabled",
+            "type": "boolean"
+          },
+          "checklistItems": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "title": "Checklistitems",
+            "type": "array"
+          },
+          "checklistOrdered": {
+            "title": "Checklistordered",
+            "type": "boolean"
+          },
+          "checklistVisible": {
+            "title": "Checklistvisible",
+            "type": "boolean"
+          },
           "createdAt": {
             "format": "date-time",
             "title": "Createdat",
@@ -2456,6 +2513,10 @@
           "knowledgeMode",
           "knowledgeTopK",
           "knowledgeBaseIds",
+          "checklistEnabled",
+          "checklistVisible",
+          "checklistOrdered",
+          "checklistItems",
           "createdAt"
         ],
         "title": "ProjectOut",
@@ -2551,6 +2612,54 @@
               }
             ],
             "title": "Chatpassword"
+          },
+          "checklistEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistenabled"
+          },
+          "checklistItems": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistitems"
+          },
+          "checklistOrdered": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistordered"
+          },
+          "checklistVisible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistvisible"
           },
           "description": {
             "anyOf": [

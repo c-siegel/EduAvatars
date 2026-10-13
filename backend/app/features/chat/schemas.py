@@ -19,6 +19,10 @@ from app.features.auth.schemas import MAX_PASSWORD_BYTES
 # against the project owner's own LLM API key with no server-side size cap at all.
 _MAX_CHAT_MESSAGE_CHARS = 8000
 
+# A conversation-plan step's ID (see features/chat/checklist.py) — short and plain, because it
+# travels in every visitor's request history.
+CHECKLIST_ID_PATTERN = r"^[a-z0-9]{6,12}$"
+
 
 def _check_chat_message_length(value: str) -> str:
     if len(value) > _MAX_CHAT_MESSAGE_CHARS:
