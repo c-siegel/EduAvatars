@@ -36,8 +36,9 @@ import {
 } from "./metrics";
 import { runTurn, type Clip, type TurnContext, type TurnInput } from "./turnRunner";
 import styles from "./LatencyLab.module.css";
+import { sitePath } from "@/lib/basePath";
 
-const PARAKEET_MODEL_URL = "/models/parakeet-redux/v1/";
+const PARAKEET_MODEL_URL = sitePath("/models/parakeet-redux/v1/");
 const SETTINGS_KEY = "eduavatars.latencyLab";
 const DEFAULT_SCRIPT = "Hallo! Wer bist du?\nKannst du mir das in einem Satz erklären?";
 

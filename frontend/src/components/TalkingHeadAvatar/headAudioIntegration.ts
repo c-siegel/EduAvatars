@@ -1,4 +1,5 @@
 import type { TalkingHead } from "@met4citizen/talkinghead";
+import { sitePath } from "@/lib/basePath";
 
 // HeadAudio (frontend/public/headaudio/, see ATTRIBUTION.md) computes lipsync visemes in real time
 // directly from the audio being played — independent of language/TTS provider, without word
@@ -26,7 +27,7 @@ const nativeImport = new Function("specifier", "return import(specifier)") as (
 ) => Promise<{ HeadAudio: new (context: AudioContext, options: Record<string, unknown>) => HeadAudioNodeLike }>;
 
 export async function attachHeadAudio(head: TalkingHead): Promise<void> {
-  await head.audioCtx.audioWorklet.addModule("/headaudio/headworklet.mjs");
+  await head.audioCtx.audioWorklet.addModule(sitePath("/headaudio/headworklet.mjs"));
   // Runtime URL under public/, no Vite module graph entry (no npm package exists, see
   // ATTRIBUTION.md). The class is called "HeadAudio" (verified in the source) — the HeadAudio docs
   // themselves speak generically of an "audio worklet node", which is not an exact class name.
@@ -35,11 +36,11 @@ export async function attachHeadAudio(head: TalkingHead): Promise<void> {
   // instead of the document base. The browser then aborts with "Content at https://… may not load
   // or link to file:///…" — Chromium (and so the Playwright verification above) and WebKit use the
   // document base and were never affected. An absolute URL leaves the browser no base to choose.
-  const { HeadAudio } = await nativeImport(new URL("/headaudio/headaudio.mjs", location.origin).href);
+  const { HeadAudio } = await nativeImport(new URL(sitePath("/headaudio/headaudio.mjs"), location.origin).href);
   const headaudio: HeadAudioNodeLike = new HeadAudio(head.audioCtx, {
     parameterData: { vadGateActiveDb: -40, vadGateInactiveDb: -60 },
   });
-  await headaudio.loadModel("/headaudio/model-en-mixed.bin");
+  await headaudio.loadModel(sitePath("/headaudio/model-en-mixed.bin"));
   head.audioSpeechGainNode.connect(headaudio);
   headaudio.onvalue = (key, value) => {
     Object.assign(head.mtAvatar[key], { newvalue: value, needsUpdate: true });

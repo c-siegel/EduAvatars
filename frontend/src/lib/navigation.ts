@@ -4,6 +4,8 @@
 // its own useNavigate() result to setNavigate(); anything registered here runs before that (there
 // is none in practice) falls back to a full page load.
 
+import { sitePath } from "@/lib/basePath";
+
 type NavigateFn = (path: string, options?: { replace?: boolean }) => void;
 
 let navigateImpl: NavigateFn | null = null;
@@ -16,6 +18,6 @@ export function navigateTo(path: string, options?: { replace?: boolean }): void 
   if (navigateImpl) {
     navigateImpl(path, options);
   } else {
-    window.location.assign(path);
+    window.location.assign(sitePath(path));
   }
 }

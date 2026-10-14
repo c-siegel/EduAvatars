@@ -18,6 +18,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.providers import KEY_TYPE_LLM, KEY_TYPE_STT, KEY_TYPE_TTS, get_provider
+from app.core.urls import site_url
 from app.features.api_keys.models import UserApiKey
 from app.features.projects.models import Project
 
@@ -112,7 +113,7 @@ def browser_stt_model_url_for(project: Project) -> str | None:
     """
     if not (settings.browser_stt_enabled and project.stt_enabled and project.stt_browser_enabled):
         return None
-    return settings.browser_stt_model_url
+    return site_url(settings.browser_stt_model_url)
 
 
 def effective_api_base(key: UserApiKey) -> str | None:

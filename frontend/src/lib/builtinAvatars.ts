@@ -1,5 +1,6 @@
 import type { AvatarModel } from "@/api/avatarLibrary";
 import type { Project } from "@/types/project";
+import { sitePath } from "@/lib/basePath";
 
 // Bundled under frontend/public/avatars/ (see ATTRIBUTION.md there) instead of coming from the
 // user's own upload library — shown in every project's avatar grid so a project always has a
@@ -7,8 +8,8 @@ import type { Project } from "@/types/project";
 // thumbnails are static PNGs next to the .glb files), so the "builtin-" id prefix marks them. A
 // project stores one of these by name (builtinAvatar, the part after "builtin-").
 export const BUILTIN_AVATARS: AvatarModel[] = [
-  { id: "builtin-julia", name: "Julia", fileUrl: "/avatars/julia.glb", thumbnailUrl: "/avatars/julia.png", createdAt: "" },
-  { id: "builtin-david", name: "David", fileUrl: "/avatars/david.glb", thumbnailUrl: "/avatars/david.png", createdAt: "" },
+  { id: "builtin-julia", name: "Julia", fileUrl: sitePath("/avatars/julia.glb"), thumbnailUrl: sitePath("/avatars/julia.png"), createdAt: "" },
+  { id: "builtin-david", name: "David", fileUrl: sitePath("/avatars/david.glb"), thumbnailUrl: sitePath("/avatars/david.png"), createdAt: "" },
 ];
 
 // What the chat falls back to when a project has neither a library nor a built-in avatar (see

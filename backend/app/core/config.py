@@ -201,8 +201,28 @@ class Settings(BaseSettings):
     sidecar starts also loads its model, which takes over a minute on a typical CPU.
     """
 
+    # ==================== PUBLIC URL PATH ====================
+
+    base_path: str = ""
+    """
+    URL path prefix the whole site is served under, e.g. "/lola" for https://host.example/lola/.
+    Empty (the default) when the site has its own domain.
+
+    The backend's own routes stay at /api/v1 (Caddy strips the prefix before proxying, see
+    docker/Caddyfile); this only goes into the URLs the API hands out for the browser to load
+    (app/core/urls.py), which must carry the prefix to reach this site at all. The web container
+    reads the same BASE_PATH from .env, so both always agree.
+    """
+
+    @field_validator("base_path")
+    @classmethod
+    def _normalize_base_path(cls, v: str) -> str:
+        """Accept "lola", "/lola" and "/lola/" alike: every URL is built as base_path + "/…"."""
+        v = v.strip().strip("/")
+        return f"/{v}" if v else ""
+
     # ==================== EMAIL & PASSWORD RESET SETTINGS ====================
-    
+
     # For password reset flow (link in email text) and SMTP sending.
     
     frontend_base_url: str = "http://localhost:5173"
