@@ -122,6 +122,9 @@ jobs:
   build-and-push:
     needs: [backend-tests, rag-tests, rag-eval-tests, frontend-build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         include:
