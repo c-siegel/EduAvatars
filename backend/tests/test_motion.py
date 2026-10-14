@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from conftest import create_project, parse_sse
 
-from app.features.chat.motion import MOTION_PROMPT, MOTIONS, MotionMark, extract_motions
+from app.features.chat.motion import MOTION_PROMPT, MOTIONS, MotionMark, extract_markers
 from app.features.chat.streaming import SentenceChunker, chunk_text
 from app.features.projects.export import parse_project_yaml
 
@@ -26,6 +26,12 @@ CLEAN_REPLY = (
 
 
 # --- Parsing ---
+
+
+def extract_motions(text: str) -> tuple[str, list[MotionMark]]:
+    """extract_markers without the conversation-plan ticks, which test_checklist.py covers."""
+    clean, marks, _ = extract_markers(text)
+    return clean, marks
 
 
 def test_extract_motions_removes_markers_and_records_positions() -> None:

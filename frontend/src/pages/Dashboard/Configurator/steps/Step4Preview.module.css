@@ -51,6 +51,13 @@
   font-size: 1rem;
 }
 
+.checklist {
+  flex-shrink: 0;
+  max-height: 40%;
+  overflow-y: auto;
+  margin: var(--space-3) var(--space-4) 0;
+}
+
 .thread {
   flex: 1;
   overflow-y: auto;

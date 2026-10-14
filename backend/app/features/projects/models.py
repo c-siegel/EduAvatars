@@ -157,6 +157,17 @@ class Project(SQLModel, table=True):
     # ever read whole, so a join table would add queries without adding anything. Kept clean by
     # features/knowledge/service.py when a knowledge base is deleted.
     knowledge_base_ids_json: str = "[]"
+    # Conversation plan (see features/chat/checklist.py): steps the avatar ticks off with
+    # "::done_N::" / "::undone_N::" markers. Off by default, like every opt-in teaching aid.
+    checklist_enabled: bool = False
+    # Whether students see the plan in the public chat. Item notes are never shown either way.
+    checklist_visible: bool = False
+    # True: the steps are meant to be worked through in order; False: in any order.
+    checklist_ordered: bool = True
+    # The steps as a JSON list of {"id", "title", "note"} — like knowledge_base_ids_json, a short
+    # list only ever read whole. The IDs are stable across reordering (the model only sees
+    # positions), so ticks stored in a running chat keep pointing at the right step.
+    checklist_json: str = "[]"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
@@ -172,6 +183,17 @@ class Project(SQLModel, table=True):
         except ValueError:
             return []
         return [i for i in ids if isinstance(i, str)] if isinstance(ids, list) else []
+
+    @property
+    def checklist_items(self) -> list[dict]:
+        """The conversation plan's steps (see checklist_json), each {"id", "title", "note"}."""
+        try:
+            items = json.loads(self.checklist_json or "[]")
+        except ValueError:
+            return []
+        if not isinstance(items, list):
+            return []
+        return [i for i in items if isinstance(i, dict) and isinstance(i.get("id"), str) and isinstance(i.get("title"), str)]
 
     @property
     def start_audio_url(self) -> str | None:

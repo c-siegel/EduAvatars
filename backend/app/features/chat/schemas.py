@@ -7,7 +7,7 @@ voice-message transcription routes.
 
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
@@ -19,11 +19,28 @@ from app.features.auth.schemas import MAX_PASSWORD_BYTES
 # against the project owner's own LLM API key with no server-side size cap at all.
 _MAX_CHAT_MESSAGE_CHARS = 8000
 
+# A conversation-plan step's ID (see features/chat/checklist.py) — short and plain, because it
+# travels in every visitor's request history.
+CHECKLIST_ID_PATTERN = r"^[a-z0-9]{6,12}$"
+
 
 def _check_chat_message_length(value: str) -> str:
     if len(value) > _MAX_CHAT_MESSAGE_CHARS:
         raise ValueError(ErrorCode.CHAT_MESSAGE_TOO_LONG)
     return value
+
+
+# At most one tick per step per message is meaningful; this only stops a client from padding its
+# history (see ChatHistoryEntry.checks).
+MAX_CHECKS_PER_MESSAGE = 20
+
+
+class ChecklistCheck(CamelModel):
+    """A conversation-plan step ticked off (done) or taken back in an assistant message, see
+    features/chat/checklist.py."""
+
+    id: str = Field(pattern=CHECKLIST_ID_PATTERN)
+    done: bool
 
 
 class ChatHistoryEntry(CamelModel):
@@ -37,6 +54,12 @@ class ChatHistoryEntry(CamelModel):
     # frontend never sends one with its request history. Saved conversations from before this
     # field existed also don't have one.
     timestamp: str | None = None
+    # The plan ticks the server returned with this assistant message — echoed back by the
+    # browser so the progress can be replayed without any server-side state (see
+    # features/chat/checklist.py). Visitor-controlled like the rest of the history, which is
+    # fine: forging ticks only changes the visitor's own guidance, and the saved transcript holds
+    # what the model really wrote.
+    checks: list[ChecklistCheck] = Field(default=[], max_length=MAX_CHECKS_PER_MESSAGE)
 
     # Caps each entry the same way as the current message (see ChatMessageIn) — history is
     # otherwise just as visitor-controlled (the frontend echoes it back on every request) and
@@ -45,6 +68,16 @@ class ChatHistoryEntry(CamelModel):
     @classmethod
     def validate_content_length(cls, value: str) -> str:
         return _check_chat_message_length(value)
+
+
+class PublicChecklistItemOut(CamelModel):
+    id: str
+    title: str
+
+
+class PublicChecklistOut(CamelModel):
+    ordered: bool
+    items: list[PublicChecklistItemOut]
 
 
 class PublicProjectOut(CamelModel):
@@ -75,6 +108,9 @@ class PublicProjectOut(CamelModel):
     # Random thinking gestures while the reply is generated (see
     # features/projects/models.py::Project.thinking_motions_enabled).
     thinking_motions_enabled: bool = False
+    # The conversation plan as students see it — None when it is off, empty or not visible to
+    # students (see features/chat/public_router.py::load_tutor). Never carries the steps' notes.
+    checklist: PublicChecklistOut | None = None
     # Already combined server-side with the respective checkbox (see
     # features/chat/public_router.py::load_tutor) — not enabled or without a URL both end up as None here, the
     # anonymous page never needs to know about the checkbox itself.
@@ -153,6 +189,9 @@ class ChatMessageOut(CamelModel):
     # Gestures for the avatar, in reply order (see features/chat/motion.py) — empty when the
     # project has motion off.
     motions: list[str] = []
+    # Plan steps ticked off or taken back in this reply (see features/chat/checklist.py) — the
+    # browser stores them on the message and echoes them back in ChatHistoryEntry.checks.
+    checks: list[ChecklistCheck] = []
 
 
 class TranscriptionOut(CamelModel):

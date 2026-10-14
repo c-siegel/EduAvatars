@@ -98,6 +98,15 @@
     "loading": "Loading survey …",
     "skip": "Skip"
   },
+  "checklist": {
+    "title": "Plan",
+    "progress": "{{done}} of {{total}}",
+    "allDone": "All done",
+    "done": "(done)",
+    "open": "(open)",
+    "stepDone": "Step done: {{title}}.",
+    "stepUndone": "Step reopened: {{title}}."
+  },
   "publicChat": {
     "unavailable": "This chat isn't available.",
     "endChat": "End chat",
@@ -287,6 +296,28 @@
     }
   },
   "configurator": {
+    "checklist": {
+      "title": "Conversation plan",
+      "intro": "Give the conversation a structure: list the steps the avatar should work through with the student. The avatar ticks a step off as soon as it is achieved, and can take a tick back if it turns out the student hasn't got it yet. The current progress is sent to the language model with every message, so it keeps track even in long conversations.",
+      "enabled": "Use a conversation plan",
+      "orderLabel": "Order of the steps",
+      "ordered": "In this order",
+      "orderedHint": "The avatar works through the steps one after the other.",
+      "anyOrder": "In any order",
+      "anyOrderHint": "The avatar ticks steps off whenever they come up.",
+      "visible": "Show the plan to students",
+      "visibleHint": "Students see the step titles and which ones are done. Notes are never shown on the page — the avatar is told to keep them to itself, but a determined student might still get it to reveal one, so don't rely on them for graded answers.",
+      "stepPlaceholder": "e.g. Explain photosynthesis",
+      "stepTitle": "Step {{number}}",
+      "noteToggle": "Note for the avatar on step {{number}}",
+      "noteLabel": "Note for the avatar on step {{number}}",
+      "notePlaceholder": "For the avatar, e.g. what counts as achieved",
+      "moveUp": "Move step {{number}} up",
+      "moveDown": "Move step {{number}} down",
+      "remove": "Remove step {{number}}",
+      "empty": "No steps yet. Add the first one.",
+      "add": "Add step"
+    },
     "knowledge": {
       "title": "Knowledge",
       "intro": "Let the avatar answer from your own documents. Before each reply, the passages that best match the student's question are looked up and handed to the language model.",
@@ -408,8 +439,6 @@
     },
     "step3": {
       "defaultPreprompt": "You are a helpful, AI-powered learning assistant.\n\nAnswer in an age-appropriate, patient, and encouraging way. If you don't know something, say so honestly instead of guessing.",
-      "targetGroup": "Target group / grade level",
-      "targetGroupPlaceholder": "e.g. Grade 7b",
       "resetToDefault": "Reset to default",
       "preprompt": "Preprompt / role",
       "prepromptRawTab": "Raw",
@@ -566,7 +595,11 @@
       "motions": "Gestures:",
       "motionAtStart": "at the start",
       "motionAtEnd": "at the end",
-      "motionBefore": "before “{{text}}”"
+      "motionBefore": "before “{{text}}”",
+      "checks": "Plan:",
+      "checkDone": "✓ {{step}}",
+      "checkUndone": "↺ {{step}} reopened",
+      "deletedStep": "deleted step"
     },
     "pagination": {
       "zero": "0 of 0",
@@ -1395,6 +1428,7 @@
     "PROJECT_NOT_FOUND": "Project not found.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Project not found or not published.",
     "INVALID_BUILTIN_AVATAR": "Unknown default avatar.",
+    "CHECKLIST_INVALID": "Every step of the conversation plan needs a title.",
     "PROJECT_IMPORT_INVALID": "This file isn't a valid LOLA project export.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "File is too large (256 KB maximum).",
     "CONVERSATION_NOT_FOUND": "Conversation not found.",

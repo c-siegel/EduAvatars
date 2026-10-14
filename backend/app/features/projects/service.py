@@ -137,6 +137,10 @@ def update_project(session: Session, project: Project, data: dict) -> Project:
         if ids is not None:
             # dict.fromkeys: de-duplicated, order kept.
             project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(ids)))
+    if "checklist_items" in data:
+        items = data.pop("checklist_items")
+        if items is not None:
+            project.checklist_json = json.dumps(items)
     for field, value in data.items():
         if value is not None or field in _CLEARABLE_FIELDS:
             setattr(project, field, value)
@@ -188,9 +192,12 @@ def create_project(session: Session, user_id: str, data: ProjectUpdate) -> Proje
     create_data = data.model_dump(exclude_unset=True)
     chat_password = create_data.pop("chat_password", _NO_CHAT_PASSWORD_SENT)
     knowledge_base_ids = create_data.pop("knowledge_base_ids", None)
+    checklist_items = create_data.pop("checklist_items", None)
     project = Project(user_id=user_id, **create_data)
     if knowledge_base_ids:
         project.knowledge_base_ids_json = json.dumps(list(dict.fromkeys(knowledge_base_ids)))
+    if checklist_items:
+        project.checklist_json = json.dumps(checklist_items)
     if chat_password is not _NO_CHAT_PASSWORD_SENT:
         set_or_clear_chat_password(project, chat_password)
     sync_llm_model(session, project)

@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Send } from "lucide-react";
@@ -7,8 +7,10 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { ChatBubble, TypingBubble } from "@/components/ChatBubble";
+import { ChecklistCard } from "@/components/ChecklistCard";
 import { TalkingHeadAvatar, type TalkingHeadAvatarHandle } from "@/components/TalkingHeadAvatar";
 import { projectsApi } from "@/api/projects";
+import { doneStepIds } from "@/lib/checklist";
 import type { ChatMessage } from "@/types/chat";
 import styles from "./Step4Preview.module.css";
 
@@ -22,6 +24,9 @@ interface Step4Props {
   // The saved setting, like everything else the preview runs on (see below).
   motionEnabled: boolean;
   thinkingMotionsEnabled: boolean;
+  // The saved conversation plan, null when it is off or empty. Shown to the teacher here even
+  // when students won't see it, so they can follow what the avatar ticks off.
+  checklist: { ordered: boolean; items: { id: string; title: string }[] } | null;
   hasUnsavedChanges: boolean;
 }
 
@@ -36,19 +41,21 @@ export function Step4Preview({
   ttsEnabled,
   motionEnabled,
   thinkingMotionsEnabled,
+  checklist,
   hasUnsavedChanges,
 }: Step4Props) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const avatarRef = useRef<TalkingHeadAvatarHandle>(null);
+  const doneIds = useMemo(() => doneStepIds(messages), [messages]);
 
   const sendMutation = useMutation({
     mutationFn: ({ message, history }: { message: string; history: ChatMessage[] }) =>
       projectsApi.previewMessage(projectId, message, history),
     onSuccess: async (res) => {
       avatarRef.current?.stopThinking();
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.reply, checks: res.checks }]);
       avatarRef.current?.playMotions(res.motions);
       if (res.audioBase64) {
         // Same reasoning as PublicChat/index.tsx's plain path: decode+speak+wait instead of the
@@ -101,6 +108,16 @@ export function Step4Preview({
           <h3 className={styles.headerTitle}>{title || t("configurator.step4.livePreview")}</h3>
           <Badge>{t("configurator.step4.testBadge")}</Badge>
         </header>
+
+        {checklist && (
+          <ChecklistCard
+            items={checklist.items}
+            ordered={checklist.ordered}
+            doneIds={doneIds}
+            variant="inline"
+            className={styles.checklist}
+          />
+        )}
 
         <div className={styles.thread}>
           <ChatBubble

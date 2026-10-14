@@ -10,6 +10,7 @@ round-trip.
 """
 
 import re
+import secrets
 from datetime import datetime
 from typing import Literal
 
@@ -18,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.core.error_codes import ErrorCode
 from app.core.schema import CamelModel
 from app.features.auth.schemas import MAX_PASSWORD_BYTES
-from app.features.chat.schemas import ChatHistoryEntry
+from app.features.chat.schemas import CHECKLIST_ID_PATTERN, ChatHistoryEntry, ChecklistCheck
 
 # A shared classroom PIN, not an account password — short and memorable is fine, unlike the
 # stricter 10-char+digit rule enforced on User passwords (features/auth/schemas.py).
@@ -58,6 +59,49 @@ def _check_builtin_avatar(value: str | None) -> str | None:
 
 # Generous: the default is ~900 characters; this only stops absurd inputs.
 MAX_MOTION_PROMPT_LENGTH = 4000
+
+# A conversation plan (see features/chat/checklist.py) is a handful of steps; the caps keep the
+# part of the system prompt it adds on every turn bounded.
+MAX_CHECKLIST_ITEMS = 20
+MAX_CHECKLIST_TITLE_LENGTH = 120
+MAX_CHECKLIST_NOTE_LENGTH = 1000
+
+
+class ChecklistItem(CamelModel):
+    """One step of a project's conversation plan."""
+
+    # None on a step the editor just added: the server assigns one (see _normalize_checklist).
+    id: str | None = Field(default=None, pattern=CHECKLIST_ID_PATTERN)
+    # Shown to students (when the plan is visible) and to the model.
+    title: str = Field(max_length=MAX_CHECKLIST_TITLE_LENGTH)
+    # Only the model sees it, e.g. the expected answers — never sent to the public page.
+    note: str | None = Field(default=None, max_length=MAX_CHECKLIST_NOTE_LENGTH)
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError(ErrorCode.CHECKLIST_INVALID)
+        return value.strip()
+
+    @field_validator("note")
+    @classmethod
+    def blank_note_is_none(cls, value: str | None) -> str | None:
+        return value.strip() or None if value else None
+
+
+def _normalize_checklist(items: list[ChecklistItem] | None) -> list[ChecklistItem] | None:
+    """Give new steps an ID and reject duplicate ones — two steps sharing an ID would tick
+    each other off."""
+    if items is None:
+        return None
+    for item in items:
+        if item.id is None:
+            item.id = secrets.token_hex(4)
+    if len({item.id for item in items}) != len(items):
+        raise ValueError(ErrorCode.CHECKLIST_INVALID)
+    return items
+
 
 class ProjectOut(CamelModel):
     id: str
@@ -109,6 +153,10 @@ class ProjectOut(CamelModel):
     knowledge_mode: KnowledgeMode
     knowledge_top_k: int
     knowledge_base_ids: list[str]
+    checklist_enabled: bool
+    checklist_visible: bool
+    checklist_ordered: bool
+    checklist_items: list[ChecklistItem]
     created_at: datetime
 
 
@@ -157,11 +205,21 @@ class ProjectUpdate(CamelModel):
     # Replaces the whole list; only the owner's own knowledge bases are accepted (checked in
     # features/projects/service.py).
     knowledge_base_ids: list[str] | None = Field(default=None, max_length=MAX_KNOWLEDGE_BASES_PER_PROJECT)
+    checklist_enabled: bool | None = None
+    checklist_visible: bool | None = None
+    checklist_ordered: bool | None = None
+    # Replaces the whole plan (stored as Project.checklist_json, see service.py::update_project).
+    checklist_items: list[ChecklistItem] | None = Field(default=None, max_length=MAX_CHECKLIST_ITEMS)
 
     @field_validator("builtin_avatar")
     @classmethod
     def validate_builtin_avatar(cls, value: str | None) -> str | None:
         return _check_builtin_avatar(value)
+
+    @field_validator("checklist_items")
+    @classmethod
+    def validate_checklist_items(cls, value: list[ChecklistItem] | None) -> list[ChecklistItem] | None:
+        return _normalize_checklist(value)
 
     @field_validator("temperature")
     @classmethod
@@ -199,8 +257,11 @@ class SystemPromptOut(CamelModel):
     motion_customized: bool
     # False when the project's layout or settings switch gestures off — motion_prompt isn't sent then.
     motion_active: bool
-    # preprompt + motion prompt exactly as joined for the model (without knowledge-base excerpts,
-    # which are added per message).
+    # The conversation plan as sent on a chat's first turn (no step done yet; the status line
+    # changes as the chat goes on), None when the plan is off or empty.
+    checklist_prompt: str | None = None
+    # preprompt + motion prompt + plan exactly as joined for the model (without knowledge-base
+    # excerpts, which are added per message).
     full: str
 
 
@@ -222,6 +283,8 @@ class PreviewMessageResponse(CamelModel):
     content_type: str | None = None
     # Avatar gestures, see features/chat/schemas.py::ChatMessageOut.motions.
     motions: list[str] = []
+    # Plan ticks, see features/chat/schemas.py::ChatMessageOut.checks.
+    checks: list[ChecklistCheck] = []
 
 
 class ProjectExportData(BaseModel):
@@ -263,6 +326,10 @@ class ProjectExportData(BaseModel):
     # imported project starts with knowledge_mode "off" (see export.py::import_project).
     knowledge_mode: KnowledgeMode = "off"
     knowledge_top_k: int = Field(default=4, ge=1, le=MAX_KNOWLEDGE_TOP_K)
+    checklist_enabled: bool = False
+    checklist_visible: bool = False
+    checklist_ordered: bool = True
+    checklist_items: list[ChecklistItem] = Field(default=[], max_length=MAX_CHECKLIST_ITEMS)
 
     @model_validator(mode="before")
     @classmethod
@@ -277,6 +344,11 @@ class ProjectExportData(BaseModel):
     @classmethod
     def validate_builtin_avatar(cls, value: str | None) -> str | None:
         return _check_builtin_avatar(value)
+
+    @field_validator("checklist_items")
+    @classmethod
+    def validate_checklist_items(cls, value: list[ChecklistItem]) -> list[ChecklistItem]:
+        return _normalize_checklist(value)
 
     @field_validator("temperature")
     @classmethod
