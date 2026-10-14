@@ -8,10 +8,15 @@ deployments keep working after the rename.
 required to use it, once someone has set it up for you.**
 
 LOLA is a web app for building custom AI characters that students, visitors, or
-colleagues can talk to in a browser, by typing or by speaking out loud. A teacher (or anyone
+colleagues can talk to in a browser, by typing or by speaking out loud. A researcher (or anyone
 with an account) creates a "project": a persona described in plain language, backed by an AI
 language model, with a 3D face and a voice. Publishing a project turns it into a public link —
 visitors need no account and no technical knowledge to use it.
+
+> **Research tool first.** LOLA is currently built primarily for **education researchers**, not
+> for everyday classroom use. It still needs proof testing and a didactical evaluation, so
+> don't rely on it for teaching or assessment without that groundwork. Teachers are welcome to
+> try it, ideally together with a research team.
 
 <p align="center">
   <img src="docs/screenshots/public-chat.svg" alt="Screenshot placeholder: a visitor talking to a published avatar" width="720">
@@ -19,13 +24,15 @@ visitors need no account and no technical knowledge to use it.
 
 ## Who is this for?
 
+- **Education researchers and institutions (primary audience)** — self-host to keep full
+  control over student data, export anonymized conversation logs for study, evaluate the
+  didactical value of avatar-based learning, and compare answer quality/latency/cost across
+  several AI providers side by side. See [Using LOLA as a researcher](#using-lola-as-a-researcher).
 - **Teachers and instructors** — build a subject-matter tutor, an exam-prep quiz partner, a
   historical figure students can interview, or an always-available FAQ desk for your course.
-  See [Using LOLA as a teacher](#using-lola-as-a-teacher) below — no installation
-  needed if your institution already runs an instance.
-- **Researchers and institutions** — self-host to keep full control over student data, export
-  anonymized conversation logs for study, and compare answer quality/latency/cost across
-  several AI providers side by side. See [Using LOLA as a researcher](#using-lola-as-a-researcher).
+  This use is still experimental: the app has not been proof-tested in regular teaching or
+  didactically evaluated yet. See [Using LOLA as a teacher](#using-lola-as-a-teacher) below —
+  no installation needed if your institution already runs an instance.
 - **Developers and IT admins** — a small, self-contained FastAPI + React stack you can run
   locally in minutes or deploy with Docker. See [Deployment](#deployment).
 
@@ -74,8 +81,10 @@ visitors need no account and no technical knowledge to use it.
 
 ## Using LOLA as a teacher
 
-If someone else (your IT department, your institution) already runs a LOLA instance for
-you, none of the setup below applies — just:
+LOLA has not yet been proof-tested in regular teaching or didactically evaluated, so treat
+classroom use as a pilot, ideally together with a research team. If someone else (your IT
+department, your institution) already runs a LOLA instance for you, none of the setup below
+applies — just:
 
 1. **Log in** (or register, if open registration is enabled) at your instance's web address.
 2. **Create a project** from the dashboard: give it a name, pick an avatar and a background
@@ -128,6 +137,10 @@ text or voice, view analytics — works end to end and is what this repo's defau
 is built around. Automated test coverage is still thin (see
 [backend/README.md](backend/README.md#tests)), and some rougher edges (error messages, mobile
 layout, provider coverage) are still being smoothed out. Expect it to keep evolving.
+
+LOLA is primarily a research instrument for now. It still needs proof testing in real settings
+and a didactical evaluation of whether and how avatar-based conversations support learning;
+until then, its main purpose is to make that research possible.
 
 Backend tests run in CI on every tagged release, and Docker images are only published if they
 (and the frontend build) pass — see [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml).
