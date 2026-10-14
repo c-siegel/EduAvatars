@@ -52,11 +52,26 @@ class TranscriptMotionOut(CamelModel):
     offset: int
 
 
+class TranscriptCheckOut(CamelModel):
+    """A conversation-plan step the LLM ticked off or took back in a reply (see
+    features/chat/checklist.py)."""
+
+    id: str
+    done: bool
+    # Character position in the message content where the marker stood.
+    offset: int
+    # The step's current title and position in the plan; None once the step has been deleted.
+    title: str | None
+    number: int | None
+
+
 class TranscriptMessageOut(ChatHistoryEntry):
     # Only on assistant messages of projects with a knowledge base; None otherwise.
     sources: list[TranscriptSourceOut] | None = None
     # Only on assistant messages in which the LLM used gestures; None otherwise.
     motions: list[TranscriptMotionOut] | None = None
+    # Only on assistant messages in which the LLM ticked plan steps; None otherwise.
+    checks: list[TranscriptCheckOut] | None = None
 
 
 class ConversationDetailOut(CamelModel):

@@ -98,6 +98,15 @@
     "loading": "Umfrage wird geladen …",
     "skip": "Überspringen"
   },
+  "checklist": {
+    "title": "Plan",
+    "progress": "{{done}} von {{total}}",
+    "allDone": "Alles erledigt",
+    "done": "(erledigt)",
+    "open": "(offen)",
+    "stepDone": "Schritt erledigt: {{title}}.",
+    "stepUndone": "Schritt wieder offen: {{title}}."
+  },
   "publicChat": {
     "unavailable": "Dieser Chat ist nicht verfügbar.",
     "endChat": "Chat beenden",
@@ -287,6 +296,28 @@
     }
   },
   "configurator": {
+    "checklist": {
+      "title": "Gesprächsplan",
+      "intro": "Gib dem Gespräch eine Struktur: Liste die Schritte auf, die der Avatar mit den Schüler:innen durchgehen soll. Der Avatar hakt einen Schritt ab, sobald er erreicht ist, und kann den Haken wieder entfernen, wenn sich zeigt, dass es doch noch nicht sitzt. Der aktuelle Stand wird bei jeder Nachricht an das Sprachmodell geschickt, damit es auch in langen Gesprächen den Überblick behält.",
+      "enabled": "Gesprächsplan verwenden",
+      "orderLabel": "Reihenfolge der Schritte",
+      "ordered": "In dieser Reihenfolge",
+      "orderedHint": "Der Avatar geht die Schritte nacheinander durch.",
+      "anyOrder": "In beliebiger Reihenfolge",
+      "anyOrderHint": "Der Avatar hakt Schritte ab, sobald sie sich ergeben.",
+      "visible": "Plan den Schüler:innen zeigen",
+      "visibleHint": "Schüler:innen sehen die Titel der Schritte und welche erledigt sind. Notizen werden nie auf der Seite angezeigt – der Avatar soll sie für sich behalten, aber hartnäckige Schüler:innen könnten ihn dazu bringen, eine zu verraten. Verlass dich bei bewerteten Antworten also nicht darauf.",
+      "stepPlaceholder": "z. B. Fotosynthese erklären",
+      "stepTitle": "Schritt {{number}}",
+      "noteToggle": "Notiz für den Avatar zu Schritt {{number}}",
+      "noteLabel": "Notiz für den Avatar zu Schritt {{number}}",
+      "notePlaceholder": "Für den Avatar, z. B. wann der Schritt erreicht ist",
+      "moveUp": "Schritt {{number}} nach oben",
+      "moveDown": "Schritt {{number}} nach unten",
+      "remove": "Schritt {{number}} entfernen",
+      "empty": "Noch keine Schritte. Füge den ersten hinzu.",
+      "add": "Schritt hinzufügen"
+    },
     "knowledge": {
       "title": "Wissen",
       "intro": "Lass den Avatar aus deinen eigenen Dokumenten antworten. Vor jeder Antwort werden die Abschnitte gesucht, die am besten zur Frage passen, und dem Sprachmodell mitgegeben.",
@@ -408,8 +439,6 @@
     },
     "step3": {
       "defaultPreprompt": "Du bist ein hilfreicher, KI-gestützter Lernassistent.\n\nAntworte kindgerecht, geduldig und ermutigend. Wenn du etwas nicht weißt, sag das ehrlich, anstatt zu raten.",
-      "targetGroup": "Zielgruppe / Klassenstufe",
-      "targetGroupPlaceholder": "z. B. Klasse 7b",
       "resetToDefault": "Auf Standard zurücksetzen",
       "preprompt": "Preprompt / Rolle",
       "prepromptRawTab": "Rohtext",
@@ -566,7 +595,11 @@
       "motions": "Gesten:",
       "motionAtStart": "am Anfang",
       "motionAtEnd": "am Ende",
-      "motionBefore": "vor „{{text}}“"
+      "motionBefore": "vor „{{text}}“",
+      "checks": "Plan:",
+      "checkDone": "✓ {{step}}",
+      "checkUndone": "↺ {{step}} wieder offen",
+      "deletedStep": "gelöschter Schritt"
     },
     "pagination": {
       "zero": "0 von 0",
@@ -1395,6 +1428,7 @@
     "PROJECT_NOT_FOUND": "Projekt nicht gefunden.",
     "PROJECT_NOT_FOUND_OR_UNPUBLISHED": "Projekt nicht gefunden oder nicht veröffentlicht.",
     "INVALID_BUILTIN_AVATAR": "Unbekannter Standard-Avatar.",
+    "CHECKLIST_INVALID": "Jeder Schritt des Gesprächsplans braucht einen Titel.",
     "PROJECT_IMPORT_INVALID": "Diese Datei ist kein gültiger LOLA-Projektexport.",
     "PROJECT_IMPORT_FILE_TOO_LARGE": "Datei ist zu groß (maximal 256 KB).",
     "CONVERSATION_NOT_FOUND": "Gespräch nicht gefunden.",

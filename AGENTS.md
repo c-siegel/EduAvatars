@@ -5,7 +5,8 @@ contributors are welcome to read it too. Keep it short: link to the READMEs inst
 
 ## What this is
 
-LOLA lets teachers and researchers build a talking 3D avatar (persona = system prompt + LLM
+LOLA lets researchers (primarily education researchers; teachers are a secondary audience until the
+app has been proof-tested and didactically evaluated) build a talking 3D avatar (persona = system prompt + LLM
 + voice + 3D face) and publish it as a public link. Visitors — usually students, without an
 account — chat with it by typing or speaking. Afterwards teachers can review the conversations in
 an analytics dashboard.

@@ -1,4 +1,4 @@
-import type { ChatLayout, KnowledgeMode, SpokenLanguage, SttServerEngine } from "@/types/project";
+import type { ChatLayout, ChecklistItem, KnowledgeMode, SpokenLanguage, SttServerEngine } from "@/types/project";
 
 // Local wizard state for screen 1e.
 export interface ConfiguratorDraft {
@@ -37,6 +37,10 @@ export interface ConfiguratorDraft {
   knowledgeMode: KnowledgeMode;
   knowledgeTopK: number;
   knowledgeBaseIds: string[];
+  checklistEnabled: boolean;
+  checklistVisible: boolean;
+  checklistOrdered: boolean;
+  checklistItems: ChecklistItem[];
 }
 
 export interface StepProps {

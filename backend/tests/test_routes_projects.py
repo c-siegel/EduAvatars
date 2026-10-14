@@ -146,6 +146,7 @@ def test_preview_message(client, chat_project, fake_ai):
         "audioBase64": base64.b64encode(TTS_BYTES).decode(),
         "contentType": "audio/mpeg",
         "motions": [],
+        "checks": [],
     }
     assert fake_ai.completion_calls[-1]["messages"][-2:] == [
         {"role": "assistant", "content": "Hallo"},

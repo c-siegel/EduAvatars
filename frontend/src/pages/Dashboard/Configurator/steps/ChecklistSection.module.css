@@ -1,0 +1,134 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-default);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.hint {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.order {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.order input {
+  margin-top: 0.25rem;
+}
+
+.order strong {
+  font-weight: 500;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Wraps on its own once the title would get narrower than ~12rem (phone, or a narrow
+   configurator column): the buttons then move to a line of their own, right-aligned. */
+.itemRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.number {
+  min-width: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.titleInput {
+  flex: 1 1 12rem;
+}
+
+.titleInput,
+.noteInput {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: inherit;
+  font: inherit;
+}
+
+.noteInput {
+  margin-left: calc(1.75rem + var(--space-2));
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.itemActions {
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--surface-sunken);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.iconButton[aria-pressed="true"] {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}

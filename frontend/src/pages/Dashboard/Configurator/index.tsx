@@ -8,6 +8,7 @@ import { Callout } from "@/components/Callout";
 import { Toast } from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
 import { projectsApi } from "@/api/projects";
+import { normalizeChecklist } from "@/lib/checklist";
 import type { Project } from "@/types/project";
 import { Step1Appearance } from "./steps/Step1Appearance";
 import { Step2Technical } from "./steps/Step2Technical";
@@ -64,6 +65,10 @@ function toDraft(project: Project): ConfiguratorDraft {
     knowledgeMode: project.knowledgeMode,
     knowledgeTopK: project.knowledgeTopK,
     knowledgeBaseIds: project.knowledgeBaseIds,
+    checklistEnabled: project.checklistEnabled,
+    checklistVisible: project.checklistVisible,
+    checklistOrdered: project.checklistOrdered,
+    checklistItems: project.checklistItems,
   };
 }
 
@@ -103,7 +108,11 @@ function isDirty(draft: ConfiguratorDraft, project: Project): boolean {
     draft.streamingEnabled !== project.streamingEnabled ||
     draft.knowledgeMode !== project.knowledgeMode ||
     draft.knowledgeTopK !== project.knowledgeTopK ||
-    draft.knowledgeBaseIds.join() !== project.knowledgeBaseIds.join()
+    draft.knowledgeBaseIds.join() !== project.knowledgeBaseIds.join() ||
+    draft.checklistEnabled !== project.checklistEnabled ||
+    draft.checklistVisible !== project.checklistVisible ||
+    draft.checklistOrdered !== project.checklistOrdered ||
+    JSON.stringify(normalizeChecklist(draft.checklistItems)) !== JSON.stringify(project.checklistItems)
   );
 }
 
@@ -169,6 +178,10 @@ export function ConfiguratorPage() {
         knowledgeMode: data.knowledgeMode,
         knowledgeTopK: data.knowledgeTopK,
         knowledgeBaseIds: data.knowledgeBaseIds,
+        checklistEnabled: data.checklistEnabled,
+        checklistVisible: data.checklistVisible,
+        checklistOrdered: data.checklistOrdered,
+        checklistItems: normalizeChecklist(data.checklistItems),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(["projects", projectId], updated);
@@ -250,6 +263,11 @@ export function ConfiguratorPage() {
             ttsEnabled={project.ttsEnabled}
             motionEnabled={project.motionEnabled}
             thinkingMotionsEnabled={project.thinkingMotionsEnabled}
+            checklist={
+              project.checklistEnabled && project.checklistItems.length
+                ? { ordered: project.checklistOrdered, items: project.checklistItems }
+                : null
+            }
             hasUnsavedChanges={isDirty(draft, project)}
           />
         )}

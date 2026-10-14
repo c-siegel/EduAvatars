@@ -794,6 +794,15 @@
       },
       "ChatHistoryEntry": {
         "properties": {
+          "checks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChecklistCheck"
+            },
+            "maxItems": 20,
+            "title": "Checks",
+            "type": "array"
+          },
           "content": {
             "title": "Content",
             "type": "string"
@@ -858,6 +867,14 @@
               }
             ],
             "title": "Audiobase64"
+          },
+          "checks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChecklistCheck"
+            },
+            "title": "Checks",
+            "type": "array"
           },
           "contentType": {
             "anyOf": [
@@ -935,6 +952,63 @@
           "password"
         ],
         "title": "ChatUnlockRequest",
+        "type": "object"
+      },
+      "ChecklistCheck": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "id": {
+            "pattern": "^[a-z0-9]{6,12}$",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "done"
+        ],
+        "title": "ChecklistCheck",
+        "type": "object"
+      },
+      "ChecklistItem": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9]{6,12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "title": {
+            "maxLength": 120,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ChecklistItem",
         "type": "object"
       },
       "ConversationDetailOut": {
@@ -1997,6 +2071,14 @@
             ],
             "title": "Audiobase64"
           },
+          "checks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChecklistCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
           "contentType": {
             "anyOf": [
               {
@@ -2133,6 +2215,25 @@
             ],
             "title": "Chatlayout",
             "type": "string"
+          },
+          "checklistEnabled": {
+            "title": "Checklistenabled",
+            "type": "boolean"
+          },
+          "checklistItems": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "title": "Checklistitems",
+            "type": "array"
+          },
+          "checklistOrdered": {
+            "title": "Checklistordered",
+            "type": "boolean"
+          },
+          "checklistVisible": {
+            "title": "Checklistvisible",
+            "type": "boolean"
           },
           "createdAt": {
             "format": "date-time",
@@ -2456,6 +2557,10 @@
           "knowledgeMode",
           "knowledgeTopK",
           "knowledgeBaseIds",
+          "checklistEnabled",
+          "checklistVisible",
+          "checklistOrdered",
+          "checklistItems",
           "createdAt"
         ],
         "title": "ProjectOut",
@@ -2551,6 +2656,54 @@
               }
             ],
             "title": "Chatpassword"
+          },
+          "checklistEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistenabled"
+          },
+          "checklistItems": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistitems"
+          },
+          "checklistOrdered": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistordered"
+          },
+          "checklistVisible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistvisible"
           },
           "description": {
             "anyOf": [
@@ -3343,6 +3496,45 @@
         "title": "ProviderSpecOut",
         "type": "object"
       },
+      "PublicChecklistItemOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "PublicChecklistItemOut",
+        "type": "object"
+      },
+      "PublicChecklistOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicChecklistItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "ordered": {
+            "title": "Ordered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ordered",
+          "items"
+        ],
+        "title": "PublicChecklistOut",
+        "type": "object"
+      },
       "PublicProjectOut": {
         "properties": {
           "avatarBackgroundUrl": {
@@ -3382,6 +3574,16 @@
             "default": "avatar_chat",
             "title": "Chatlayout",
             "type": "string"
+          },
+          "checklist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicChecklistOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "llmModel": {
             "anyOf": [
@@ -4936,6 +5138,17 @@
       },
       "SystemPromptOut": {
         "properties": {
+          "checklistPrompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklistprompt"
+          },
           "defaultMotionPrompt": {
             "title": "Defaultmotionprompt",
             "type": "string"
@@ -5239,8 +5452,69 @@
         "title": "TimeseriesPointOut",
         "type": "object"
       },
+      "TranscriptCheckOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "done",
+          "offset",
+          "title",
+          "number"
+        ],
+        "title": "TranscriptCheckOut",
+        "type": "object"
+      },
       "TranscriptMessageOut": {
         "properties": {
+          "checks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptCheckOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checks"
+          },
           "content": {
             "title": "Content",
             "type": "string"

@@ -22,6 +22,7 @@ from app.features.analytics.schemas import (
     AnalyticsStatsOut,
     ConversationDetailOut,
     SessionRowOut,
+    TranscriptCheckOut,
     TranscriptMessageOut,
     TranscriptMotionOut,
     TranscriptSourceOut,
@@ -48,6 +49,7 @@ def get_conversation_detail(session: Session, user_id: str, conversation_id: str
         return None
     messages = json.loads(conversation.messages_json)
     names = document_names(session, [s["documentId"] for m in messages for s in m.get("sources") or []])
+    steps = {item["id"]: (number, item["title"]) for number, item in enumerate(project.checklist_items, start=1)}
     return ConversationDetailOut(
         id=conversation.id,
         project_title=project.title,
@@ -65,6 +67,18 @@ def get_conversation_detail(session: Session, user_id: str, conversation_id: str
                 else None,
                 motions=[TranscriptMotionOut(name=x["name"], offset=x["offset"]) for x in m["motions"]]
                 if m.get("motions")
+                else None,
+                checks=[
+                    TranscriptCheckOut(
+                        id=c["id"],
+                        done=c["done"],
+                        offset=c["offset"],
+                        number=steps[c["id"]][0] if c["id"] in steps else None,
+                        title=steps[c["id"]][1] if c["id"] in steps else None,
+                    )
+                    for c in m["checks"]
+                ]
+                if m.get("checks")
                 else None,
             )
             for m in messages
