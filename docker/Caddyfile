@@ -47,6 +47,13 @@ http://{$SITE_ADDRESS} {
 		}
 	}
 
+	# Serving under a sub-path (BASE_PATH in .env, e.g. /lola): strip it here, so every handle below
+	# and the backend see the same paths as on a site of its own. Requests without the prefix still
+	# work, for a proxy in front that strips it itself. The pattern tolerates BASE_PATH written with
+	# or without slashes, and an empty BASE_PATH matches everything and rewrites it to itself.
+	@prefixed path_regexp prefixed ^/*{$BASE_PATH}/*(.*)$
+	rewrite @prefixed /{re.prefixed.1}
+
 	# On-device speech recognition model (see scripts/fetch-stt-model.sh), mounted read-only from
 	# the data directory by docker-compose.yml. Every file sits next to a .gz copy the script made
 	# once, and `precompressed` sends that copy to any browser that accepts gzip: ~170 MB instead of
@@ -78,6 +85,12 @@ http://{$SITE_ADDRESS} {
 	# reloading on a sub-route would be a 404.
 	handle {
 		root * /srv
+		# index.html's <base href> is filled in from BASE_PATH here (see frontend/vite.config.ts),
+		# so the same image works at the root and under any sub-path. Only HTML is templated, and
+		# index.html is the only HTML file.
+		templates {
+			mime text/html
+		}
 		try_files {path} /index.html
 		file_server
 	}

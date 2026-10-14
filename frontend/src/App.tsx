@@ -4,6 +4,7 @@ import { DashboardShell } from "./layouts/DashboardShell";
 import { RequireAdmin } from "./components/RequireAdmin";
 import { setNavigate } from "./lib/navigation";
 import { PageFallback } from "./components/PageFallback";
+import { BASE_PATH } from "@/lib/basePath";
 
 // Every page is its own chunk, so a student opening a chat link downloads the chat page only, not
 // the whole teacher dashboard (analytics, latency lab, evaluation, ...).
@@ -71,7 +72,7 @@ function NavigateBridge() {
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={BASE_PATH || undefined}>
       <NavigateBridge />
       <Suspense fallback={<PageFallback />}>
         <Routes>

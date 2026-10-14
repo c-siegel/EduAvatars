@@ -11,6 +11,7 @@ import type { Project } from "@/types/project";
 import { projectAvatarThumbnailUrl } from "@/lib/builtinAvatars";
 import { formatRelativeDate } from "@/lib/time";
 import styles from "./ProjectRow.module.css";
+import { sitePath } from "@/lib/basePath";
 
 // One table row of the overview (screen 1d); the actions live in the last cell.
 export function ProjectRow({ project }: { project: Project }) {
@@ -59,7 +60,7 @@ export function ProjectRow({ project }: { project: Project }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [menuOpen]);
 
-  const shareUrl = project.shareSlug ? `${window.location.origin}/c/${project.shareSlug}` : null;
+  const shareUrl = project.shareSlug ? `${window.location.origin}${sitePath(`/c/${project.shareSlug}`)}` : null;
 
   function copyLink() {
     if (shareUrl) navigator.clipboard.writeText(shareUrl);

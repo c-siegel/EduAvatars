@@ -228,3 +228,27 @@ WebSockets.)
 Also add this outer proxy's own address to `FORWARDED_ALLOW_IPS` in `.env` — see the comment next
 to it in `.env.example` for why: it's now an extra hop that appends itself to `X-Forwarded-For`,
 and every hop in that chain has to be trusted or the real visitor address is lost.
+
+### Serving under a sub-path
+
+If the outer proxy gives LOLA only a path on a shared host (e.g.
+`https://host.example/lola/`) instead of a domain of its own, set in the root `.env`:
+
+```bash
+BASE_PATH=/lola
+FRONTEND_BASE_URL=https://host.example/lola   # links in emails
+CORS_ORIGINS=https://host.example             # an origin has no path
+SITE_ADDRESS=:80                              # if the proxy forwards the shared host's name
+```
+
+The same images work at the root and under any prefix, nothing is rebuilt:
+
+- **Caddy** strips the prefix before routing (see `Caddyfile`), so it doesn't matter whether the
+  outer proxy forwards `/lola/…` or strips it itself.
+- **The frontend** is built with relative asset URLs, and Caddy writes the prefix into
+  `index.html`'s `<base href>` per request (`templates` in `Caddyfile`, see
+  `frontend/vite.config.ts`). The app reads it from there for its routes, API calls and static
+  files (`frontend/src/lib/basePath.ts`).
+- **The backend** keeps its routes at `/api/v1` but puts the prefix into every URL it hands out
+  (`backend/app/core/urls.py`) and limits its cookies to that path, so other apps on the same
+  host don't receive the login token.

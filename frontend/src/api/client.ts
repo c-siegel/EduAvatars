@@ -1,10 +1,12 @@
 import i18n from "@/i18n";
+import { sitePath } from "@/lib/basePath";
 
-// Every backend route lives under /api/v1 (see backend/app/core/urls.py). Exported for the few
-// requests that bypass apiClient (file downloads, the streamed chat reply). URLs the backend hands
-// out for direct browser use (avatar files, pictures, start audio) already include this prefix
-// and are used as-is.
-export const API_BASE_URL = "/api/v1";
+// Every backend route lives under /api/v1 (see backend/app/core/urls.py), behind the site's own
+// sub-path if it has one (see lib/basePath.ts). Exported for the few requests that bypass
+// apiClient (file downloads, the streamed chat reply). URLs the backend hands out for direct
+// browser use (avatar files, pictures, start audio) already include this prefix and are used
+// as-is.
+export const API_BASE_URL = sitePath("/api/v1");
 const BASE_URL = API_BASE_URL;
 
 export class ApiError extends Error {

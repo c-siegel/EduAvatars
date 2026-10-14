@@ -12,6 +12,7 @@ import { projectsApi } from "@/api/projects";
 import type { Project } from "@/types/project";
 import type { StepProps } from "../types";
 import styles from "./shared.module.css";
+import { sitePath } from "@/lib/basePath";
 
 interface Step5Props extends StepProps {
   project: Project;
@@ -45,7 +46,7 @@ export function Step5Publish({ draft, onChange, project, projectId, hasUnsavedCh
     },
   });
 
-  const shareUrl = project.shareSlug ? `${window.location.origin}/c/${project.shareSlug}` : null;
+  const shareUrl = project.shareSlug ? `${window.location.origin}${sitePath(`/c/${project.shareSlug}`)}` : null;
 
   // Deliberately not part of `draft`/onChange (like published/shareSlug above) — this is
   // server-owned status set through its own mutation, not part of the wizard's draft/dirty flow.

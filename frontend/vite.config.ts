@@ -45,7 +45,29 @@ function serveSttModels(): Plugin {
   };
 }
 
-export default defineConfig({
+// The <base href> every relative URL in the app resolves against (see src/lib/basePath.ts). The
+// production build leaves a Caddy template in it, filled in from BASE_PATH per request (see
+// docker/Caddyfile), so one image serves the site at the root or under any sub-path; the Vite dev
+// server always serves at the root.
+function baseHref(): Plugin {
+  let isBuild = false;
+  return {
+    name: "base-href",
+    configResolved(config) {
+      isBuild = config.command === "build";
+    },
+    transformIndexHtml() {
+      // Go raw strings (backticks), because Vite escapes double quotes inside attribute values.
+      const href = isBuild ? "{{ printf `/%s/` (trimAll `/` (env `BASE_PATH`)) | replace `//` `/` }}" : "/";
+      return [{ tag: "base", attrs: { href }, injectTo: "head-prepend" }];
+    },
+  };
+}
+
+export default defineConfig(({ command }) => ({
+  // Relative asset URLs in the build, so they follow the <base href> above instead of assuming
+  // the site sits at the root.
+  base: command === "build" ? "./" : "/",
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
     __APP_COMMIT__: JSON.stringify(gitCommit()),
@@ -55,7 +77,7 @@ export default defineConfig({
   // Testing either from another device over the LAN (e.g. `vite --host`) therefore needs real
   // HTTPS, even in dev — this plugin self-signs a certificate for that, at the cost of a one-time
   // click-through browser warning per device ("connection is not private").
-  plugins: [react(), basicSsl(), serveSttModels()],
+  plugins: [baseHref(), react(), basicSsl(), serveSttModels()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -89,4 +111,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
