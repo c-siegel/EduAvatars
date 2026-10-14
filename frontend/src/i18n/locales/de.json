@@ -439,8 +439,6 @@
     },
     "step3": {
       "defaultPreprompt": "Du bist ein hilfreicher, KI-gestützter Lernassistent.\n\nAntworte kindgerecht, geduldig und ermutigend. Wenn du etwas nicht weißt, sag das ehrlich, anstatt zu raten.",
-      "targetGroup": "Zielgruppe / Klassenstufe",
-      "targetGroupPlaceholder": "z. B. Klasse 7b",
       "resetToDefault": "Auf Standard zurücksetzen",
       "preprompt": "Preprompt / Rolle",
       "prepromptRawTab": "Rohtext",

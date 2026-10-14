@@ -1,5 +1,5 @@
 // The conversation plan as students (and the teacher in the preview) see it: a small collapsible
-// card listing the steps, with the ones the avatar ticked off crossed out (see backend
+// card listing the steps, with the ones the avatar ticked off (see backend
 // features/chat/checklist.py). Progress comes in as `doneIds`, derived from the messages, so it
 // rolls back with an edited or regenerated message without any state of its own.
 

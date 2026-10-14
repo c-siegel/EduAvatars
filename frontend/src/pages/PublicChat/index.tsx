@@ -477,7 +477,7 @@ export function PublicChatPage() {
 
   function revealStreamedChunk(chunk: StreamChunkEvent) {
     avatarRef.current?.playMotions(chunk.motions);
-    // Plan ticks land on the message as its sentence is spoken, so the step is crossed off then.
+    // Plan ticks land on the message as its sentence is spoken, so the step is ticked then.
     const checks = chunk.checks ?? [];
     setMessages((prev) => {
       if (chunk.index === 0) return [...prev, { role: "assistant", content: chunk.text, checks }];

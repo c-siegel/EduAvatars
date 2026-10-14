@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Play, RotateCcw, Volume2 } from "lucide-react";
-import { Input, Textarea } from "@/components/Input";
+import { Textarea } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Callout } from "@/components/Callout";
 import { LabelWithInfo } from "@/components/InfoTip";
@@ -107,13 +107,6 @@ export function Step3Behavior({
 
   return (
     <div>
-      <Input
-        label={t("configurator.step3.targetGroup")}
-        placeholder={t("configurator.step3.targetGroupPlaceholder")}
-        value={draft.gradeLevel}
-        onChange={(e) => onChange({ gradeLevel: e.target.value })}
-      />
-
       <div className={styles.toolbar}>
         <div className={styles.viewToggle} role="tablist">
           <button

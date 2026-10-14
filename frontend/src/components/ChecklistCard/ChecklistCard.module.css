@@ -89,9 +89,7 @@
 }
 
 .itemTitle {
-  text-decoration: line-through;
-  text-decoration-color: transparent;
-  transition: color 0.25s ease, text-decoration-color 0.25s ease;
+  transition: color 0.25s ease;
 }
 
 .done .box {
@@ -103,7 +101,6 @@
 
 .done .itemTitle {
   color: var(--text-tertiary);
-  text-decoration-color: currentColor;
 }
 
 .next .itemTitle {

@@ -439,8 +439,6 @@
     },
     "step3": {
       "defaultPreprompt": "You are a helpful, AI-powered learning assistant.\n\nAnswer in an age-appropriate, patient, and encouraging way. If you don't know something, say so honestly instead of guessing.",
-      "targetGroup": "Target group / grade level",
-      "targetGroupPlaceholder": "e.g. Grade 7b",
       "resetToDefault": "Reset to default",
       "preprompt": "Preprompt / role",
       "prepromptRawTab": "Raw",
