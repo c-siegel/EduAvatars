@@ -91,14 +91,19 @@ def generate_start_audio(session: Session, project: Project) -> Project:
     return project
 
 
+def _owner_enabled(session: Session, project: Project) -> bool:
+    owner = session.get(User, project.user_id)
+    return owner is not None and owner.enabled
+
+
 def servable_start_audio(session: Session, project_id: str, current_user: User | None) -> tuple[str, str] | None:
     """The stored start audio's (path, media type) if `current_user` may hear it — its owner, or
-    anyone once the project is published — else None."""
+    anyone once the project is published by an enabled account — else None."""
     project = session.get(Project, project_id)
     if project is None or not project.start_audio_path:
         return None
     is_owner = current_user is not None and project.user_id == current_user.id
-    if not is_owner and not project.published:
+    if not is_owner and not (project.published and _owner_enabled(session, project)):
         return None
     # Defaulting to mpeg keeps serving files written before WAV support (always real MP3s then).
     media_type = _AUDIO_CONTENT_TYPE_BY_EXTENSION.get(Path(project.start_audio_path).suffix, "audio/mpeg")

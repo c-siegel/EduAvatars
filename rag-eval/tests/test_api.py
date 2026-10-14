@@ -66,6 +66,15 @@ def test_the_judge_gets_the_teachers_key_and_model(client, judge, embed_calls):
     assert all(call["temperature"] == 0 for call in judge.calls)
 
 
+def test_a_keyless_judge_never_falls_back_to_the_servers_key(client, judge, monkeypatch):
+    # Without an explicit key litellm would read OPENAI_API_KEY from this service's environment and
+    # send it to the teacher's endpoint.
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-operator-own-secret")
+    keyless = {"model": JUDGE["model"], "api_base": "https://llm.school.example/v1"}
+    client.post("/score", json=score_body(metrics=["faithfulness"], judge=keyless), headers=AUTH)
+    assert judge.calls and all(call["api_key"] == "no-key" for call in judge.calls)
+
+
 def test_unsupported_statements_lower_faithfulness(client, judge):
     judge.overrides["verdict"] = 0
     response = client.post("/score", json=score_body(metrics=["faithfulness"]), headers=AUTH)

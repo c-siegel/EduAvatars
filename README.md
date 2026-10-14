@@ -364,8 +364,9 @@ and validation are generated from that single source, so nothing else needs to c
 
 For Ollama and OpenAI-compatible keys, the endpoint address you enter can be anything on your own
 network (e.g. a school's LAN GPU box) — the backend only rejects addresses that could never be a
-real LLM/TTS server, like a cloud metadata endpoint, to close off that one otherwise-easy misuse of
-a "bring your own endpoint" field.
+real LLM/TTS server: cloud metadata endpoints and this deployment's own Docker services (`rag`,
+`tts-local`, `docling`, …), to close off the otherwise-easy misuse of a "bring your own endpoint"
+field. `localhost` stays allowed, since a local setup may run Ollama there.
 
 ### Requirements for on-device speech recognition
 

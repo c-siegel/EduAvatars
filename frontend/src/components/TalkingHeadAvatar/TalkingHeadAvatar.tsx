@@ -4,11 +4,12 @@ import { Loader2 } from "lucide-react";
 import type { MotionEngine } from "@/vendor/motion-engine/MotionEngine.js";
 import { attachHeadAudio } from "./headAudioIntegration";
 import styles from "./TalkingHeadAvatar.module.css";
+import { sitePath } from "@/lib/basePath";
 
 // Self-hosted under public/avatars/ (see ATTRIBUTION.md there) instead of loaded live from GitHub —
 // for the same privacy reason as the fonts (no third-party request on every page view).
 // Alternative in the same repo: david.glb.
-const DEFAULT_AVATAR_URL = "/avatars/julia.glb";
+const DEFAULT_AVATAR_URL = sitePath("/avatars/julia.glb");
 
 type Status = "loading" | "ready" | "error" | "skipped";
 
@@ -406,7 +407,7 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             try {
               await attachHeadAudio(head);
             } catch (error) {
-              console.error("HeadAudio-Lipsync nicht verfügbar — Avatar läuft ohne Lippenbewegung.", error);
+              console.error("HeadAudio lipsync unavailable — the avatar runs without lip movement.", error);
             }
             // Composes over (never replaces) the lip-sync update attachHeadAudio just installed —
             // lip-sync must keep running every tick regardless of our own FPS bookkeeping. Uses
@@ -458,7 +459,7 @@ export const TalkingHeadAvatar = forwardRef<TalkingHeadAvatarHandle, TalkingHead
             }
           }
         } catch (error) {
-          console.error("TalkingHead-Avatar konnte nicht geladen werden.", error);
+          console.error("TalkingHead avatar could not be loaded.", error);
           if (!cancelled) {
             setStatus("error");
           }

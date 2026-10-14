@@ -1,4 +1,6 @@
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { apiKeysApi } from "@/api/apiKeys";
 import i18n from "@/i18n";
 import { evaluationApi } from "@/api/evaluation";
@@ -9,11 +11,25 @@ import type { ApiKey, ApiKeyType, ProviderModel, ProviderSpec } from "@/types/ap
 // (backend/app/core/providers.py) instead of a second list here — otherwise the frontend could
 // offer providers or models that have no call path on the server.
 export function useProviders() {
+  const { t, i18n } = useTranslation();
+  // The registry's labels and hints are German; translated here by provider id (providers.<id>
+  // in the locales), with the backend's own text as fallback for a provider added there first.
+  const select = useCallback(
+    (specs: ProviderSpec[]) =>
+      specs.map((spec) => ({
+        ...spec,
+        label: t(`providers.${spec.value}.label`, { defaultValue: spec.label }),
+        hint: spec.hint && t(`providers.${spec.value}.hint`, { defaultValue: spec.hint }),
+      })),
+    // i18n.language: re-translate on a language switch.
+    [t, i18n.language],
+  );
   return useQuery({
     queryKey: ["api-key-providers"],
     queryFn: apiKeysApi.listProviders,
     // This reference data only changes with a deployment.
     staleTime: Infinity,
+    select,
   });
 }
 

@@ -37,7 +37,7 @@ export async function captureAvatarThumbnail(glbUrl: string): Promise<Blob> {
     renderer.render(scene, camera);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-    if (!blob) throw new Error("Snapshot fehlgeschlagen.");
+    if (!blob) throw new Error("Snapshot failed.");
     return blob;
   } finally {
     renderer.dispose();

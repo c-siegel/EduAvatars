@@ -11,8 +11,9 @@ import { Callout } from "@/components/Callout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { ParakeetSttEngine, type DecodeStats, type LoadProgress, type StreamingSession } from "@/lib/parakeetStt";
 import styles from "./SttTest.module.css";
+import { sitePath } from "@/lib/basePath";
 
-const DEFAULT_MODEL_URL = "/models/parakeet-redux/v1/";
+const DEFAULT_MODEL_URL = sitePath("/models/parakeet-redux/v1/");
 
 interface RunStats {
   firstPartialMs: number | null;

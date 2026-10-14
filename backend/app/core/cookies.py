@@ -32,6 +32,12 @@ VISITOR_ID_COOKIE = "ah_visitor_id"
 _VISITOR_ID_COOKIE_MAX_AGE_SECONDS = 4 * 60 * 60
 
 
+def _cookie_path() -> str:
+    """Under a sub-path (settings.base_path), the cookies belong to it alone: on a host shared
+    with other apps, a path of "/" would hand our auth token to all of them as well."""
+    return f"{settings.base_path}/"
+
+
 def set_auth_cookie(response: Response, user: User) -> None:
     """Issue a fresh auth token for `user` and set it as the response's httponly cookie."""
     token = create_access_token(user.id, user.token_version)
@@ -42,12 +48,13 @@ def set_auth_cookie(response: Response, user: User) -> None:
         secure=settings.cookie_secure,
         samesite="lax",
         max_age=settings.access_token_expire_minutes * 60,
+        path=_cookie_path(),
     )
 
 
 def clear_auth_cookie(response: Response) -> None:
     """Remove the auth cookie (logout, account deletion)."""
-    response.delete_cookie(ACCESS_TOKEN_COOKIE)
+    response.delete_cookie(ACCESS_TOKEN_COOKIE, path=_cookie_path())
 
 
 def get_or_set_visitor_id(request: Request, response: Response) -> str:
@@ -78,5 +85,6 @@ def get_or_set_visitor_id(request: Request, response: Response) -> str:
             secure=settings.cookie_secure,
             samesite="lax",
             max_age=_VISITOR_ID_COOKIE_MAX_AGE_SECONDS,
+            path=_cookie_path(),
         )
     return visitor_id

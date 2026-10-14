@@ -28,6 +28,10 @@ class JudgeFailed(Exception):
     """The judge LLM couldn't be reached or didn't produce a usable reply."""
 
 
+# Sent instead of a missing key, see make_judge. Same value as the backend sends.
+KEYLESS_API_KEY = "no-key"
+
+
 def make_judge(config: JudgeConfig) -> InstructorBaseRagasLLM:
     # litellm.acompletion is looked up at call time (not bound here), so tests can replace it.
     async def completion(**kwargs):
@@ -37,8 +41,9 @@ def make_judge(config: JudgeConfig) -> InstructorBaseRagasLLM:
     # Instructor re-asks up to three times when a reply doesn't parse. Each retry is a paid call
     # and a judge that fails twice will usually fail again, so one retry is the compromise.
     model_args = {"temperature": 0, "timeout": settings.rag_eval_llm_timeout_seconds, "max_retries": 1}
-    if config.api_key is not None:
-        model_args["api_key"] = config.api_key.get_secret_value()
+    # Never None: litellm would then read the key from this service's environment (e.g.
+    # OPENAI_API_KEY) and send it to the teacher's endpoint. Keyless servers ignore the placeholder.
+    model_args["api_key"] = config.api_key.get_secret_value() if config.api_key is not None else KEYLESS_API_KEY
     if config.api_base:
         model_args["api_base"] = config.api_base
     return llm_factory(config.model, provider="litellm", client=client, adapter="litellm", **model_args)

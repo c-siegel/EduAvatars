@@ -24,6 +24,7 @@ How to use:
     db_url = settings.database_url
 """
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -31,8 +32,11 @@ from cryptography.fernet import Fernet
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Path to the .env-file within the root directory
+# Path to the .env-file within the root directory. EDUAVATARS_ENV_FILE points elsewhere; set to an
+# empty value it reads no file at all, which the test suite relies on so a developer's own .env
+# can't change what the tests see.
 _ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+_ENV_FILE = os.environ.get("EDUAVATARS_ENV_FILE", str(_ROOT_ENV_FILE)) or None
 
 # Values people copy-paste from .env.example (or type without thinking) — none of these are
 # safe JWT secrets, no matter how they're cased, so this is checked in addition to length.
@@ -47,7 +51,7 @@ _WEAK_JWT_SECRETS = frozenset(
 class Settings(BaseSettings):
     
     # Pydantic configuration: read from the shared root .env file, ignore extra environment variables
-    model_config = SettingsConfigDict(env_file=_ROOT_ENV_FILE, extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     # ==================== DATABASE SETTINGS ====================
     
@@ -197,8 +201,28 @@ class Settings(BaseSettings):
     sidecar starts also loads its model, which takes over a minute on a typical CPU.
     """
 
+    # ==================== PUBLIC URL PATH ====================
+
+    base_path: str = ""
+    """
+    URL path prefix the whole site is served under, e.g. "/lola" for https://host.example/lola/.
+    Empty (the default) when the site has its own domain.
+
+    The backend's own routes stay at /api/v1 (Caddy strips the prefix before proxying, see
+    docker/Caddyfile); this only goes into the URLs the API hands out for the browser to load
+    (app/core/urls.py), which must carry the prefix to reach this site at all. The web container
+    reads the same BASE_PATH from .env, so both always agree.
+    """
+
+    @field_validator("base_path")
+    @classmethod
+    def _normalize_base_path(cls, v: str) -> str:
+        """Accept "lola", "/lola" and "/lola/" alike: every URL is built as base_path + "/…"."""
+        v = v.strip().strip("/")
+        return f"/{v}" if v else ""
+
     # ==================== EMAIL & PASSWORD RESET SETTINGS ====================
-    
+
     # For password reset flow (link in email text) and SMTP sending.
     
     frontend_base_url: str = "http://localhost:5173"

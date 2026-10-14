@@ -241,8 +241,12 @@ def get_published_project(
                 "prompt": project.start_prompt
             }
     """
+    # A disabled owner's chats go offline with the account (and come back when it's re-enabled):
+    # disabling is how an admin removes access, which has to include what the account published.
     project = session.exec(
-        select(Project).where(Project.share_slug == slug, Project.published == True)  # noqa: E712
+        select(Project)
+        .join(User, User.id == Project.user_id)
+        .where(Project.share_slug == slug, Project.published == True, User.enabled == True)  # noqa: E712
     ).first()
     if project is None:
         raise HTTPException(status_code=404, detail=ErrorCode.PROJECT_NOT_FOUND_OR_UNPUBLISHED)
