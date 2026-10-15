@@ -1,6 +1,6 @@
 services:
   web:
-    image: chsiegel/eduavatars:frontend
+    image: ghcr.io/c-siegel/lola:frontend
     pull_policy: always
     env_file: ../.env
     # Same user as the backend's files (see PUID/PGID in .env.example), so Caddy can read the
@@ -33,7 +33,7 @@ services:
   # so after the first run it finishes in seconds. `web` deliberately doesn't wait for it: the
   # site is up right away, and browsers use server transcription until the model is complete.
   stt-model:
-    image: chsiegel/eduavatars:frontend
+    image: ghcr.io/c-siegel/lola:frontend
     pull_policy: always
     entrypoint: ["fetch-stt-model", "/models"]
     user: "${PUID:-568}:${PGID:-568}"
@@ -51,7 +51,7 @@ services:
   # "local-tts" profile — set COMPOSE_PROFILES=local-tts and LOCAL_TTS_ENABLED=true in .env (see
   # docker/README.md). Needs a few GB of RAM and plenty of CPU; nothing else depends on it.
   tts-local:
-    image: chsiegel/eduavatars:local-tts
+    image: ghcr.io/c-siegel/lola:local-tts
     pull_policy: always
     profiles: ["local-tts"]
     env_file: ../.env
@@ -77,7 +77,7 @@ services:
   # the "rag" profile — set COMPOSE_PROFILES=rag, RAG_ENABLED=true and RAG_SERVICE_TOKEN in .env
   # (see docker/README.md). Publishes no port: only the backend talks to it, with the shared token.
   rag:
-    image: chsiegel/eduavatars:rag
+    image: ghcr.io/c-siegel/lola:rag
     pull_policy: always
     profiles: ["rag"]
     env_file: ../.env
@@ -115,7 +115,7 @@ services:
   # teacher's own LLM keys as judge. Only started with the "rag-eval" profile next to "rag" — set
   # COMPOSE_PROFILES=rag,rag-eval and RAG_EVALUATION_ENABLED=true in .env. Publishes no port.
   rag-eval:
-    image: chsiegel/eduavatars:rag-eval
+    image: ghcr.io/c-siegel/lola:rag-eval
     pull_policy: always
     profiles: ["rag-eval"]
     # Only the shared token, not the whole .env: this container needs none of the backend's
@@ -167,7 +167,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: chsiegel/eduavatars:backend
+    image: ghcr.io/c-siegel/lola:backend
     pull_policy: always
     env_file: ../.env
     environment:
