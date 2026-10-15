@@ -1,0 +1,17 @@
+[Unit]
+Description=LOLA (Docker Compose Stack)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/lola
+# Hardcode the Compose project name so "systemctl restart lola" hits the same
+# containers/volumes after a "git pull", regardless of the directory name.
+ExecStart=/usr/bin/docker compose -p lola -f /opt/lola/docker/docker-compose.yml --env-file /opt/lola/.env up -d
+ExecStop=/usr/bin/docker compose -p lola -f /opt/lola/docker/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target
