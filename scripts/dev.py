@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Local development runner: set up and start every EduAvatars service with one command.
+Local development runner: set up and start every LOLA service with one command.
 
     python scripts/dev.py setup     # once: venvs, pip/npm installs, database migrations
     python scripts/dev.py           # start backend + frontend + the optional services enabled in .env
@@ -272,7 +272,7 @@ def start(names: list[str]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Set up and run EduAvatars locally.")
+    parser = argparse.ArgumentParser(description="Set up and run LOLA locally.")
     parser.add_argument("command", nargs="?", choices=["setup", "start"], default="start")
     parser.add_argument(
         "services", nargs="*", metavar="service",

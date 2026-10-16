@@ -26,7 +26,7 @@ services:
     volumes:
       # On-device speech recognition model, served by Caddy at /models/ (see Caddyfile). Filled by
       # the stt-model service below.
-      - ${EDUAVATARS_DATA_DIR}/models:/models:ro
+      - ${LOLA_DATA_DIR}/models:/models:ro
 
   # Downloads the on-device speech recognition model into the data directory, then exits (see
   # scripts/fetch-stt-model.sh). Runs on every `up`, but only downloads what's missing or damaged,
@@ -43,7 +43,7 @@ services:
       backend:
         condition: service_healthy
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/models:/models
+      - ${LOLA_DATA_DIR}/models:/models
     restart: "no"
 
   # Optional local text-to-speech (see local-tts/): speech output without a cloud key, including
@@ -63,7 +63,7 @@ services:
       # Only a cache: the backend re-sends a teacher's clip whenever it's missing here.
       TTS_CUSTOM_VOICES_DIR: /data/custom-voices
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/local-tts:/data
+      - ${LOLA_DATA_DIR}/local-tts:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
@@ -90,7 +90,7 @@ services:
       HF_HOME: /data/model-cache/huggingface
       HOME: /tmp
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/rag:/data
+      - ${LOLA_DATA_DIR}/rag:/data
     read_only: true
     tmpfs:
       - /tmp
@@ -130,7 +130,7 @@ services:
       HOME: /tmp
     user: "${PUID:-568}:${PGID:-568}"
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/rag-eval:/data
+      - ${LOLA_DATA_DIR}/rag-eval:/data
     read_only: true
     tmpfs:
       - /tmp
@@ -171,7 +171,7 @@ services:
     pull_policy: always
     env_file: ../.env
     environment:
-      DATABASE_URL: sqlite:////data/eduavatars.db
+      DATABASE_URL: sqlite:////data/lola.db
       AVATAR_UPLOAD_DIR: /data/uploads/avatars
       PROFILE_PICTURE_UPLOAD_DIR: /data/uploads/profile-pictures
       AVATAR_THUMBNAIL_UPLOAD_DIR: /data/uploads/avatar-thumbnails
@@ -219,7 +219,7 @@ services:
     volumes:
       # This is the one value that genuinely needs ${VAR} substitution while the YAML itself is
       # being parsed (volume sources can't come from env_file, unlike plain environment variables).
-      - ${EDUAVATARS_DATA_DIR}:/data
+      - ${LOLA_DATA_DIR}:/data
     restart: unless-stopped
     healthcheck:
       # python:3.12-slim has no curl/wget — urllib is stdlib, so this needs no extra dependency.

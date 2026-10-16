@@ -173,12 +173,12 @@ def test_thinking_motions_default_off_and_only_reach_the_public_page_together_wi
 
 
 def test_exports_without_the_thinking_setting_import_with_it_off() -> None:
-    assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n").thinking_motions_enabled is False
+    assert parse_project_yaml("lola_export: 2\nproject:\n  title: x\n").thinking_motions_enabled is False
 
 
 def test_exports_without_the_setting_import_with_motion_on() -> None:
-    assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n").motion_enabled is True
-    assert parse_project_yaml("eduavatars_export: 2\nproject:\n  title: x\n  motion_enabled: false\n").motion_enabled is False
+    assert parse_project_yaml("lola_export: 2\nproject:\n  title: x\n").motion_enabled is True
+    assert parse_project_yaml("lola_export: 2\nproject:\n  title: x\n  motion_enabled: false\n").motion_enabled is False
 
 
 # --- Editable motion prompt ---

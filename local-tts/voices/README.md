@@ -19,7 +19,7 @@ One file per supported language, named `<language>.wav` (e.g. `de.wav`, `en.wav`
 
 ## Where this directory is read from
 
-In Docker, this path is bind-mounted from `${EDUAVATARS_DATA_DIR}/sopro-voices` (see
+In Docker, this path is bind-mounted from `${LOLA_DATA_DIR}/sopro-voices` (see
 `docker/docker-compose.yml`) rather than copied into the image — so an operator can add or swap
 a voice without rebuilding anything, and no audio file needs to be committed to this repo. A
 language with no matching file here simply isn't available; `POST /synthesize` returns a 400 for

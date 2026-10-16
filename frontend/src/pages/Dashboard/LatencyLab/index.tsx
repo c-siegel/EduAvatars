@@ -39,7 +39,7 @@ import styles from "./LatencyLab.module.css";
 import { sitePath } from "@/lib/basePath";
 
 const PARAKEET_MODEL_URL = sitePath("/models/parakeet-redux/v1/");
-const SETTINGS_KEY = "eduavatars.latencyLab";
+const SETTINGS_KEY = "lola.latencyLab";
 const DEFAULT_SCRIPT = "Hallo! Wer bist du?\nKannst du mir das in einem Satz erklären?";
 
 const DEFAULT_CONFIG: LabConfig = { sttMode: "device", llmKeyId: null, streaming: true, ttsMode: "project", avatar: true };

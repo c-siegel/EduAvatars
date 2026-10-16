@@ -2,7 +2,7 @@
 Project Export/Import
 
 Turns a Project into a portable YAML document, and back — so an educator can back up a
-project, move it to another eduavatars account, or share a configuration with a colleague
+project, move it to another LOLA account, or share a configuration with a colleague
 without also handing over their own API keys.
 
 What is YAML? A human-readable text format for structured data (like JSON, but easier to
@@ -48,13 +48,13 @@ MAX_IMPORT_UPLOAD_BYTES = 256 * 1024
 
 
 class ProjectImportError(ValueError):
-    """Raised when an uploaded file isn't a valid eduavatars project export."""
+    """Raised when an uploaded file isn't a valid LOLA project export."""
 
 
 def export_project_yaml(project: Project) -> str:
     """Serialize `project`'s portable configuration (no API keys, publishing state, or IDs) as YAML."""
     data = ProjectExportData.model_validate(project, from_attributes=True)
-    payload = {"eduavatars_export": FORMAT_VERSION, "project": data.model_dump()}
+    payload = {"lola_export": FORMAT_VERSION, "project": data.model_dump()}
     return _YAML_HEADER + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False)
 
 
@@ -65,7 +65,7 @@ def export_filename(project: Project) -> str:
 
 
 def parse_project_yaml(raw: bytes | str) -> ProjectExportData:
-    """Parse and validate an uploaded file as an eduavatars project export.
+    """Parse and validate an uploaded file as a LOLA project export.
 
     Raises ProjectImportError for anything that isn't a well-formed export — not the file's own
     fault vs. a bug distinction; every failure just means "can't import this file".
@@ -77,7 +77,7 @@ def parse_project_yaml(raw: bytes | str) -> ProjectExportData:
     if not isinstance(document, dict) or not isinstance(document.get("project"), dict):
         raise ProjectImportError("missing a 'project' section")
     fields = document["project"]
-    if document.get("eduavatars_export", 1) == 1:
+    if document.get("lola_export", 1) == 1:
         fields = _upgrade_v1(fields)
     try:
         return ProjectExportData.model_validate(fields)

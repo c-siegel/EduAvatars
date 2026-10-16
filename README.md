@@ -1,8 +1,6 @@
 # LOLA
 
-*Leipzig's Open Learning Avatar — formerly EduAvatars.* Technical names (Docker images
-`chsiegel/eduavatars`, the `eduavatars.service` unit, storage keys) keep the old name, so existing
-deployments keep working after the rename.
+*Leipzig's Open Learning Avatar.*
 
 **Create a talking 3D avatar, give it a personality, and share it as a link — no coding
 required to use it, once someone has set it up for you.**
@@ -192,7 +190,7 @@ is left at a placeholder value (e.g. `change-me`), too short, or — for `API_KE
 one. This catches a copy-pasted `.env.example` before it ever reaches production, not after.
 
 `.env.example` has a comment on every other variable explaining which deploy path (A, B, or both)
-uses it — see that file for the full list (SMTP, `SITE_ADDRESS`, `EDUAVATARS_DATA_DIR`, ...).
+uses it — see that file for the full list (SMTP, `SITE_ADDRESS`, `LOLA_DATA_DIR`, ...).
 
 ### Deploy A: local development
 
@@ -351,7 +349,7 @@ unit: [docker/README.md](docker/README.md).
 ```bash
 docker compose -f docker/docker-compose.yml --env-file .env up -d
 ```
-The example `docker-compose.yml` pulls prebuilt images (`chsiegel/eduavatars:frontend`/`:backend`) rather than building them — Caddy serves the frontend and reverse-proxies `/api/*` to the backend. TLS is expected to be terminated upstream (e.g. a Cloudflare Tunnel). The `web` service listens on port `30080` by default.
+The example `docker-compose.yml` pulls prebuilt images (`ghcr.io/c-siegel/lola:frontend`/`:backend`) rather than building them — Caddy serves the frontend and reverse-proxies `/api/*` to the backend. TLS is expected to be terminated upstream (e.g. a Cloudflare Tunnel). The `web` service listens on port `30080` by default.
 
 ## Supported AI providers
 

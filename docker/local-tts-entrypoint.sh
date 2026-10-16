@@ -3,7 +3,7 @@ set -eu
 
 # Same PUID/PGID adjustment as docker/backend-entrypoint.sh, and for the same reason: this
 # service's model-cache/voices directories are bind-mounted subdirectories of the same
-# EDUAVATARS_DATA_DIR the backend uses, so they need to end up owned by whatever host UID/GID
+# LOLA_DATA_DIR the backend uses, so they need to end up owned by whatever host UID/GID
 # actually owns that directory.
 PUID="${PUID:-568}"
 PGID="${PGID:-568}"

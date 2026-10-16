@@ -18,7 +18,7 @@ ALLOWED="MIT;BSD;Apache;ISC;PSF;Python Software Foundation;Mozilla Public Licens
 #   tiktoken         MIT (licence text in the package metadata)
 #   py_rust_stemmers MIT (github.com/qdrant/py-rust-stemmers; a fastembed dependency)
 # Plus our own packages and the CI-only tooling that runs this check.
-REVIEWED="tiktoken py_rust_stemmers py-rust-stemmers eduavatars-backend eduavatars-rag eduavatars-rag-eval pip-licenses prettytable wcwidth tomli"
+REVIEWED="tiktoken py_rust_stemmers py-rust-stemmers lola-backend lola-rag lola-rag-eval pip-licenses prettytable wcwidth tomli"
 
 # shellcheck disable=SC2086
 pip-licenses --partial-match --allow-only="$ALLOWED" --ignore-packages $REVIEWED >/dev/null

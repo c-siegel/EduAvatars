@@ -18,14 +18,14 @@ See the [root README](../README.md) for what the app does and for the shared `.e
 | `backend-entrypoint.sh` | Container startup: creates upload/cache folders, runs database migrations, then starts the API |
 | `Caddyfile` | Reverse-proxy config — routes `/api/*` to the backend, serves the speech recognition model under `/models/*` (pre-gzipped, from the data directory) and the frontend's static files otherwise (with SPA fallback so client-side routes work on page reload); also sets baseline security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) on every response |
 | `docker-compose.yml` | The stack: `web` (frontend + Caddy), `backend` (the API), `stt-model` (one-off: downloads the speech recognition model), and the optional `tts-local` (local text-to-speech) |
-| `eduavatars.service` | systemd unit to start/stop the stack on boot |
+| `lola.service` | systemd unit to start/stop the stack on boot |
 
 The `.env` file itself lives one level up, at the repo root — see [Deploying](#deploying) below.
 
 ## How it fits together
 
-`docker-compose.yml` **pulls** prebuilt images (`chsiegel/eduavatars:frontend` /
-`chsiegel/eduavatars:backend`) rather than building them itself — the two Dockerfiles are used in
+`docker-compose.yml` **pulls** prebuilt images (`ghcr.io/c-siegel/lola:frontend` /
+`ghcr.io/c-siegel/lola:backend`) rather than building them itself — the two Dockerfiles are used in
 a separate build/publish step. The `web` container runs Caddy, which serves the built frontend
 and reverse-proxies API calls to the `backend` container. Caddy itself only speaks plain HTTP
 (`auto_https off`); TLS is expected to be terminated in front of it (e.g. a Cloudflare Tunnel).
@@ -33,7 +33,7 @@ and reverse-proxies API calls to the `backend` container. Caddy itself only spea
 Both services read their configuration from `../.env` (relative to this folder) via
 `env_file: ../.env` — the same file used by [Deploy A](../README.md#deploy-a-local-development).
 This assumes the repo is checked out on the host and Compose is run from within it (e.g. via
-`eduavatars.service`), not e.g. pasted into a UI that only takes the YAML without the surrounding
+`lola.service`), not e.g. pasted into a UI that only takes the YAML without the surrounding
 repo.
 
 ## Health checks
@@ -50,12 +50,12 @@ balancer or uptime monitor tries the more obvious URL first). Both hit the same 
 
 ## Deploying
 
-This assumes the repo is checked out on the host (e.g. at `/opt/eduavatars`) — see the root
+This assumes the repo is checked out on the host (e.g. at `/opt/lola`) — see the root
 [README](../README.md#deployment) for the shared `.env` setup (`cp .env.example .env` at the repo
 root, then fill in the required secrets).
 
 1. Nothing to do for the on-device speech recognition model: the one-off `stt-model` service in
-   `docker-compose.yml` downloads it into `<EDUAVATARS_DATA_DIR>/models` on every `up` and then
+   `docker-compose.yml` downloads it into `<LOLA_DATA_DIR>/models` on every `up` and then
    exits. The first run fetches ~380 MB from Hugging Face (a pinned revision, every file checked
    against its SHA-256 hash) and stores a gzipped copy next to each file, which Caddy serves to
    browsers (`/models/*` in `Caddyfile`): ~175 MB per device instead of ~380 MB. Later runs only
@@ -88,16 +88,16 @@ root, then fill in the required secrets).
 
    **`--env-file .env` is required, not optional.** Without it, Compose falls back to looking for a
    `.env` file next to the compose file itself (`docker/.env`) for `${VAR}` substitution — which
-   doesn't exist, since the real one lives at the repo root. `EDUAVATARS_DATA_DIR` would silently
+   doesn't exist, since the real one lives at the repo root. `LOLA_DATA_DIR` would silently
    resolve to an empty string, turning the volume mount into `- :/data` and breaking the container
-   at startup. (`eduavatars.service` already passes the equivalent absolute-path flag.)
-3. Optional — run it as a systemd service so it survives reboots: install `eduavatars.service`
-   (it expects the repo checked out at `/opt/eduavatars` — adjust `WorkingDirectory` and the
+   at startup. (`lola.service` already passes the equivalent absolute-path flag.)
+3. Optional — run it as a systemd service so it survives reboots: install `lola.service`
+   (it expects the repo checked out at `/opt/lola` — adjust `WorkingDirectory` and the
    paths in `ExecStart`/`ExecStop` if you use a different location) and enable it with
-   `systemctl enable --now eduavatars`.
+   `systemctl enable --now lola`.
 
 For a real (non-`localhost`) deployment, also set `SITE_ADDRESS`, `CORS_ORIGINS`,
-`FRONTEND_BASE_URL`, and `EDUAVATARS_DATA_DIR` in the root `.env` — see `.env.example` for what
+`FRONTEND_BASE_URL`, and `LOLA_DATA_DIR` in the root `.env` — see `.env.example` for what
 each one does.
 
 To get your first admin account (dashboard access to manage other accounts and site settings),
@@ -106,12 +106,12 @@ entrypoint.sh` creates or promotes that account on every container start (a no-o
 already an admin), so the values are safe to leave in `.env` indefinitely.
 
 **On a non-TrueNAS host**, also set `PUID`/`PGID` in `.env` to the UID/GID that should own
-`EDUAVATARS_DATA_DIR` (e.g. your own user's `id -u`/`id -g`) — otherwise the backend container
+`LOLA_DATA_DIR` (e.g. your own user's `id -u`/`id -g`) — otherwise the backend container
 defaults to UID/GID 568 (TrueNAS's built-in "apps" user) and won't have write access to a data
 directory owned by anyone else. The backend's entrypoint adjusts its in-container user to match at
 every start (see `backend-entrypoint.sh`), so the image itself doesn't need rebuilding for a
 different host. The `web` and `stt-model` containers run as the same UID/GID, so they can read and
-write the speech recognition model in `<EDUAVATARS_DATA_DIR>/models` even where only that
+write the speech recognition model in `<LOLA_DATA_DIR>/models` even where only that
 user/group has access (as on a TrueNAS dataset).
 
 ## Local text-to-speech (optional)
@@ -127,7 +127,7 @@ LOCAL_TTS_ENABLED=true       # makes the backend use it
 ```
 
 and run the usual `docker compose -f docker/docker-compose.yml --env-file .env up -d`. Its data
-lives in `<EDUAVATARS_DATA_DIR>/local-tts/`: the downloaded model (~600 MB, fetched on first use),
+lives in `<LOLA_DATA_DIR>/local-tts/`: the downloaded model (~600 MB, fetched on first use),
 optional default voices in `voices/<language>.wav` (see
 [local-tts/voices/README.md](../local-tts/voices/README.md)), and a cache of teachers' clips. The
 very first speech request after a start also loads the model, which can take over a minute;
@@ -148,7 +148,7 @@ RAG_SERVICE_TOKEN=<random>      # python3 -c "import secrets; print(secrets.toke
 Both containers read the same `RAG_SERVICE_TOKEN` from `.env`. The service publishes no port —
 only the backend reaches it, on the Compose network. It runs as `PUID:PGID` with a read-only root
 filesystem and no capabilities, because it parses untrusted uploads (each file additionally in a
-resource-limited subprocess). Its data lives in `<EDUAVATARS_DATA_DIR>/rag/`: the index
+resource-limited subprocess). Its data lives in `<LOLA_DATA_DIR>/rag/`: the index
 (`rag.db`), in-flight uploads (deleted once parsed) and the local embedding model (about 600 MB,
 downloaded from Hugging Face on the first upload). Plan on about 1–2 GB of RAM for it.
 
@@ -182,7 +182,7 @@ RAG_EVALUATION_ENABLED=true
 The `rag-eval` service gets only `RAG_SERVICE_TOKEN` from `.env`, not the other secrets; the judge
 LLM's key (one of the teacher's own) arrives with each request. It runs like `rag` (no port,
 read-only root filesystem, no capabilities, about 1 GB of RAM) and keeps only cached prompt
-translations in `<EDUAVATARS_DATA_DIR>/rag-eval/`. Its Ragas telemetry is switched off. Runs cost
+translations in `<LOLA_DATA_DIR>/rag-eval/`. Its Ragas telemetry is switched off. Runs cost
 the teacher judge calls on their own key; admins cap the questions per run under Admin → Settings.
 
 ## Deploying behind another reverse proxy

@@ -18,7 +18,7 @@ the backend only calls out to this service over HTTP, and only when `TTS_LOCAL_E
 setting; see root README) is turned on.
 
 In production it runs as the optional `tts-local` service in `docker/docker-compose.yml` (image
-`chsiegel/eduavatars:local-tts`, enabled with the `local-tts` Compose profile — see
+`ghcr.io/c-siegel/lola:local-tts`, enabled with the `local-tts` Compose profile — see
 [docker/README.md](../docker/README.md#local-text-to-speech-optional)); in development, run it by
 hand as below.
 

@@ -475,9 +475,9 @@ cd backend && pytest
 ```
 
 Tests need no setup: `tests/conftest.py` sets throwaway `JWT_SECRET`/`API_KEY_ENCRYPTION_SECRET`
-values and keeps the repo root `.env` out (`EDUAVATARS_ENV_FILE=""` for the settings,
+values and keeps the repo root `.env` out (`LOLA_ENV_FILE=""` for the settings,
 `LITELLM_MODE=PRODUCTION` so litellm doesn't load it either), so your local settings can't change
-the results. Outside tests, `EDUAVATARS_ENV_FILE` (a real environment variable — it can't be set
+the results. Outside tests, `LOLA_ENV_FILE` (a real environment variable — it can't be set
 from inside a `.env`) points the backend at a different `.env` file.
 
 CI (`.github/workflows/docker-publish.yml`) runs this suite, plus the frontend build, before a

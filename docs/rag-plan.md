@@ -69,7 +69,7 @@ They are in §12.
   `rag` service.
 - **`rag` service**: stateless towards users. It only knows opaque IDs (`knowledge_base_id`,
   `document_id`) and owns the derived data: extracted text, chunks, vectors and the keyword index,
-  in its own SQLite file under `${EDUAVATARS_DATA_DIR}/rag/`. It is not reachable from outside the
+  in its own SQLite file under `${LOLA_DATA_DIR}/rag/`. It is not reachable from outside the
   Compose network (no published port) and requires a shared bearer token on every route except
   `/health`.
 
@@ -81,7 +81,7 @@ They are in §12.
 - CPU-heavy indexing can't starve the chat request workers.
 
 **Why the index lives in SQLite (sqlite-vec + FTS5)**
-- No extra database server. Backing up `${EDUAVATARS_DATA_DIR}` keeps backing up everything.
+- No extra database server. Backing up `${LOLA_DATA_DIR}` keeps backing up everything.
 - Every query is filtered to the project's knowledge bases, so brute-force vector search
   (sqlite-vec has no approximate index yet) stays fast. Expect a few milliseconds for tens of
   thousands of chunks.
@@ -160,7 +160,7 @@ teacher clicks "Retry", which re-uploads from the backend (see §5.2).
 ## 4. Embeddings: local first, API optional
 
 **Local (default).** fastembed with an ONNX model, loaded once at startup and cached in
-`${EDUAVATARS_DATA_DIR}/rag/model-cache`. Configurable with `RAG_LOCAL_EMBEDDING_MODEL`; only models
+`${LOLA_DATA_DIR}/rag/model-cache`. Configurable with `RAG_LOCAL_EMBEDDING_MODEL`; only models
 from a built-in allowlist with verified permissive licences are accepted:
 
 | Model | Licence | Dim. | Max. input | Notes |
@@ -589,7 +589,7 @@ class EvalRunItem(SQLModel, table=True):
   # Optional knowledge base (RAG) — see rag/ and docs/rag-plan.md. Only started with the "rag"
   # profile: set COMPOSE_PROFILES=rag and RAG_ENABLED=true in .env.
   rag:
-    image: chsiegel/eduavatars:rag
+    image: ghcr.io/c-siegel/lola:rag
     pull_policy: always
     profiles: ["rag"]
     env_file: ../.env
@@ -599,7 +599,7 @@ class EvalRunItem(SQLModel, table=True):
       RAG_MODEL_CACHE_DIR: /data/model-cache
       # DOCLING_URL: http://docling:5001   ← set in .env together with the "docling" profile
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/rag:/data
+      - ${LOLA_DATA_DIR}/rag:/data
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
@@ -623,7 +623,7 @@ class EvalRunItem(SQLModel, table=True):
   # Optional answer-quality evaluation with Ragas (§7). Only with COMPOSE_PROFILES=rag,rag-eval
   # and RAG_EVALUATION_ENABLED=true.
   rag-eval:
-    image: chsiegel/eduavatars:rag-eval
+    image: ghcr.io/c-siegel/lola:rag-eval
     pull_policy: always
     profiles: ["rag-eval"]
     env_file: ../.env
@@ -633,7 +633,7 @@ class EvalRunItem(SQLModel, table=True):
       RAG_SERVICE_URL: http://rag:8090  # for the KB's embedding model (POST /embed)
       RAGAS_DO_NOT_TRACK: "true"
     volumes:
-      - ${EDUAVATARS_DATA_DIR}/rag-eval:/data
+      - ${LOLA_DATA_DIR}/rag-eval:/data
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]

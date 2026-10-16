@@ -32,11 +32,11 @@ from cryptography.fernet import Fernet
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Path to the .env-file within the root directory. EDUAVATARS_ENV_FILE points elsewhere; set to an
+# Path to the .env-file within the root directory. LOLA_ENV_FILE points elsewhere; set to an
 # empty value it reads no file at all, which the test suite relies on so a developer's own .env
 # can't change what the tests see.
 _ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
-_ENV_FILE = os.environ.get("EDUAVATARS_ENV_FILE", str(_ROOT_ENV_FILE)) or None
+_ENV_FILE = os.environ.get("LOLA_ENV_FILE", str(_ROOT_ENV_FILE)) or None
 
 # Values people copy-paste from .env.example (or type without thinking) — none of these are
 # safe JWT secrets, no matter how they're cased, so this is checked in addition to length.
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     # ==================== DATABASE SETTINGS ====================
     
-    database_url: str = "sqlite:///./eduavatars.db"
+    database_url: str = "sqlite:///./lola.db"
 
     # ==================== JWT AUTHENTICATION SETTINGS ====================
     
@@ -240,7 +240,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = ""
     smtp_password: str = ""
-    smtp_from_address: str = "no-reply@eduavatars.example"
+    smtp_from_address: str = "no-reply@lola.example"
     smtp_use_tls: bool = True
     password_reset_token_expire_minutes: int = 30
 

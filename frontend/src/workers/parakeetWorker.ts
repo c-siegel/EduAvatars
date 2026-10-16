@@ -37,7 +37,7 @@ const MAX_SEGMENT_SECONDS = 20;
 const MIN_DECODE_SECONDS = 0.3;
 const SILENT_SEGMENT_KEEP_SECONDS = 0.5;
 
-const MODEL_CACHE = "eduavatars-stt-models";
+const MODEL_CACHE = "lola-stt-models";
 // A download that receives nothing for this long counts as failed, so the chat falls back to
 // server transcription instead of keeping students on the loading screen indefinitely (e.g. a
 // truncated file on the server, or a connection that silently hangs).
